@@ -255,6 +255,13 @@ body {
 .team-row.role-agent { margin-left: 14px; }
 .type-tag.role-director { background: var(--accent-2); color: var(--ink); text-shadow: none; }
 .type-tag.role-risk { background: #7b3fa0; }
+.type-tag.role-lnd { background: #2bb3a3; }
+.team-row.role-lnd { background: #e3f6f3; }
+.flag.lnd { background: #2bb3a3; }
+.log-list .lnd { color: #1f8a7e; }
+.log-list .rapport, .log-list .notulen { color: #7b3fa0; }
+.task.report .note { background: #f1e8f8; color: #4a2a6a; }
+.actions { font-size: 10px; }
 .team-row.role-risk { background: #f1e8f8; }
 .status.eating { color: #c27a00; }
 .status.hardening, .status.patrol { color: #7b3fa0; }

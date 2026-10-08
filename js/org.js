@@ -8,7 +8,7 @@
 //   opgehaald      op de stapel van het afdelingshoofd
 //   bezig          een agent werkt eraan
 //   controle       output ligt bij het hoofd
-//   scan           ligt bij RISK THREAT voor een security-scan (ontwikkelwerk)
+//   scan           ligt bij RISK FRED voor een security-scan (ontwikkelwerk)
 //   gecontroleerd  goedgekeurd door het hoofd (en veilig), wacht op bezorging
 //   onderweg       het hoofd loopt ermee naar Godfred
 //   ingeleverd     ligt bij Godfred
@@ -21,7 +21,7 @@ window.FC = window.FC || {};
 
 (function (FC) {
   const MAP = FC.map;
-  const SAVE_KEY = 'feedcloudje.org.v4';
+  const SAVE_KEY = 'feedcloudje.org.v5';
   const GAME_MINUTES_PER_SECOND = 8;
   const WALK_SPEED = 3.6;
   const EAT_MINUTES = 6;
@@ -40,26 +40,33 @@ window.FC = window.FC || {};
   const RISK_SCAN_MINUTES = 3;
 
   const TYPES = {
-    CODE: { color: '#4a90e2' }, DATA: { color: '#3fae5a' }, CREATIEF: { color: '#f06bb5' },
-    BEVEILIGING: { color: '#7d879b' }, STRATEGIE: { color: '#a8743f' }, OPERATIONS: { color: '#f08a2c' },
+    FINANCE: { color: '#3fae5a' }, MARKETING: { color: '#f06bb5' }, OPERATIONS: { color: '#f08a2c' },
+    STRATEGIE: { color: '#4a90e2' }, DIRECTIE: { color: '#a8743f' }, RISK: { color: '#7b3fa0' }, LND: { color: '#2bb3a3' },
   };
 
+  // De vier afdelingshoofden uit het profiel van Godfred.
+  const HEAD_NAMES = { finance: 'FINANCE FRED', marketing: 'MARKETING FRED', operations: 'OPERATIONS FRED', strategie: 'STRATEGIC FRED' };
+
   // Hoe Godfred een opdracht per afdeling formuleert.
-  const PHASE = { lab: 'Bouwen', studio: 'Ontwerpen', bieb: 'Onderzoeken', werk: 'Organiseren', poort: 'Beveiligen' };
+  const PHASE = { finance: 'Doorrekenen', marketing: 'Vermarkten', operations: 'Uitvoeren', strategie: 'Onderzoeken' };
   const KEYWORDS = {
-    lab:    ['app', 'website', 'site', 'api', 'code', 'bouw', 'software', 'tool', 'systeem', 'koppel', 'test'],
-    studio: ['logo', 'ontwerp', 'campagne', 'video', 'post', 'tekst', 'huisstijl', 'design', 'social', 'nieuwsbrief', 'merk'],
-    bieb:   ['onderzoek', 'analyse', 'data', 'rapport', 'markt', 'cijfers', 'klant', 'trend', 'concurrent'],
-    werk:   ['planning', 'factuur', 'server', 'proces', 'inkoop', 'voorraad', 'backup', 'lancer', 'uitrol', 'support'],
+    finance:    ['geld', 'budget', 'factuur', 'kosten', 'prijs', 'begroting', 'cijfers', 'omzet', 'betaal', 'financ', 'winst'],
+    marketing:  ['logo', 'campagne', 'video', 'post', 'tekst', 'huisstijl', 'social', 'nieuwsbrief', 'merk', 'website', 'sales', 'klant'],
+    operations: ['app', 'website', 'api', 'systeem', 'proces', 'planning', 'server', 'bouw', 'lancer', 'uitrol', 'support', 'tool', 'portaal', 'automat'],
+    strategie:  ['onderzoek', 'analyse', 'markt', 'strategie', 'plan', 'concurrent', 'trend', 'kans', 'visie', 'groei'],
   };
-  // Opdrachten met deze woorden gaan altijd langs RISK THREAT.
-  const SECURITY_WORDS = ['beveilig', 'toegang', 'wachtwoord', 'privacy', 'audit', 'avg', 'veilig', 'login', 'betaal', 'server', 'api'];
+  // Ontwikkel- en beveiligingswerk gaat altijd langs RISK FRED.
+  const SECURITY_WORDS = ['app', 'website', 'site', 'api', 'code', 'systeem', 'server', 'portaal', 'login', 'betaal',
+    'wachtwoord', 'privacy', 'toegang', 'beveilig', 'avg', 'tool', 'automat', 'koppel'];
   const TEMPLATES = {
-    lab:    ['Login-pagina bouwen', 'API koppelen', 'Tests schrijven', 'Database migreren', 'Performance tunen'],
-    studio: ['Logo ontwerpen', 'Social post maken', 'Video monteren', 'Websiteteksten', 'Campagne bedenken'],
-    bieb:   ['Marktonderzoek', 'Data opschonen', 'Klantanalyse', 'Weekrapport maken', 'Trends voorspellen'],
-    werk:   ['Serveronderhoud', 'Back-up maken', 'Facturen verwerken', 'Planning bijwerken', 'Voorraad tellen'],
+    finance:    ['Kwartaalcijfers opstellen', 'Facturen verwerken', 'Begroting bijwerken', 'Cashflowprognose', 'Kostenanalyse'],
+    marketing:  ['Campagne bedenken', 'Social posts maken', 'Websiteteksten', 'Nieuwsbrief schrijven', 'Salespitch aanscherpen'],
+    operations: ['Proces automatiseren', 'Planning bijwerken', 'Serveronderhoud', 'Leveranciers afstemmen', 'Klantportaal bouwen'],
+    strategie:  ['Marktonderzoek', 'Concurrentieanalyse', 'Kansen in kaart brengen', 'Kwartaalplan', 'Scenario doorrekenen'],
   };
+  // Wat Elsje tijdens haar verbetersessies vindt en uitprobeert.
+  const LND_TIPS = ['kortere, scherpere instructies', 'een checklist voor het inleveren', 'eerst de klantvraag herhalen',
+    'voorbeelden van goedgekeurd werk', 'cijfers altijd onderbouwen'];
 
   const NICKNAMES = ['PIP', 'NOVA', 'BRAM', 'LOTTE', 'JUUL', 'DEX', 'FENNA', 'MILO', 'SAAR', 'TIJN',
     'ROOS', 'KAI', 'LIEKE', 'OTTO', 'EVI', 'SEM', 'NOOR', 'GUUS', 'ISA', 'TEUN', 'MAX', 'ZOE',
@@ -71,7 +78,8 @@ window.FC = window.FC || {};
     baas:     ['order', 'meeting', 'rest'],
     director: ['plan', 'initiative', 'post', 'review', 'feedback', 'meeting', 'say'],
     head:     ['pickup', 'assign', 'review', 'check', 'deliver', 'rest', 'say'],
-    risk:     ['review', 'verdict', 'harden', 'patrol', 'advise', 'say'],
+    risk:     ['review', 'verdict', 'harden', 'patrol', 'advise', 'report', 'say'],
+    lnd:      ['session', 'coach', 'propose', 'report', 'say'],
   };
 
   const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
@@ -93,6 +101,7 @@ window.FC = window.FC || {};
       this.godfredBrain = new FC.GodfredBrain(this);
       this.headBrain = new FC.HeadBrain(this);
       this.riskBrain = new FC.RiskBrain(this);
+      this.lndBrain = new FC.LndBrain(this);
     }
 
     on(fn) { this.listeners.push(fn); }
@@ -118,17 +127,25 @@ window.FC = window.FC || {};
         tasks: [],
         projects: [],
         meeting: null,
-        memory: { lastMt: 0, lastCrisis: -9999, lastInitiative: 0, lastPatrol: 0, lastAdvice: -9999, adviceAt: -9999 },
+        memory: { lastMt: 0, lastCrisis: -9999, lastInitiative: 0, lastPatrol: 0, lastAdvice: -9999, adviceAt: -9999,
+          adviceResponse: null, lastRiskReport: 0, nextSession: 0 },
+        reports: [],     // rapporten aan Sjoerd (van Elsje en Risk Fred)
+        minutes: [],     // notulen van het management-overleg
+        improvements: [], // verbeterlog van Elsje
+        deptBonus: {},   // kwaliteitswinst per afdeling door uitgerolde tools
         stats: { projectsDone: 0, tasksApproved: 0, revisions: 0, leaks: 0, intrudersBlocked: 0, breaches: 0, meetings: 0, snacks: 0, xpSpent: 0 },
         log: [],
       };
       this.state.memory.lastMt = this.state.clock - 6 * 60 + 20; // eerste MT-overleg na ~20 minuten
       this.addAgent('PLANUIL', { role: 'director', name: 'GODFRED' });
-      this.addAgent('KLUISBEER', { role: 'risk', name: 'RISK THREAT' });
-      [['BITBIT', 3], ['PIXELFEE', 3], ['DATADIL', 3], ['MOERBOT', 3]].forEach(([species, n]) => {
-        this.addAgent(species, { role: 'head' });
+      this.addAgent('KLUISBEER', { role: 'risk', name: 'RISK FRED' });
+      this.addAgent('BOEKKONIJN', { role: 'lnd', name: 'ELSJE' });
+      [['DATADIL', 3], ['PIXELFEE', 3], ['MOERBOT', 3], ['BITBIT', 3]].forEach(([species, n]) => {
+        const head = this.addAgent(species, { role: 'head' });
+        head.name = HEAD_NAMES[head.dept];
         for (let i = 0; i < n; i++) this.addAgent(species, { initial: true });
       });
+      this.state.memory.nextSession = this.state.clock + 4 * 60; // eerste verbetersessie van Elsje
       // Om mee te beginnen hangt er al wat werk op het prikbord.
       MAP.DEPTS.forEach(dept => {
         const p = this.addProject(pick(TEMPLATES[dept]), rand(1, 3), 'godfred', dept);
@@ -188,6 +205,7 @@ window.FC = window.FC || {};
     director() { return this.state.agents.find(a => a.role === 'director'); }
     head(dept) { return this.state.agents.find(a => a.role === 'head' && a.dept === dept); }
     risk() { return this.state.agents.find(a => a.role === 'risk'); }
+    elsje() { return this.state.agents.find(a => a.role === 'lnd'); }
     deptColor(dept) { const r = MAP.room(dept); return r.type ? TYPES[r.type].color : '#a8743f'; }
 
     freeDesk(dept) {
@@ -198,7 +216,7 @@ window.FC = window.FC || {};
       const role = opts.role || 'agent';
       const type = FC.sprites.SPECIES[species].type;
       const dept = role === 'director' ? 'hq' : MAP.roomForType(type).id;
-      const seat = role === 'director' ? MAP.BOSS_SEAT : role === 'risk' ? MAP.RISK_SEAT
+      const seat = role === 'director' ? MAP.BOSS_SEAT : role === 'risk' ? MAP.RISK_SEAT : role === 'lnd' ? MAP.ELSJE_SEAT
         : role === 'head' ? MAP.room(dept).headSeat : this.freeDesk(dept);
       if (!seat) return null;
       const used = new Set(this.state.agents.map(a => a.name));
@@ -259,8 +277,8 @@ window.FC = window.FC || {};
         quality: 0,
         revision: 0,      // keren teruggestuurd door Godfred
         headRevision: 0,  // keren teruggestuurd door het hoofd
-        secCheck: dept === 'lab' || SECURITY_WORDS.some(w => project.title.toLowerCase().includes(w)),
-        secRevision: 0,   // keren teruggestuurd door RISK THREAT
+        secCheck: SECURITY_WORDS.some(w => `${project.title} ${title}`.toLowerCase().includes(w)),
+        secRevision: 0,   // keren teruggestuurd door RISK FRED
         secured: false,
         feedback: '',
         reward: { xp: d * 12 },
@@ -280,7 +298,7 @@ window.FC = window.FC || {};
         const lower = p.title.toLowerCase();
         depts = MAP.DEPTS.filter(d => KEYWORDS[d].some(k => lower.includes(k)));
         if (!depts.length) {
-          const pool = ['lab', 'studio', 'bieb', 'werk'].sort(() => Math.random() - 0.5);
+          const pool = MAP.DEPTS.slice().sort(() => Math.random() - 0.5);
           depts = pool.slice(0, p.difficulty >= 4 ? 3 : p.difficulty >= 2 ? 2 : 1);
         }
       }
@@ -387,6 +405,10 @@ window.FC = window.FC || {};
           a.eatGain = m ? m.energy / EAT_MINUTES : 0;
           break;
         }
+        case 'coach':
+          this.coach(a);
+          this.toDesk(a);
+          break;
         case 'patrol':
           a.state = 'patrol';
           a.timer = 15;
@@ -462,7 +484,7 @@ window.FC = window.FC || {};
     handOver(h) {
       const g = this.director();
       const tasks = h.carry.map(id => this.task(id)).filter(t => t && t.status === 'onderweg');
-      tasks.forEach(t => { t.status = 'ingeleverd'; });
+      tasks.forEach(t => { t.status = 'ingeleverd'; t.deliveredAt = this.now(); });
       h.stats.delivered += tasks.length;
       if (!tasks.length) return;
       this.emit({ kind: 'deliver', agentId: h.id, text: `${h.name} brengt de output van ${roomName(h.dept)} naar ${g.name} (${plural(tasks.length)}).` });
@@ -484,7 +506,7 @@ window.FC = window.FC || {};
           const title = String(cmd.title || '').trim().slice(0, 50);
           if (!title) return false;
           const p = this.addProject(title, clamp(cmd.difficulty || 2, 1, 5), 'baas', cmd.dept || null);
-          this.emit({ kind: 'opdracht', agentId: g.id, text: `DE BAAS → ${g.name}: "${p.title}"` });
+          this.emit({ kind: 'opdracht', agentId: g.id, text: `SJOERD → ${g.name}: "${p.title}"` });
           return p;
         }
         case 'plan': {
@@ -535,6 +557,7 @@ window.FC = window.FC || {};
           actor.reviewDone = null;
           if (!t || t.status !== 'scan') return false;
           actor.stats.scanned++;
+          if (t.kind === 'tool') return this.toolVerdict(t, cmd.verdict === 'lek', cmd.note, actor);
           const head = this.head(t.dept);
           if (cmd.verdict === 'lek') {
             t.status = 'opgehaald';
@@ -590,11 +613,11 @@ window.FC = window.FC || {};
               text: `${actor.name} stuurt "${t.title}" terug: ${cmd.note}` });
             this.say(actor, cmd.note);
           } else if (t.secCheck && !t.secured) {
-            // Ontwikkelwerk eerst langs RISK THREAT.
+            // Ontwikkelwerk eerst langs RISK FRED.
             t.status = 'scan';
             const r = this.risk();
             this.emit({ kind: 'check', from: actor.id, to: r ? [r.id] : [], agentId: actor.id, color: '#b9a3ff',
-              text: `${actor.name} keurt "${t.title}" goed en laat hem scannen door RISK THREAT.` });
+              text: `${actor.name} keurt "${t.title}" goed en laat hem scannen door RISK FRED.` });
           } else {
             t.status = 'gecontroleerd';
             t.checkedAt = this.now();
@@ -644,7 +667,38 @@ window.FC = window.FC || {};
           const went = this.toBuffet(a);
           if (!went) return false;
           this.emit({ kind: 'rest', from: actor ? actor.id : null, to: [a.id], agentId: a.id,
-            text: `${actor ? actor.name : 'DE BAAS'} stuurt ${a.name} naar de lounge${went === 'water' ? ' (geen XP, dus water)' : ' voor iets van het buffet'}.` });
+            text: `${actor ? actor.name : 'SJOERD'} stuurt ${a.name} naar de lounge${went === 'water' ? ' (geen XP, dus water)' : ' voor iets van het buffet'}.` });
+          return true;
+        }
+        case 'report':
+          this.addReport(actor, cmd.title, cmd.text);
+          return true;
+        case 'session': {
+          // Elsje start een verbetersessie: ze loopt naar de afdeling van de
+          // agent waar verbetering het meeste oplevert.
+          if (actor.state !== 'idle') return false;
+          const a = this.agent(cmd.agentId);
+          if (!a) return false;
+          this.state.memory.nextSession = this.now() + 3 * 1440;
+          actor.coachTarget = a.id;
+          this.emit({ kind: 'lnd', agentId: actor.id, text: `${actor.name} start haar verbetersessie en gaat langs bij ${a.name} (${roomName(a.dept)}).` });
+          this.say(actor, 'Verbetersessie!');
+          this.moveTo(actor, MAP.room(a.dept).doors[0], 'coach');
+          return true;
+        }
+        case 'propose': {
+          // Een nieuwe tool of skill: eerst langs Risk Fred.
+          const r = this.risk();
+          const t = {
+            id: this.state.nextId++, kind: 'tool', projectId: null, boss: false, dept: 'academy',
+            targetDept: cmd.dept, title: `Tool: ${cmd.tool} voor ${roomName(cmd.dept)}`, difficulty: 1,
+            required: 1, progress: 1, status: 'scan', assignee: null, quality: Math.random(), revision: 0,
+            headRevision: 0, secCheck: true, secRevision: 0, secured: false, feedback: '', reward: { xp: 0 },
+            checkedAt: 0, doneAt: null,
+          };
+          this.state.tasks.push(t);
+          this.emit({ kind: 'lnd', from: actor.id, to: r ? [r.id] : [], agentId: actor.id, color: '#7fe0d4',
+            text: `${actor.name} wil "${cmd.tool}" invoeren bij ${roomName(cmd.dept)} en laat het eerst scannen door RISK FRED.` });
           return true;
         }
         case 'meeting':
@@ -661,6 +715,51 @@ window.FC = window.FC || {};
       if (a) this.emit({ kind: 'say', agentId: a.id, text });
     }
 
+    // Elsje coacht een agent: een gerichte tip, de agent wordt er beter van.
+    coach(e) {
+      const a = this.agent(e.coachTarget);
+      e.coachTarget = null;
+      if (!a) return;
+      const tip = pick(LND_TIPS);
+      a.level++;
+      this.state.improvements.unshift({ time: this.clockLabel(), agent: a.name, dept: roomName(a.dept),
+        what: `Coaching: ${tip}`, why: `${a.stats.revisions} revisies op ${a.stats.tasks} taken`, result: `${a.name} naar level ${a.level}` });
+      this.state.improvements.length = Math.min(this.state.improvements.length, 20);
+      this.emit({ kind: 'lnd', from: e.id, to: [a.id], agentId: e.id, color: '#7fe0d4',
+        text: `${e.name} coacht ${a.name}: ${tip}. ${a.name} gaat naar level ${a.level}.` });
+      this.say(e, `Tip: ${tip}`);
+    }
+
+    toolVerdict(t, leak, note, r) {
+      const e = this.elsje();
+      t.status = 'goedgekeurd';
+      t.doneAt = this.now();
+      t.secured = !leak;
+      if (leak) {
+        t.feedback = `Afgewezen door Risk Fred: ${note}`;
+        this.state.stats.leaks++;
+        r.stats.leaks++;
+        this.emit({ kind: 'scan', from: r.id, to: e ? [e.id] : [], agentId: r.id, color: '#ff8a7a',
+          text: `${r.name} wijst "${t.title}" af: ${note}` });
+        this.say(r, 'Deze tool komt er niet in.');
+      } else {
+        const bonus = this.state.deptBonus;
+        bonus[t.targetDept] = Math.min(0.3, (bonus[t.targetDept] || 0) + 0.05);
+        t.feedback = 'Veilig bevonden en uitgerold.';
+        this.state.improvements.unshift({ time: this.clockLabel(), agent: MAP.room(t.targetDept).name, dept: roomName(t.targetDept),
+          what: t.title, why: 'Nieuwe ontwikkeling in AI', result: `Kwaliteit +${Math.round(bonus[t.targetDept] * 100)}% voor de afdeling` });
+        this.emit({ kind: 'lnd', from: r.id, to: e ? [e.id] : [], agentId: e ? e.id : r.id, color: '#b9a3ff',
+          text: `${r.name} keurt "${t.title}" veilig. ${e ? e.name : 'Elsje'} rolt hem uit.` });
+      }
+      return true;
+    }
+
+    addReport(from, title, text) {
+      this.state.reports.unshift({ time: this.clockLabel(), from: from.name, title, text });
+      this.state.reports.length = Math.min(this.state.reports.length, 20);
+      this.emit({ kind: 'rapport', agentId: from.id, text: `${from.name} → SJOERD: ${title}` });
+    }
+
     approve(t, note, g, head, worker) {
       const s = this.state;
       t.status = 'goedgekeurd';
@@ -673,6 +772,7 @@ window.FC = window.FC || {};
         this.gainXp(worker, t.reward.xp);
       }
       if (head) this.gainXp(head, Math.round(t.reward.xp / 3));
+      if (worker && stars(t.quality) === 5) this.say(g, `Topper, ${worker.name}.`);
       this.emit({ kind: 'approve', from: g.id, to: head ? [head.id] : [], agentId: g.id, color: '#9dff9d',
         text: `${g.name} keurt "${t.title}" goed ${'★'.repeat(stars(t.quality))}: ${note}${worker ? ` +${t.reward.xp} XP voor ${worker.name}` : ''}` });
 
@@ -686,7 +786,7 @@ window.FC = window.FC || {};
       s.stats.projectsDone++;
       if (p.source === 'baas') {
         this.emit({ kind: 'project', agentId: g.id,
-          text: `${g.name} → DE BAAS: "${p.title}" is af! ${plural(tasks.length)}, kwaliteit ${'★'.repeat(stars(p.quality))}.` });
+          text: `${g.name} → SJOERD: "${p.title}" is af! ${plural(tasks.length)}, kwaliteit ${'★'.repeat(stars(p.quality))}.` });
         this.say(g, `Baas, "${p.title}" is af!`);
       }
     }
@@ -697,7 +797,7 @@ window.FC = window.FC || {};
       const s = this.state;
       if (s.meeting) return false;
       const g = this.director();
-      const busy = a => ['post', 'pickup', 'deliver', 'patrol', 'buffet', 'eat'].includes(a.intent) ||
+      const busy = a => ['post', 'pickup', 'deliver', 'patrol', 'buffet', 'eat', 'coach'].includes(a.intent) ||
         ['reviewing', 'hardening', 'patrol', 'eating'].includes(a.state);
       const attendees = s.agents.filter(a => (scope === 'mt' ? a.role !== 'agent' : true) && !busy(a));
       s.meeting = { topic, scope, phase: 'verzamelen', attendees: [], timer: 0 };
@@ -739,8 +839,14 @@ window.FC = window.FC || {};
       if (a.role === 'director') {
         const running = s.projects.filter(p => p.status === 'loopt').length;
         const inbox = s.tasks.filter(t => t.status === 'ingeleverd').length;
-        return pick([`${running} projecten lopen.`, `Firewall: ${Math.round(s.firewall)}%.`,
-          inbox ? `${inbox} stukken liggen bij mij.` : 'Mijn inbox is leeg!', 'Kwaliteit boven snelheid.', 'Hoe staan de afdelingen ervoor?']);
+        return pick([`${running} projecten lopen. Tempo houden.`, 'Kort: waar zit het knelpunt?',
+          inbox ? `${inbox} stukken liggen bij mij. Komt goed.` : 'Inbox leeg. Prima.', 'Wat hebben jullie nodig?',
+          'Sales loopt achter? Dan sturen we daarop.', 'Signalen van Risk Fred gaan voor.']);
+      }
+      if (a.role === 'lnd') {
+        const last = s.improvements[0];
+        return pick([last ? `Laatste verbetering: ${last.what}.` : 'Ik zoek uit wat ons sneller maakt.',
+          'Geen hype, alleen wat werkt.', 'Performance ligt bij mij, Godfred.', 'Volgende sessie: nieuwe tools testen.']);
       }
       if (a.role === 'risk') {
         return pick([`Firewall: ${Math.round(s.firewall)}%.`, `${s.stats.intrudersBlocked} aanvallen geblokt.`,
@@ -766,6 +872,24 @@ window.FC = window.FC || {};
         if (a && (a.state === 'meeting' || a.intent === 'meeting')) this.toDesk(a);
       });
       this.emit({ kind: 'meeting', agentId: this.director().id, text: 'Vergadering afgelopen. Iedereen terug naar zijn plek!' });
+      if (m.scope === 'mt') this.writeMinutes(m);
+    }
+
+    // Godfred legt notulen en actiepunten centraal vast.
+    writeMinutes(m) {
+      const s = this.state;
+      const actions = MAP.DEPTS.map(d => {
+        const mine = s.tasks.filter(t => t.dept === d && t.status !== 'goedgekeurd');
+        const stuck = mine.filter(t => ['bord', 'opgehaald'].includes(t.status)).length;
+        const head = this.head(d);
+        return `${head ? head.name : roomName(d)}: ${stuck ? `${plural(stuck)} oppakken` : 'op schema'}`;
+      });
+      if (s.firewall < 80) actions.push(`RISK FRED: firewall terug naar 100% (nu ${Math.round(s.firewall)}%)`);
+      const pending = s.projects.filter(p => p.source === 'baas' && p.status !== 'klaar');
+      if (pending.length) actions.push(`GODFRED: ${pending.length} opdracht${pending.length === 1 ? '' : 'en'} van Sjoerd bewaken`);
+      s.minutes.unshift({ time: this.clockLabel(), topic: m.topic, actions });
+      s.minutes.length = Math.min(s.minutes.length, 10);
+      this.emit({ kind: 'notulen', agentId: this.director().id, text: `GODFRED legt notulen vast: ${actions.length} actiepunten.` });
     }
 
     // ---------- de spel-lus ----------
@@ -791,9 +915,10 @@ window.FC = window.FC || {};
         if (a.role === 'director') this.godfredBrain.tick(a);
         else if (a.role === 'head') this.headBrain.tick(a);
         else if (a.role === 'risk') this.riskBrain.tick(a);
+        else if (a.role === 'lnd') this.lndBrain.tick(a);
       }
       // Oude afgeronde taken en projecten van Godfred zelf opruimen.
-      // Opdrachten van de baas blijven altijd bewaard.
+      // Opdrachten van Sjoerd blijven altijd bewaard.
       const own = id => { const p = this.project(id); return !p || p.source !== 'baas'; };
       const done = s.tasks.filter(t => t.status === 'goedgekeurd' && own(t.projectId));
       if (done.length > 60) {
@@ -855,7 +980,9 @@ window.FC = window.FC || {};
     finishTask(a, t) {
       t.status = 'controle';
       t.progress = t.required;
-      t.quality = clamp(0.3 + a.level * 0.06 + Math.random() * 0.35 + t.revision * 0.2 + t.headRevision * 0.15, 0.05, 1);
+      const bonus = this.state.deptBonus[a.dept] || 0;
+      t.quality = clamp(0.3 + a.level * 0.06 + Math.random() * 0.35 + bonus +
+        t.revision * 0.2 + t.headRevision * 0.15 + t.secRevision * 0.15, 0.05, 1);
       a.taskId = null;
       a.state = 'idle';
       a.stats.tasks++;
@@ -876,7 +1003,7 @@ window.FC = window.FC || {};
 
     // ---------- beveiliging van de afgesloten omgeving ----------
 
-    // RISK THREAT houdt de poort en de firewall in de gaten. Zit hij in een
+    // RISK FRED houdt de poort en de firewall in de gaten. Zit hij in een
     // vergadering, dan is de poort kwetsbaarder.
     tickSecurity() {
       const s = this.state;
@@ -884,7 +1011,8 @@ window.FC = window.FC || {};
       const r = this.risk();
       const threat = pick(['een onbekende bot', 'malware in een bijlage', 'een virus via een download', 'een port-scanner',
         'een phishingmail', 'een verdwaalde hacker']);
-      const onDuty = r && ['idle', 'reviewing', 'hardening', 'patrol'].includes(r.state);
+      // Alleen in een vergadering is hij echt weg van zijn post.
+      const onDuty = r && r.state !== 'meeting' && r.intent !== 'meeting';
       const chance = !onDuty ? 0.25 : r.state === 'patrol' ? 1 : 0.6 + s.firewall / 250;
       if (Math.random() < chance) {
         s.stats.intrudersBlocked++;
@@ -898,7 +1026,7 @@ window.FC = window.FC || {};
         const dmg = rand(6, 14);
         s.firewall = clamp(s.firewall - dmg, 0, 100);
         s.stats.breaches++;
-        this.emit({ kind: 'alarm', text: `ALARM! ${threat} glipte langs de poort. Firewall -${dmg}%.${onDuty ? '' : ' RISK THREAT was niet op zijn post.'}` });
+        this.emit({ kind: 'alarm', text: `ALARM! ${threat} glipte langs de poort. Firewall -${dmg}%.${onDuty ? '' : ' RISK FRED was niet op zijn post.'}` });
       }
     }
   }

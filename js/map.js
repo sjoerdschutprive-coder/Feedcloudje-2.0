@@ -24,14 +24,15 @@ window.FC = window.FC || {};
 
   // `type` = welk soort medewerker hier thuishoort.
   const ROOMS = [
-    { id: 'lab',     name: 'CODE-LAB',     type: 'CODE',        x0: 2,  y0: 2,  x1: 11, y1: 9,  floor: 'wood',       doorSide: 'bottom' },
-    { id: 'hq',      name: 'DIRECTIE',     type: 'STRATEGIE',   x0: 11, y0: 2,  x1: 20, y1: 9,  floor: 'carpetRed',  doorSide: 'bottom' },
-    { id: 'studio',  name: 'STUDIO',       type: 'CREATIEF',    x0: 20, y0: 2,  x1: 29, y1: 9,  floor: 'wood',       doorSide: 'bottom' },
-    { id: 'lounge',  name: 'LOUNGE',       type: null,          x0: 29, y0: 2,  x1: 37, y1: 9,  floor: 'tiles',      doorSide: 'bottom' },
-    { id: 'bieb',    name: 'DATABIEB',     type: 'DATA',        x0: 2,  y0: 12, x1: 11, y1: 18, floor: 'wood',       doorSide: 'top' },
-    { id: 'meeting', name: 'VERGADERZAAL', type: null,          x0: 11, y0: 12, x1: 29, y1: 18, floor: 'carpetBlue', doorSide: 'top', doorXs: [15, 25] },
-    { id: 'werk',    name: 'WERKPLAATS',   type: 'OPERATIONS',  x0: 29, y0: 12, x1: 37, y1: 18, floor: 'wood',       doorSide: 'top' },
-    { id: 'poort',   name: 'POORTWACHT',   type: 'BEVEILIGING', x0: 23, y0: 21, x1: 28, y1: 24, floor: 'concrete',   doorSide: 'top' },
+    { id: 'finance',    name: 'FINANCE',      type: 'FINANCE',    x0: 2,  y0: 2,  x1: 11, y1: 9,  floor: 'wood',       doorSide: 'bottom' },
+    { id: 'hq',         name: 'DIRECTIE',     type: 'DIRECTIE',   x0: 11, y0: 2,  x1: 20, y1: 9,  floor: 'carpetRed',  doorSide: 'bottom' },
+    { id: 'marketing',  name: 'MARKETING',    type: 'MARKETING',  x0: 20, y0: 2,  x1: 29, y1: 9,  floor: 'wood',       doorSide: 'bottom' },
+    { id: 'lounge',     name: 'LOUNGE',       type: null,         x0: 29, y0: 2,  x1: 37, y1: 9,  floor: 'tiles',      doorSide: 'bottom' },
+    { id: 'strategie',  name: 'STRATEGIE',    type: 'STRATEGIE',  x0: 2,  y0: 12, x1: 11, y1: 18, floor: 'wood',       doorSide: 'top' },
+    { id: 'meeting',    name: 'VERGADERZAAL', type: null,         x0: 11, y0: 12, x1: 29, y1: 18, floor: 'carpetBlue', doorSide: 'top', doorXs: [15, 25] },
+    { id: 'operations', name: 'OPERATIONS',   type: 'OPERATIONS', x0: 29, y0: 12, x1: 37, y1: 18, floor: 'wood',       doorSide: 'top' },
+    { id: 'poort',      name: 'POORTWACHT',   type: 'RISK',       x0: 23, y0: 21, x1: 28, y1: 24, floor: 'concrete',   doorSide: 'top' },
+    { id: 'academy',    name: 'L&D',          type: 'LND',        x0: 4,  y0: 21, x1: 9,  y1: 24, floor: 'mint',       doorSide: 'top' },
   ];
   const CORRIDOR = { id: 'gang', name: 'GANG', floor: 'corridor' };
 
@@ -47,13 +48,13 @@ window.FC = window.FC || {};
   vline(38, 10, 20, '=');
   hline(20, 1, 38, '=');
   vline(20, 21, 24, '=');
-  for (let y = 22; y <= 23; y++) hline(y, 6, 11, '~');
+  for (let y = 22; y <= 23; y++) hline(y, 31, 35, '~');
 
   hline(0, 0, W - 1, 'T');
   hline(H - 1, 0, W - 1, 'T');
   vline(0, 0, H - 1, 'T');
   vline(W - 1, 0, H - 1, 'T');
-  [[3, 22], [14, 23], [16, 22], [34, 23], [36, 21], [1, 24], [2, 24], [38, 24], [37, 24], [1, 1], [38, 1]]
+  [[2, 22], [14, 23], [16, 22], [11, 23], [36, 21], [1, 24], [2, 24], [38, 24], [37, 24], [1, 1], [38, 1]]
     .forEach(([x, y]) => set(x, y, 'T'));
   set(GATE.x, GATE.y, 'G');
 
@@ -93,7 +94,7 @@ window.FC = window.FC || {};
   // Afdelingen met bureaus: rijen stoelen met het bureau eronder. De
   // medewerker zit "achter" zijn bureau en kijkt de kijker aan.
   // Werkafdelingen: een hoofd en een team van agents.
-  const DEPTS = ['lab', 'studio', 'bieb', 'werk'];
+  const DEPTS = ['finance', 'marketing', 'operations', 'strategie'];
   DEPTS.forEach(id => {
     const r = room(id);
     const doorXs = r.doors.map(d => d.x);
@@ -120,7 +121,14 @@ window.FC = window.FC || {};
     place(head.x, head.y + 1, 'headdesk', { dept: id });
   });
 
-  // Poortwacht: het kantoor van RISK THREAT, met de serverkasten waar de
+  // L&D: het eigen gebouwtje van Elsje, bewust los van de rest.
+  const ELSJE_SEAT = { x: 6, y: 22 };
+  place(6, 22, 'chair');
+  place(6, 23, 'headdesk', { dept: 'academy' });
+  place(8, 22, 'shelf'); place(5, 23, 'plant');
+  room('academy').headSeat = ELSJE_SEAT;
+
+  // Poortwacht: het kantoor van RISK FRED, met de serverkasten waar de
   // firewall op draait. Eén bureau; de poort zelf ligt er vlakbij.
   const RISK_SEAT = { x: 25, y: 22 };
   place(25, 22, 'chair');
@@ -206,7 +214,7 @@ window.FC = window.FC || {};
 
   FC.map = {
     W, H, tiles, roomAt, furn, ROOMS, CORRIDOR, GATE, GUARD_SPOT, DEPTS, BOARD, BOARD_SPOTS,
-    BOSS_SEAT, RISK_SEAT, VISITOR_SPOTS, BUFFET, REST_SPOTS, MEETING_SEATS, PRESENTER_SPOT,
+    BOSS_SEAT, RISK_SEAT, ELSJE_SEAT, VISITOR_SPOTS, BUFFET, REST_SPOTS, MEETING_SEATS, PRESENTER_SPOT,
     room,
     roomForType: type => ROOMS.find(r => r.type === type),
     walkable, findPath,

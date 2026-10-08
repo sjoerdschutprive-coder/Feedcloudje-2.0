@@ -6,7 +6,7 @@ Een organisatie van AI-agents in een **afgesloten omgeving**, met een
 duidelijke hiërarchie:
 
 ```
-DE BAAS (jij) → GODFRED (directeur) → AFDELINGSHOOFDEN → AGENTS
+SJOERD (jij) → GODFRED (directeur) → AFDELINGSHOOFDEN → AGENTS
 ```
 
 Jij stuurt alleen Godfred aan. Godfred stuurt de afdelingshoofden aan via
@@ -14,7 +14,11 @@ het **prikbord** in het midden van het gebouw. De hoofden sturen hun agents
 aan. De output loopt dezelfde weg terug: agent → hoofd (controle) → Godfred
 (goedkeuren of revisie) → baas (project af). Dat is de **feedbackloop**.
 
-Naast de hoofden zit **RISK THREAT** in het MT: de risk & safety officer.
+De vier hoofden heten **Finance Fred, Marketing Fred, Operations Fred en
+Strategic Fred** (zie `godfred/profile.md`). Naast hen zitten twee MT-leden
+die Godfred ook beoordelen en rechtstreeks aan Sjoerd rapporteren:
+**Elsje** (Learning & Development, `elsje/profile.md`) en **RISK FRED**,
+de risk & safety officer.
 Hij scant ontwikkelwerk op lekken vóór het bij Godfred komt, bewaakt poort en
 firewall en adviseert Godfred. Zie [ROLKAARTEN.md](ROLKAARTEN.md).
 
@@ -34,7 +38,7 @@ bovenaf waar je ziet wie werkt, wie taken ophaalt en wie output brengt.
 ```
 
 1. **Breinen** (`js/brains.js`) kijken naar de staat en geven alleen
-   **commando's**. Godfred, elk afdelingshoofd en RISK THREAT hebben een eigen brein.
+   **commando's**. Godfred, elk afdelingshoofd, Risk Fred en Elsje hebben een eigen brein.
 2. **Organisatie** (`js/org.js`) controleert of iemand een commando mag geven
    (een hoofd kan alleen zijn eigen team aansturen), voert het uit, laat
    iedereen lopen en publiceert **gebeurtenissen**.
@@ -56,9 +60,13 @@ bovenaf waar je ziet wie werkt, wie taken ophaalt en wie output brengt.
 | Hoofd | `review {taskId}` + `check {taskId, verdict, note}` | Werk controleren: `ok` of `beter` |
 | Hoofd | `deliver` | Gecontroleerde output naar Godfred brengen |
 | Hoofd | `rest` | Agent naar het buffet |
-| Risk Threat | `review {taskId}` + `verdict {taskId, verdict, note}` | Security-scan: `veilig` of `lek` |
-| Risk Threat | `harden`, `patrol` | Firewall versterken, inspectieronde bij de poort |
-| Risk Threat | `advise {note}` | Advies aan Godfred (leidt tot crisisoverleg) |
+| Risk Fred | `review {taskId}` + `verdict {taskId, verdict, note}` | Security-scan: `veilig` of `lek` |
+| Risk Fred | `harden`, `patrol` | Firewall versterken, inspectieronde bij de poort |
+| Risk Fred | `advise {note}` | Signaal aan Godfred (leidt tot ad hoc overleg) |
+| Risk Fred | `report {title, text}` | Dagelijks rapport aan Sjoerd |
+| Elsje | `session {agentId}` | Verbetersessie: agent coachen |
+| Elsje | `propose {tool, dept}` | Nieuwe tool voorstellen (eerst scan door Risk Fred) |
+| Elsje | `report {title, text}` | Rapport aan Sjoerd over performance en Godfred |
 
 ### Levensloop van een taak
 
@@ -66,7 +74,7 @@ bovenaf waar je ziet wie werkt, wie taken ophaalt en wie output brengt.
 `gecontroleerd` → `onderweg` → `ingeleverd` → `goedgekeurd`.
 
 Drie terugkoppelingen: het hoofd kan een taak terugzetten op zijn stapel
-(`beter`), RISK THREAT stuurt hem terug bij een lek (`lek`), en Godfred kan
+(`beter`), RISK FRED stuurt hem terug bij een lek (`lek`), en Godfred kan
 hem terughangen op het prikbord (`revisie`).
 
 ### Gebeurtenissen
@@ -77,13 +85,14 @@ hem terughangen op het prikbord (`revisie`).
 
 Soorten: `opdracht`, `project`, `plan`, `post`, `pickup`, `order`, `output`,
 `check`, `scan`, `advies`, `deliver`, `approve`, `feedback`, `meeting`, `rest`,
-`snack`, `say`, `security`, `alarm`, `warn`, `info`, `levelup`.
+`snack`, `lnd`, `rapport`, `notulen`, `say`, `security`, `alarm`, `warn`, `info`, `levelup`.
 
 ## Fase 1: simulatie (klaar)
 
-- Kantoor met vier afdelingen (elk een hoofd + 3 agents), directiekamer,
-  centraal prikbord, vergaderzaal, lounge met buffet en de poortwacht van
-  RISK THREAT.
+- Kantoor met vier afdelingen (Finance, Marketing, Operations, Strategie;
+  elk een Fred + 3 agents), directiekamer, centraal prikbord, vergaderzaal,
+  lounge met buffet, de poortwacht van Risk Fred en het L&D-gebouwtje van
+  Elsje.
 - Regelgebaseerde breinen voor Godfred en de hoofden, met de volledige
   keten en beide feedbackloops.
 - Kwaliteit per taak (sterren) hangt af van level en revisies.
@@ -106,7 +115,7 @@ Soorten: `opdracht`, `project`, `plan`, `post`, `pickup`, `order`, `output`,
 6. **Energie = budget, XP = verdiend budget.** Energie is hoeveel een agent
    nog mag doen; XP verdient hij met goedgekeurd werk en zet hij in het
    buffet om in nieuw budget. Goed werk levert dus letterlijk ruimte op.
-7. **RISK THREAT wordt echt:** hij leest code en configuratie op lekken en
+7. **RISK FRED wordt echt:** hij leest code en configuratie op lekken en
    beheert het netwerkbeleid van de container.
 
 ### Welk model waarvoor (advies)
@@ -115,7 +124,8 @@ Soorten: `opdracht`, `project`, `plan`, `post`, `pickup`, `order`, `output`,
 |---|---|---|
 | Godfred | Claude Opus 5.5 | Plant en beoordeelt alles. Kwaliteit telt het zwaarst. |
 | Afdelingshoofden | Claude Sonnet 5.5 | Verdelen en controleren binnen één afdeling. |
-| RISK THREAT | Claude Opus 5.5 | Security-review vraagt grondigheid; een gemist lek is duur. |
+| RISK FRED | Claude Opus 5.5 | Security-review vraagt grondigheid; een gemist lek is duur. |
+| ELSJE | Claude Opus 5.5 | Beoordeelt Godfred en verbetert instructies: daar moet ze minstens zo scherp voor zijn als hij. |
 | Agents (denkwerk: code, data) | Claude Sonnet 5.5 | Goed en een stuk goedkoper. Er draaien er veel tegelijk. |
 | Agents (simpel/veel: samenvatten, sorteren) | Claude Haiku 5.5 | Zeer goedkoop voor hoog volume. |
 | Uitzonderlijk zware klussen | Claude Fable 5.1 | Het krachtigst, maar ruim 2x de prijs van Opus. Alleen gericht inzetten. |
@@ -123,14 +133,14 @@ Soorten: `opdracht`, `project`, `plan`, `post`, `pickup`, `order`, `output`,
 ## Fase 3: ideeën
 
 - Goedkeuringen: een agent die iets riskants wil, vraagt het via het
-  dialoogvenster aan de baas ("BITBIT wil deployen. JA / NEE").
+  dialoogvenster aan Sjoerd ("BITBIT wil deployen. JA / NEE").
 - Afdelingsoverleg (hoofd + eigen team) naast het MT-overleg.
 - Jij als baas kunt een goedgekeurd project alsnog afkeuren: de lus gaat dan
   nog één laag hoger.
 - Evolutie: na genoeg levels een nieuwe sprite en meer tools.
 - Meerdere verdiepingen of gebouwen = meerdere projecten.
 
-## Open vragen voor de baas
+## Open vragen voor Sjoerd
 
 - Wat moet de organisatie in het echt gaan doen?
 - Waar draait de afgesloten omgeving: je eigen computer, een server, de cloud?

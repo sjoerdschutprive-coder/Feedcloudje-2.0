@@ -11,14 +11,14 @@ window.FC = window.FC || {};
     meeting: 'IN VERGADERING', eating: 'EET IETS', reviewing: 'CONTROLEERT',
     hardening: 'VERSTERKT FIREWALL', patrol: 'INSPECTIE BIJ POORT',
   };
-  const LEAD_IDLE = { director: 'AAN ZIJN BUREAU', head: 'STUURT TEAM AAN', risk: 'BEWAAKT HET NETWERK' };
+  const LEAD_IDLE = { director: 'AAN ZIJN BUREAU', head: 'STUURT TEAM AAN', risk: 'BEWAAKT HET NETWERK', lnd: 'VOLGT AI-ONTWIKKELINGEN' };
   const INTENT = {
     desk: 'NAAR BUREAU', rest: 'NAAR LOUNGE', meeting: 'NAAR VERGADERING', buffet: 'NAAR BUFFET',
     eat: 'MET ETEN NAAR ZITPLEK', post: 'NAAR PRIKBORD', pickup: 'HAALT TAKEN OP', deliver: 'NAAR GODFRED',
-    patrol: 'NAAR DE POORT',
+    patrol: 'NAAR DE POORT', coach: 'GAAT COACHEN',
   };
-  const ROLE_LABEL = { director: 'DIRECTEUR', head: 'HOOFD', agent: 'AGENT', risk: 'RISK & SAFETY' };
-  const DEPT_ORDER = ['hq', 'poort', 'lab', 'studio', 'bieb', 'werk'];
+  const ROLE_LABEL = { director: 'GENERAL MANAGER', head: 'HOOFD', agent: 'AGENT', risk: 'RISK & SAFETY', lnd: 'L&D' };
+  const DEPT_ORDER = ['hq', 'poort', 'academy', 'finance', 'marketing', 'operations', 'strategie'];
   // De pijplijn op het PRIKBORD-tabblad.
   const PIPELINE = [
     ['concept', 'BIJ GODFRED IN VOORBEREIDING'],
@@ -26,14 +26,14 @@ window.FC = window.FC || {};
     ['opgehaald', 'OP DE STAPEL VAN HET HOOFD'],
     ['bezig', 'IN UITVOERING'],
     ['controle', 'CONTROLE DOOR HOOFD'],
-    ['scan', 'SECURITY-SCAN DOOR RISK THREAT'],
+    ['scan', 'SECURITY-SCAN DOOR RISK FRED'],
     ['gecontroleerd', 'KLAAR VOOR GODFRED'],
     ['onderweg', 'ONDERWEG NAAR GODFRED'],
     ['ingeleverd', 'LIGT BIJ GODFRED'],
   ];
   // Gebeurtenissen die groot in het dialoogvenster verschijnen. De rest zie
   // je als vliegende berichtjes op de kaart en in het logboek.
-  const DIALOG_KINDS = new Set(['opdracht', 'project', 'feedback', 'advies', 'meeting', 'alarm', 'warn', 'info', 'levelup']);
+  const DIALOG_KINDS = new Set(['opdracht', 'project', 'feedback', 'advies', 'rapport', 'lnd', 'notulen', 'meeting', 'alarm', 'warn', 'info', 'levelup']);
   const LETTER_COLORS = { order: '#ffffff', output: '#ffe27a', rest: '#c8f0ff' };
   const POPUPS = {
     levelup: ['LEVEL UP!', '#ffd23f'], approve: ['GOEDGEKEURD!', '#7dff8a'], feedback: ['REVISIE!', '#ff8a7a'],
@@ -70,7 +70,8 @@ window.FC = window.FC || {};
     }
 
     tag(a) {
-      if (a.role === 'director') return '<span class="type-tag role-director">DIRECTEUR</span>';
+      if (a.role === 'director') return '<span class="type-tag role-director">GENERAL MANAGER</span>';
+      if (a.role === 'lnd') return '<span class="type-tag role-lnd">MT · L&amp;D</span>';
       if (a.role === 'risk') return '<span class="type-tag role-risk">MT · RISK &amp; SAFETY</span>';
       const color = this.org.deptColor(a.dept);
       return `<span class="type-tag" style="background:${color}">${ROLE_LABEL[a.role]}</span>`;
@@ -85,7 +86,7 @@ window.FC = window.FC || {};
         $('btn-speed').textContent = `${org.speed}x`;
       });
       $('btn-meeting').addEventListener('click', () => {
-        if (!org.execute({ type: 'meeting', scope: 'alle', topic: 'Algemene vergadering op verzoek van de baas' })) {
+        if (!org.execute({ type: 'meeting', scope: 'alle', topic: 'Algemene vergadering op verzoek van Sjoerd' })) {
           org.emit({ kind: 'warn', text: 'Er loopt al een vergadering.' });
         }
       });
@@ -236,7 +237,7 @@ window.FC = window.FC || {};
     renderTeam() {
       const counts = {};
       // Hoofden eerst, dan de agents.
-      const rank = { director: 0, risk: 1, head: 1, agent: 2 };
+      const rank = { director: 0, risk: 1, lnd: 1, head: 1, agent: 2 };
       const agents = [...this.org.state.agents].sort((p, q) => rank[p.role] - rank[q.role] || p.id - q.id);
       for (const a of agents) {
         if (a.role === 'agent') counts[a.dept] = (counts[a.dept] || 0) + 1;
@@ -267,7 +268,7 @@ window.FC = window.FC || {};
       }
       this.sections.forEach((sec, dept) => {
         const n = counts[dept] || 0;
-        sec.querySelector('.dept-count').textContent = dept === 'hq' ? 'DIRECTIE' : dept === 'poort' ? 'MT-LID' : `HOOFD + ${n} agent${n === 1 ? '' : 's'}`;
+        sec.querySelector('.dept-count').textContent = dept === 'hq' ? 'DIRECTIE' : ['poort', 'academy'].includes(dept) ? 'MT-LID' : `HOOFD + ${n} agent${n === 1 ? '' : 's'}`;
       });
     }
 
@@ -320,6 +321,7 @@ window.FC = window.FC || {};
       el.querySelector('.d-record').textContent = {
         director: () => `${st.reviewed} beoordeeld`,
         risk: () => `${st.scanned} gescand · ${st.leaks} lekken · ${st.blocked} geblokt`,
+        lnd: () => `${this.org.state.improvements.length} verbeteringen vastgelegd`,
         head: () => `${st.checked} gecontroleerd · ${st.delivered} ingeleverd`,
         agent: () => `${st.tasks} af · ${st.approved} goedgekeurd · ${st.revisions} revisies · ${st.snacks} snacks`,
       }[a.role]();
@@ -334,11 +336,15 @@ window.FC = window.FC || {};
       if (!r) return '';
       return `
         <div class="rc-head"><b>ROLKAART · ${r.title}</b><span>${r.level}</span></div>
+        ${r.profile ? `<div class="rc-label">PROFIEL: ${esc(r.profile)}</div>` : ''}
         <p class="rc-mission">${esc(r.mission)}</p>
         <div class="rc-label">TAKEN</div>
         <ul class="rc-tasks">${r.tasks.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+        ${r.character ? `<div class="rc-label">KARAKTER</div><ul class="rc-tasks">${r.character.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+        ${r.limits ? `<div class="rc-label">GRENZEN</div><ul class="rc-tasks">${r.limits.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
         <div class="rc-grid">
           <span>RAPPORTEERT AAN</span><span>${esc(r.reportsTo)}</span>
+          ${r.assessedBy ? `<span>BEOORDEELD DOOR</span><span>${esc(r.assessedBy)}</span>` : ''}
           <span>STUURT AAN</span><span>${esc(r.leads)}</span>
           ${r.rights.length ? `<span>COMMANDO'S</span><span>${r.rights.map(c => `<code>${c}</code>`).join(' ')}</span>` : ''}
         </div>`;
@@ -348,7 +354,8 @@ window.FC = window.FC || {};
       const who = this.org.agent(t.assignee);
       const pct = Math.floor(t.progress / t.required * 100);
       const flags = [
-        t.boss ? '<span class="flag boss">BAAS</span>' : '',
+        t.boss ? '<span class="flag boss">SJOERD</span>' : '',
+        t.kind === 'tool' ? '<span class="flag lnd">TOOL VAN ELSJE</span>' : '',
         t.revision ? `<span class="flag rev">REVISIE ${t.revision}</span>` : '',
         t.headRevision ? '<span class="flag fix">BIJGESCHAAFD</span>' : '',
         t.secCheck ? `<span class="flag sec">${t.secured ? '🔒 VEILIG' : t.secRevision ? 'LEK GEDICHT' : 'SECURITY'}</span>` : '',
@@ -382,7 +389,7 @@ window.FC = window.FC || {};
       return `
         <li class="project ${p.status}">
           <div class="line"><span>${esc(p.title)}</span><span>${p.status === 'klaar' ? `<span class="stars">${'★'.repeat(FC.stars(p.quality))}</span>` : `${done}/${tasks.length}`}</span></div>
-          <div class="meta"><span>${{ nieuw: 'GODFRED PLANT HET IN', loopt: 'LOOPT', klaar: 'AF, GEMELD AAN DE BAAS' }[p.status]}</span></div>
+          <div class="meta"><span>${{ nieuw: 'GODFRED PLANT HET IN', loopt: 'LOOPT', klaar: 'AF, GEMELD AAN SJOERD' }[p.status]}</span></div>
           <span class="bar"><span class="fill ${p.status === 'klaar' ? '' : 'progress'}" style="width:${pct}%"></span></span>
           <div class="chips">${tasks.map(t => `<span class="chip ${t.status === 'goedgekeurd' ? 'ok' : ''}" style="border-color:${org.deptColor(t.dept)}">${MAP.room(t.dept).name}</span>`).join('')}</div>
         </li>`;
@@ -393,11 +400,30 @@ window.FC = window.FC || {};
       const order = p => ({ loopt: 0, nieuw: 1, klaar: 2 }[p.status]);
       const boss = org.state.projects.filter(p => p.source === 'baas').sort((p, q) => order(p) - order(q) || q.id - p.id);
       const own = org.state.projects.filter(p => p.source !== 'baas').sort((p, q) => order(p) - order(q) || q.id - p.id);
-      let html = '<li class="section-title">OPDRACHTEN VAN DE BAAS</li>';
+      const s = org.state;
+      let html = '<li class="section-title">RAPPORTEN AAN SJOERD</li>';
+      html += s.reports.slice(0, 4).map(r => `
+        <li class="task report"><div class="line"><span>${esc(r.from)}: ${esc(r.title)}</span></div>
+        <div class="meta"><span>${esc(r.time)}</span></div><div class="note">${esc(r.text)}</div></li>`).join('')
+        || '<li class="empty">Nog geen rapporten. Risk Fred rapporteert dagelijks, Elsje na elke verbetersessie.</li>';
+      html += '<li class="section-title">OPDRACHTEN VAN SJOERD</li>';
       html += boss.map(p => this.projectLine(p)).join('') || '<li class="empty">Nog geen opdrachten gegeven. Dat doe je op het PRIKBORD-tabblad.</li>';
+      if (s.minutes.length) {
+        const m = s.minutes[0];
+        html += `<li class="section-title">LAATSTE NOTULEN · ${esc(m.time)}</li>
+          <li class="task"><div class="line"><span>${esc(m.topic)}</span></div>
+          <ul class="rc-tasks actions">${m.actions.map(x => `<li>${esc(x)}</li>`).join('')}</ul></li>`;
+      }
+      if (s.improvements.length) {
+        html += '<li class="section-title">VERBETERLOG ELSJE</li>';
+        html += s.improvements.slice(0, 5).map(i => `
+          <li class="task"><div class="line"><span>${esc(i.what)}</span><span>${esc(i.dept)}</span></div>
+          <div class="meta"><span>${esc(i.why)}</span><span>${esc(i.time)}</span></div>
+          <div class="note">${esc(i.result)}</div></li>`).join('');
+      }
       html += '<li class="section-title">EIGEN INITIATIEF VAN GODFRED</li>';
       html += own.slice(0, 6).map(p => this.projectLine(p)).join('');
-      const approved = org.state.tasks.filter(t => t.status === 'goedgekeurd').sort((p, q) => q.doneAt - p.doneAt).slice(0, 20);
+      const approved = org.state.tasks.filter(t => t.status === 'goedgekeurd' && t.kind !== 'tool').sort((p, q) => q.doneAt - p.doneAt).slice(0, 20);
       html += '<li class="section-title">GOEDGEKEURD DOOR GODFRED</li>';
       html += approved.map(t => {
         const who = org.agent(t.assignee);

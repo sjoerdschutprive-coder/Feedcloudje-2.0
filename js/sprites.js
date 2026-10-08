@@ -7,8 +7,8 @@ window.FC = window.FC || {};
 
   const SPECIES = {
     BITBIT: {
-      type: 'CODE',
-      dex: 'Een rond robotje dat 1 en 0 eet. Zijn antenne licht op bij elke geslaagde test.',
+      type: 'STRATEGIE',
+      dex: 'Een rekenrobotje dat scenario\'s doorrekent. Zijn antenne licht op bij elke goede kans.',
       palette: { b: '#4a90e2', l: '#9cc9ff' },
       half: [
         '........',
@@ -30,8 +30,8 @@ window.FC = window.FC || {};
       ],
     },
     DATADIL: {
-      type: 'DATA',
-      dex: 'Een kalme krokodil die spreadsheets in één hap doorslikt en nooit een getal vergeet.',
+      type: 'FINANCE',
+      dex: 'Een kalme krokodil die spreadsheets in één hap doorslikt en nooit een cijfer vergeet.',
       palette: { g: '#3fae5a', v: '#c8f0a0' },
       half: [
         '........',
@@ -53,7 +53,7 @@ window.FC = window.FC || {};
       ],
     },
     PIXELFEE: {
-      type: 'CREATIEF',
+      type: 'MARKETING',
       dex: 'Een fladderende fee die met haar vleugels kleuren mengt. Ziet overal een logo in.',
       palette: { p: '#f06bb5', u: '#a8e6ff' },
       half: [
@@ -76,8 +76,8 @@ window.FC = window.FC || {};
       ],
     },
     KLUISBEER: {
-      type: 'BEVEILIGING',
-      dex: 'Een stevige beer met een gouden penning. Niemand komt het dal in zonder zijn knikje.',
+      type: 'RISK',
+      dex: 'Een stevige beer met een gouden penning. Geen bestand komt het netwerk in zonder zijn knikje.',
       palette: { s: '#9aa3b5', d: '#5b6478', v: '#e6dccb' },
       half: [
         '........',
@@ -99,7 +99,7 @@ window.FC = window.FC || {};
       ],
     },
     PLANUIL: {
-      type: 'STRATEGIE',
+      type: 'DIRECTIE',
       dex: 'Een wijze uil met een kroontje. Denkt drie kwartalen vooruit en knippert zelden.',
       palette: { o: '#8b5a2b', t: '#e9c99a' },
       half: [
@@ -144,6 +144,31 @@ window.FC = window.FC || {};
         '.....kk.',
       ],
     },
+  };
+
+  // Elsje: een nieuwsgierig konijn met een bril (L&D).
+  SPECIES.BOEKKONIJN = {
+    type: 'LND',
+    dex: 'Een nieuwsgierig konijn met een bril en een stapel papers. Leest alles over AI, gelooft alleen wat werkt.',
+    palette: { f: '#f2e6d8', p: '#ff9eb5', t: '#2bb3a3', g: '#9ed8ff' },
+    half: [
+      '....kk..',
+      '...kfk..',
+      '...kpk..',
+      '...kpk..',
+      '..kkfkkk',
+      '.kffffff',
+      '.kfkkkkf',
+      '.kfkgwkk',
+      '.kfkkkkf',
+      '.kffffff',
+      '.kfcffff',
+      '..kfffkk',
+      '..kttttt',
+      '..kttttt',
+      '..ktkkkt',
+      '..kk..kk',
+    ],
   };
 
   function build(def) {

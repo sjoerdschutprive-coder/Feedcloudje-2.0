@@ -1,10 +1,12 @@
 // De besluitvormers van de organisatie, in drie lagen:
 //
-//   DE BAAS (jij)  ──opdracht──▶  GODFRED  ──taken op het prikbord──▶  AFDELINGSHOOFDEN  ──▶  AGENTS
+//   SJOERD (jij)   ──opdracht──▶  GODFRED  ──taken op het prikbord──▶  AFDELINGSHOOFDEN  ──▶  AGENTS
 //                  ◀──project af──          ◀──output (goed / revisie)──                  ◀──output──
 //
-//   RISK THREAT (MT-lid) scant ontwikkelwerk vóór het naar Godfred gaat,
+//   RISK FRED (MT-lid) scant ontwikkelwerk vóór het naar Godfred gaat,
 //   bewaakt poort en firewall en adviseert Godfred over risico's.
+//   ELSJE (MT-lid, L&D) maakt de agents beter: coaching en nieuwe tools.
+//   Risk Fred en Elsje rapporteren rechtstreeks aan Sjoerd, ook over Godfred.
 //
 // Elk brein *kijkt* naar de staat en *geeft commando's*; het verandert zelf
 // nooit iets. org.js voert de commando's uit. Daardoor kan elk brein later
@@ -13,7 +15,8 @@
 //
 // Commando's van Godfred:   plan, initiative, post, review, feedback, meeting, say
 // Commando's van een hoofd: pickup, assign, review, check, deliver, rest, say
-// Commando's van RISK THREAT: review, verdict, harden, patrol, advise, say
+// Commando's van RISK FRED: review, verdict, harden, patrol, advise, report, say
+// Commando's van ELSJE: session, propose, report, say
 window.FC = window.FC || {};
 
 (function (FC) {
@@ -22,10 +25,13 @@ window.FC = window.FC || {};
   const DELIVER_AFTER = 20;        // max. wachttijd voor gecontroleerde output
   const PATROL_EVERY = 90;         // inspectieronde bij de poort
   const ADVICE_EVERY = 240;        // niet vaker adviseren dan dit
+  const RISK_REPORT_EVERY = 1440;  // dagelijks beveiligingsrapport aan Sjoerd
 
-  const REVISE_NOTES = ['Te oppervlakkig, ga dieper.', 'Mist de klantkant.', 'Maak het scherper.',
-    'Graag met concrete cijfers.', 'Sluit nog niet aan op de rest van het project.'];
-  const GOOD_NOTES = ['Precies wat we nodig hadden.', 'Sterk werk!', 'Goedgekeurd.', 'Netjes afgerond.', 'Hier kunnen we mee verder.'];
+  // Godfred: direct, kort, licht van toon (zie godfred/profile.md).
+  const REVISE_NOTES = ['Te vaag. Maak het concreet.', 'Waar is de onderbouwing?', 'Mist de klant. Opnieuw.',
+    'Te lang. Halveer het.', 'Cijfers erbij, dan praten we verder.'];
+  const GOOD_NOTES = ['Goed. Door.', 'Strak werk. Dit wil ik vaker zien.', 'Klopt. Volgende.',
+    'Netjes. Sjoerd gaat dit leuk vinden.', 'Precies goed, niks aan doen.'];
   const HEAD_NOTES = ['Check de randgevallen nog even.', 'Kan strakker.', 'Mist nog een stukje.'];
   const LEAK_NOTES = ['Wachtwoord staat in de code.', 'Invoer wordt niet gecontroleerd.', 'Te ruime toegangsrechten.',
     'Verouderde bibliotheek met bekend lek.', 'Gevoelige data niet versleuteld.'];
@@ -55,17 +61,19 @@ window.FC = window.FC || {};
       // 2. Vaste overleggen.
       if (now - mem.lastMt >= MT_EVERY) {
         mem.lastMt = now;
-        cmd({ type: 'meeting', scope: 'mt', topic: 'MT-overleg met de afdelingshoofden' });
+        cmd({ type: 'meeting', scope: 'mt', topic: 'Management-overleg: voortgang' });
         return;
       }
-      // Advies van RISK THREAT over de firewall: crisisoverleg.
+      // Advies van RISK FRED over de firewall: crisisoverleg.
+      // Signalen van Risk Fred gaan voor op snelheid.
       if (mem.adviceAt > mem.lastCrisis) {
         mem.lastCrisis = now;
-        cmd({ type: 'meeting', scope: 'mt', topic: 'Crisisoverleg op advies van RISK THREAT' });
+        mem.adviceResponse = now - mem.adviceAt;
+        cmd({ type: 'meeting', scope: 'mt', topic: 'Ad hoc: signaal van RISK FRED' });
         return;
       }
 
-      // 3. Nieuwe opdrachten van de baas opknippen in taken per afdeling.
+      // 3. Nieuwe opdrachten van Sjoerd opknippen in taken per afdeling.
       s.projects.filter(p => p.status === 'nieuw').forEach(p => cmd({ type: 'plan', projectId: p.id }));
 
       // 4. Ingeleverde output beoordelen.
@@ -139,7 +147,7 @@ window.FC = window.FC || {};
     }
   }
 
-  // ---------- RISK THREAT: risk & safety officer ----------
+  // ---------- RISK FRED: risk & safety officer ----------
 
   class RiskBrain {
     constructor(org) { this.org = org; }
@@ -156,7 +164,8 @@ window.FC = window.FC || {};
       // 1. Een scan afronden: veilig of lek.
       if (r.reviewDone) {
         const t = org.task(r.reviewDone);
-        const leak = t.secRevision < 1 && (t.quality < 0.5 || Math.random() < 0.15);
+        // Tools van Elsje: alleen afkeuren als er echt iets mis mee is.
+        const leak = t.kind === 'tool' ? t.quality < 0.25 : t.secRevision < 1 && (t.quality < 0.5 || Math.random() < 0.15);
         cmd({ type: 'verdict', taskId: t.id, verdict: leak ? 'lek' : 'veilig', note: leak ? pick(LEAK_NOTES) : '' });
         return;
       }
@@ -164,6 +173,18 @@ window.FC = window.FC || {};
       // 2. Godfred adviseren als de firewall zwak wordt.
       if (s.firewall < 65 && now - mem.lastAdvice >= ADVICE_EVERY) {
         cmd({ type: 'advise', note: `De firewall staat op ${Math.round(s.firewall)}%. Ik adviseer een crisisoverleg en extra waakzaamheid.` });
+        return;
+      }
+
+      // Dagelijks rapport aan Sjoerd, ook over hoe Godfred met signalen omgaat.
+      if (now - mem.lastRiskReport >= RISK_REPORT_EVERY) {
+        mem.lastRiskReport = now;
+        const st = s.stats;
+        const response = mem.adviceResponse === null ? 'Godfred had nog geen signaal van mij nodig.'
+          : `Godfred volgde mijn laatste signaal op na ${mem.adviceResponse} minuten.`;
+        cmd({ type: 'report', title: 'Dagelijks beveiligingsrapport',
+          text: `Firewall ${Math.round(s.firewall)}%. ${st.intrudersBlocked} aanvallen geblokt, ${st.breaches} doorgekomen. ` +
+            `${st.leaks} lekken onderschept. ${response}` });
         return;
       }
 
@@ -179,7 +200,41 @@ window.FC = window.FC || {};
     }
   }
 
+  // ---------- ELSJE: Learning & Development ----------
+
+  const LND_TOOLS = ['spreadsheet-skill', 'nieuwe prompttechniek', 'samenvat-extensie', 'onderzoeksagent', 'planningstool', 'nieuw model'];
+
+  class LndBrain {
+    constructor(org) { this.org = org; }
+
+    tick(e) {
+      const org = this.org;
+      const s = org.state;
+      if (e.state !== 'idle' || s.meeting) return;
+      if (org.now() < s.memory.nextSession) return;
+      const cmd = c => org.execute(c, e.id);
+
+      // Waar levert verbetering het meeste op? De agent met de meeste
+      // revisies per taak (bij gelijkspel: het laagste level).
+      const agents = s.agents.filter(a => a.role === 'agent');
+      const score = a => (a.stats.revisions + 1) / (a.stats.tasks + 2) - a.level * 0.01;
+      const target = agents.sort((p, q) => score(q) - score(p))[0];
+
+      // Rapport aan Sjoerd over Godfred, en een nieuwe tool laten scannen.
+      const done = s.tasks.filter(t => t.status === 'goedgekeurd' && t.kind !== 'tool' && t.deliveredAt);
+      const firstTime = done.length ? Math.round(done.filter(t => !t.revision).length / done.length * 100) : 100;
+      const speed = done.length ? Math.round(done.reduce((sum, t) => sum + (t.doneAt - t.deliveredAt), 0) / done.length) : 0;
+      cmd({ type: 'report', title: 'Verbetersessie: performance en Godfred',
+        text: `Godfred keurt ${firstTime}% in één keer goed en beoordeelt binnen gemiddeld ${speed} minuten. ` +
+          `${s.stats.revisions} revisies totaal. Vandaag coach ik ${target ? target.name : 'niemand'}.` });
+      const dept = target ? target.dept : FC.map.DEPTS[0];
+      cmd({ type: 'propose', tool: pick(LND_TOOLS), dept });
+      if (target) cmd({ type: 'session', agentId: target.id });
+    }
+  }
+
   FC.GodfredBrain = GodfredBrain;
   FC.HeadBrain = HeadBrain;
   FC.RiskBrain = RiskBrain;
+  FC.LndBrain = LndBrain;
 })(window.FC);

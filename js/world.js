@@ -21,6 +21,7 @@ window.FC = window.FC || {};
     carpetBlue: { a: '#6683c7', b: '#5873b5' },
     tiles:      { a: '#f3dbe5', b: '#e6c6d4' },
     concrete:   { a: '#bcc3cf', b: '#a9b1bf' },
+    mint:       { a: '#bfeee6', b: '#a6e2d8' },
     corridor:   { a: '#e8e2d2', b: '#d9d0bb' },
   };
 
@@ -444,7 +445,7 @@ window.FC = window.FC || {};
       } else if (a.state === 'eating' || (a.snack && a.intent === 'eat')) {
         drawFood(ctx, a.snack, X + 10, Y - 2);
       } else if (a.state === 'hardening') {
-        // Schildje dat oplaadt: RISK THREAT versterkt de firewall.
+        // Schildje dat oplaadt: RISK FRED versterkt de firewall.
         const blink = Math.floor(this.time * 3) % 2;
         px(ctx, X + 11, Y - 4, 7, 7, C.outline);
         px(ctx, X + 12, Y - 3, 5, 4, blink ? '#b9a3ff' : '#7b3fa0');
@@ -453,7 +454,7 @@ window.FC = window.FC || {};
         px(ctx, X + 12, Y - 1, 5, 6, C.outline);
         px(ctx, X + 13, Y, 3, 4, '#ffd23f');
       }
-      const LABELS = { director: ['DIRECTEUR', '#ffd23f', C.outline], risk: ['RISK', '#7b3fa0', '#ffffff'] };
+      const LABELS = { director: ['GODFRED', '#ffd23f', C.outline], risk: ['RISK', '#7b3fa0', '#ffffff'], lnd: ['L&D', '#2bb3a3', '#ffffff'] };
       if (a.role !== 'agent') {
         const [lbl, bg, fg] = LABELS[a.role] || ['HOOFD', org.deptColor(a.dept), '#ffffff'];
         ctx.font = 'bold 5px "Courier New", monospace';
