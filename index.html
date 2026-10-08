@@ -47,11 +47,26 @@
 
     <aside class="side-col">
       <nav class="tabs" role="tablist">
+        <button class="tab" data-tab="chat" role="tab">GODFRED</button>
         <button class="tab active" data-tab="team" role="tab">TEAM</button>
         <button class="tab" data-tab="board" role="tab">PRIKBORD <span class="badge" id="board-count">0</span></button>
         <button class="tab" data-tab="output" role="tab">OUTPUT</button>
         <button class="tab" data-tab="log" role="tab">LOG</button>
       </nav>
+
+      <div class="panel box hidden" id="tab-chat">
+        <p class="chat-head">Praat met <b>GODFRED</b>. Geef een opdracht of stel een vraag. Hij antwoordt in zijn eigen stijl en zet werk zelf op het prikbord.</p>
+        <ul id="chat-log" class="chat-log"></ul>
+        <form id="chat-form" class="chat-form">
+          <textarea id="chat-input" rows="3" maxlength="2000" placeholder="Bijv. Zet een consultancy agency op voor AI-implementatie in het mkb." required></textarea>
+          <div class="form-row">
+            <span id="chat-status" class="chat-status"></span>
+            <button type="button" id="chat-stop" class="btn btn-ghost hidden">STOP</button>
+            <button class="btn btn-accent" type="submit" id="chat-send">STUUR</button>
+          </div>
+        </form>
+        <p id="chat-note" class="chat-note hidden"></p>
+      </div>
 
       <div class="panel box" id="tab-team">
         <div id="detail" class="detail hidden"></div>
@@ -60,8 +75,8 @@
 
       <div class="panel box hidden" id="tab-board">
         <form id="order-form" class="quest-form">
-          <div class="form-title">OPDRACHT VAN SJOERD AAN GODFRED</div>
-          <p class="form-help">Typ wat je wilt, kies eventueel een afdeling en hoe groot het is, en klik GEEF. Godfred knipt het op, hangt het op het prikbord en meldt zich onder OUTPUT als het af is.</p>
+          <div class="form-title">SNELLE OPDRACHT (ZONDER GESPREK)</div>
+          <p class="form-help">Wil je overleggen? Gebruik het tabblad GODFRED. Hier zet je direct een opdracht uit; Godfred verdeelt hem dan volgens vaste regels.</p>
           <input id="o-title" type="text" maxlength="50" placeholder="Bijv. Webshop met betaalmodule lanceren" required>
           <div class="form-row">
             <select id="o-dept" aria-label="Afdeling"></select>
@@ -88,9 +103,11 @@
   <script src="js/map.js"></script>
   <script src="js/sprites.js"></script>
   <script src="js/roles.js"></script>
+  <script src="js/profiles.js"></script>
   <script src="js/brains.js"></script>
   <script src="js/org.js"></script>
   <script src="js/world.js"></script>
+  <script src="js/godfred-ai.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
 </body>

@@ -99,7 +99,9 @@ Soorten: `opdracht`, `project`, `plan`, `post`, `pickup`, `order`, `output`,
 
 ## Fase 2: echte agents
 
-1. **Godfred wordt een AI-agent.** Zijn commando's worden zijn *tools*.
+1. **Godfred wordt een AI-agent.** *(Eerste stap gezet: in het tabblad
+   GODFRED praat je met hem via Claude; hij plant zelf de taken. De
+   beoordeling van output is nog gesimuleerd.)* Zijn commando's worden zijn *tools*.
    `brains.js` stuurt dan de staat naar het model en geeft de tool-calls
    door aan `org.execute()`. Het beoordelen (`feedback`) wordt echt: Godfred
    leest de output en legt de lat.

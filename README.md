@@ -41,7 +41,13 @@ geel = output, rood = revisie of lek, paars = security, groen = goedgekeurd.
 
 ## Bediening
 
-- **OPDRACHT AAN GODFRED** (knop rechtsboven): geef een titel en omvang. Kies zelf
+- **OPDRACHT AAN GODFRED** (knop rechtsboven) opent het gesprek met Godfred.
+  Open je de pagina in Claude, dan denkt hij **echt** na: hij krijgt zijn
+  profiel (`godfred/profile.md`) en de stand van de organisatie mee,
+  antwoordt in zijn eigen stijl, stelt vragen als hij iets mist en zet zelf
+  taken per Fred op het prikbord. Dat gebruikt jouw eigen Claude-account; de
+  pagina vraagt daar de eerste keer toestemming voor.
+- **PRIKBORD → Snelle opdracht**: zonder gesprek, met een titel en omvang. Kies zelf
   een afdeling of laat Godfred beslissen (hij kijkt naar woorden als
   "website", "logo", "onderzoek" en verdeelt grote opdrachten over meerdere
   afdelingen).
@@ -61,6 +67,8 @@ css/style.css   spelstijl (kaders, balken, panelen)
 js/map.js       plattegrond: ruimtes, bureaus, prikbord, vergadertafel, routes zoeken
 js/sprites.js   pixel-art wezentjes (16x16, gespiegeld getekend)
 js/roles.js     rolkaarten (zie ook docs/ROLKAARTEN.md)
+js/profiles.js  profielen van Godfred en Elsje (gegenereerd: scripts/sync-profiles.py)
+js/godfred-ai.js  de echte Godfred: wat hij meekrijgt en wat hij teruggeeft
 js/brains.js    de besluitvormers: Godfred, de hoofden en RISK FRED (geven commando's)
 js/org.js       organisatie-motor: voert commando's uit, taken, beweging, vergaderingen
 js/world.js     tekent de wereld op een canvas

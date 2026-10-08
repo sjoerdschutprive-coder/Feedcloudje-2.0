@@ -406,6 +406,13 @@ window.FC = window.FC || {};
     drawAgentOverlay(ctx, a) {
       const X = Math.round(a.x * T), Y = Math.round(a.y * T) - 5;
       const org = this.org;
+      // Godfred denkt (echt) na: drie puntjes in een wolkje.
+      if (a.id === this.thinkingId) {
+        px(ctx, X + 1, Y - 13, 15, 8, C.outline);
+        px(ctx, X + 2, Y - 12, 13, 6, '#ffffff');
+        const n = Math.floor(this.time * 3) % 4;
+        for (let i = 0; i < n; i++) px(ctx, X + 4 + i * 3, Y - 10, 2, 2, C.outline);
+      }
       // Stapeltje taakkaarten dat iemand bij zich draagt.
       if (a.carry && a.carry.length && a.state === 'walking') {
         a.carry.slice(0, 4).forEach((id, i) => {

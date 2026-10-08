@@ -59,12 +59,16 @@ window.FC = window.FC || {};
       this.dialogTimer = null;
       this.rows = new Map();
       this.sections = new Map();
+      this.sample = null;     // de echte Godfred (Claude), als deze pagina in Claude draait
+      this.chatCtl = null;
 
       world.onSelect = id => this.select(id);
       org.on(e => this.onEvent(e));
       this.bindControls();
       this.fillDeptSelect();
       this.renderLog();
+      this.renderChat();
+      this.connectGodfred();
       const latest = org.state.log[0];
       if (latest) { this.dialogQueue.push(latest.text); this.nextDialog(); }
     }
@@ -86,10 +90,18 @@ window.FC = window.FC || {};
         $('btn-speed').textContent = `${org.speed}x`;
       });
       $('btn-order').addEventListener('click', () => {
-        this.showTab('board');
-        $('order-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        $('o-title').focus();
+        this.showTab('chat');
+        $('chat-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        $('chat-input').focus();
       });
+      $('chat-form').addEventListener('submit', e => {
+        e.preventDefault();
+        this.sendChat($('chat-input').value.trim());
+      });
+      $('chat-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('chat-form').requestSubmit(); }
+      });
+      $('chat-stop').addEventListener('click', () => this.chatCtl && this.chatCtl.abort());
       $('btn-meeting').addEventListener('click', () => {
         if (!org.execute({ type: 'meeting', scope: 'alle', topic: 'Algemene vergadering op verzoek van Sjoerd' })) {
           org.emit({ kind: 'warn', text: 'Er loopt al een vergadering.' });
@@ -103,6 +115,7 @@ window.FC = window.FC || {};
         this.select(null);
         org.reset();
         this.renderLog();
+        this.renderChat();
       });
       document.querySelectorAll('.tab').forEach(btn => {
         btn.addEventListener('click', () => this.showTab(btn.dataset.tab));
@@ -136,7 +149,7 @@ window.FC = window.FC || {};
     showTab(tab) {
       this.tab = tab;
       document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-      ['team', 'board', 'output', 'log'].forEach(t => $(`tab-${t}`).classList.toggle('hidden', t !== tab));
+      ['chat', 'team', 'board', 'output', 'log'].forEach(t => $(`tab-${t}`).classList.toggle('hidden', t !== tab));
       this.render();
     }
 
@@ -145,6 +158,95 @@ window.FC = window.FC || {};
       this.world.selectedId = id;
       if (id !== null && this.tab !== 'team') this.showTab('team');
       this.render();
+    }
+
+    // ---------- gesprek met de echte Godfred ----------
+
+    connectGodfred() {
+      const use = window.claude && window.claude.use;
+      if (!use) { this.setChatNote('offline'); return; }
+      window.claude.use('sample').then(sample => {
+        this.sample = sample;
+        this.setChatNote(sample ? null : 'offline');
+      }, () => this.setChatNote('offline'));
+    }
+
+    setChatNote(kind, text) {
+      const note = $('chat-note');
+      const msg = kind === 'offline'
+        ? 'Godfred kan hier niet echt nadenken: dat werkt alleen als je deze pagina in Claude opent. Gebruik anders het formulier op het PRIKBORD.'
+        : text;
+      note.textContent = msg || '';
+      note.classList.toggle('hidden', !msg);
+      $('chat-send').disabled = kind === 'offline' || kind === 'blocked';
+    }
+
+    renderChat(pending) {
+      const org = this.org;
+      const items = org.state.chat.map(m => {
+        const p = m.projectId ? org.project(m.projectId) : null;
+        return `
+          <li class="msg ${m.role}">
+            <div class="msg-head"><b>${m.role === 'sjoerd' ? 'SJOERD' : 'GODFRED'}</b><span>${esc(m.time)}</span></div>
+            <div class="msg-text">${esc(m.text)}</div>
+            ${m.projectTitle ? `<div class="msg-project">▶ Op het prikbord: <b>${esc(m.projectTitle)}</b>${p ? ` (${p.taskIds.length} taken)` : ''}</div>` : ''}
+          </li>`;
+      });
+      if (pending) items.push(`<li class="msg godfred thinking"><div class="msg-head"><b>GODFRED</b></div><div class="msg-text">${esc(pending)}</div></li>`);
+      if (!items.length) {
+        items.push('<li class="empty">Nog geen gesprek. Zeg Godfred wat je wilt; hij vraagt door als hij iets mist.</li>');
+      }
+      const log = $('chat-log');
+      log.innerHTML = items.join('');
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async sendChat(text) {
+      const org = this.org;
+      if (!text || this.chatCtl || !this.sample) return;
+      const g = org.director();
+      const input = FC.GodfredAI.buildInput(org, text);   // vóór het nieuwe bericht in de geschiedenis staat
+      org.state.chat.push({ role: 'sjoerd', text, time: org.clockLabel() });
+      $('chat-input').value = '';
+      this.renderChat('Denkt na...');
+      $('chat-send').disabled = true;
+      $('chat-stop').classList.remove('hidden');
+      $('chat-status').textContent = '';
+      this.world.thinkingId = g.id;
+      const ctl = new AbortController();
+      this.chatCtl = ctl;
+      try {
+        const res = FC.GodfredAI.normalize(await this.sample.json(input, { signal: ctl.signal, cache: false }));
+        if (!res.antwoord && !res.project) throw { code: 'invalid_json' };
+        let project = null;
+        if (res.project) {
+          const difficulty = Math.max(...res.project.tasks.map(t => t.difficulty));
+          project = org.execute({ type: 'order', title: res.project.title, difficulty, tasks: res.project.tasks });
+        }
+        const answer = res.antwoord || 'Komt goed. Staat op het bord.';
+        org.state.chat.push({ role: 'godfred', text: answer, time: org.clockLabel(),
+          projectId: project ? project.id : null, projectTitle: project ? project.title : null });
+        org.state.chat = org.state.chat.slice(-40);
+        org.save();
+        const first = answer.split(/(?<=[.!?])\s/)[0];
+        this.world.say(g.id, first);
+        this.dialogQueue.push(`GODFRED: ${answer.length > 160 ? `${answer.slice(0, 157)}...` : answer}`);
+        if (!this.dialogBusy) this.nextDialog();
+      } catch (e) {
+        org.state.chat.pop(); // het bericht kwam niet aan; zet het terug in het invoerveld
+        $('chat-input').value = text;
+        if (e && e.code !== 'cancelled') {
+          const blocking = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'];
+          if (blocking.includes(e.code)) this.setChatNote('blocked', FC.GodfredAI.errorText(e.code));
+          else $('chat-status').textContent = FC.GodfredAI.errorText(e && e.code);
+        }
+      } finally {
+        this.chatCtl = null;
+        this.world.thinkingId = null;
+        $('chat-stop').classList.add('hidden');
+        if ($('chat-note').classList.contains('hidden')) $('chat-send').disabled = false;
+        this.renderChat();
+      }
     }
 
     // ---------- gebeurtenissen ----------

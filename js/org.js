@@ -130,6 +130,7 @@ window.FC = window.FC || {};
         memory: { lastMt: 0, lastCrisis: -9999, lastInitiative: 0, lastPatrol: 0, lastAdvice: -9999, adviceAt: -9999,
           adviceResponse: null, lastRiskReport: 0, nextSession: 0 },
         reports: [],     // rapporten aan Sjoerd (van Elsje en Risk Fred)
+        chat: [],        // gesprek tussen Sjoerd en Godfred
         minutes: [],     // notulen van het management-overleg
         improvements: [], // verbeterlog van Elsje
         deptBonus: {},   // kwaliteitswinst per afdeling door uitgerolde tools
@@ -151,7 +152,7 @@ window.FC = window.FC || {};
         const p = this.addProject(pick(TEMPLATES[dept]), rand(1, 3), 'godfred', dept);
         this.planProject(p, true);
       });
-      this.emit({ kind: 'info', text: `Welkom bij ${this.state.name}! Klik rechtsboven op "OPDRACHT AAN GODFRED" om hem aan het werk te zetten.` });
+      this.emit({ kind: 'info', text: `Welkom bij ${this.state.name}! Klik rechtsboven op "OPDRACHT AAN GODFRED" om met hem te praten en hem aan het werk te zetten.` });
     }
 
     load() {
@@ -162,6 +163,7 @@ window.FC = window.FC || {};
         if (!data || !Array.isArray(data.agents) || !Array.isArray(data.tasks)) return false;
         this.state = data;
         this.state.meeting = null;
+        if (!Array.isArray(this.state.chat)) this.state.chat = [];
         this.spots.clear();
         this.state.tasks.forEach(t => { if (t.status === 'onderweg') t.status = 'gecontroleerd'; });
         // Iedereen begint weer op zijn eigen plek.
@@ -262,8 +264,8 @@ window.FC = window.FC || {};
       return p;
     }
 
-    addTask(project, dept, title) {
-      const d = project.difficulty;
+    addTask(project, dept, title, difficulty) {
+      const d = difficulty || project.difficulty;
       const t = {
         id: this.state.nextId++,
         projectId: project.id,
@@ -507,6 +509,18 @@ window.FC = window.FC || {};
           if (!title) return false;
           const p = this.addProject(title, clamp(cmd.difficulty || 2, 1, 5), 'baas', cmd.dept || null);
           this.emit({ kind: 'opdracht', agentId: g.id, text: `SJOERD → ${g.name}: "${p.title}"` });
+          // Een plan dat Godfred (de echte, via Claude) zelf al bedacht heeft.
+          const tasks = (cmd.tasks || []).filter(t => MAP.DEPTS.includes(t.dept)).slice(0, 6);
+          if (tasks.length) {
+            tasks.forEach(t => {
+              const task = this.addTask(p, t.dept, String(t.title).slice(0, 50), clamp(Number(t.difficulty) || p.difficulty, 1, 5));
+              if (t.security) task.secCheck = true;
+            });
+            p.status = 'loopt';
+            p.aiPlanned = true;
+            this.emit({ kind: 'project', agentId: g.id,
+              text: `${g.name} verdeelt "${p.title}" in ${plural(tasks.length)} over ${[...new Set(tasks.map(t => roomName(t.dept)))].join(', ')}.` });
+          }
           return p;
         }
         case 'plan': {
