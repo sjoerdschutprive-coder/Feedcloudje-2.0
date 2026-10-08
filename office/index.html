@@ -21,6 +21,7 @@
     --idle: #6d625a;
     --warn: #ef5d5d;
     --radius: 12px;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; }
@@ -29,7 +30,7 @@
     color: var(--text);
     font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
-  .app { display: grid; grid-template-columns: 1fr 380px; height: 100vh; }
+  .app { display: grid; grid-template-columns: 1fr 380px; height: 100%; }
   header.top { position: absolute; left: 20px; top: 16px; z-index: 2; pointer-events: none; }
   header.top h1 { margin: 0; font-size: 20px; letter-spacing: .3px; }
   header.top h1 span { color: var(--accent); }
@@ -698,7 +699,8 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const micBtn = document.getElementById("micBtn"), cmdText = document.getElementById("cmdText"),
       cmdHint = document.getElementById("cmdHint"), cmdPlan = document.getElementById("cmdPlan"),
       cmdAudio = document.getElementById("cmdAudio"), cmdSend = document.getElementById("cmdSend");
-let recog = null, mediaRec = null, mediaStream = null, chunks = [], baseText = "", currentAudio = null, plan = null;
+let recog = null, mediaRec = null, mediaStream = null, chunks = [], baseText = "", currentAudio = null, plan = null, micBlocked = false;
+const DICTEER = "De microfoon is hier niet beschikbaar. Tik in het tekstvak en gebruik de microfoon van je toetsenbord (dicteren) om je commando in te spreken.";
 
 function hint(msg, err) { cmdHint.textContent = msg; cmdHint.classList.toggle("err", !!err); }
 
@@ -707,6 +709,7 @@ function toggleVoice() { listening ? stopVoice() : startVoice(); }
 async function startVoice() {
   document.getElementById("cmdBlock").scrollIntoView({ behavior: "smooth", block: "nearest" });
   baseText = cmdText.value.trim();
+  micBlocked = false;
   let gotAudio = false;
   if (navigator.mediaDevices && window.MediaRecorder) {
     try {
@@ -725,7 +728,7 @@ async function startVoice() {
       gotAudio = true;
     } catch (e) { /* geen microfoontoegang voor opname; spraakherkenning kan nog wel werken */ }
   }
-  if (!gotAudio && !SR) { hint("Geen toegang tot de microfoon. Geef de browser toestemming of typ je commando.", true); return; }
+  if (!gotAudio && !SR) { hint(DICTEER, true); cmdText.focus(); return; }
 
   listening = true;
   micBtn.classList.add("rec");
@@ -737,19 +740,25 @@ async function startVoice() {
     recog.lang = "nl-NL";
     recog.interimResults = true;
     recog.continuous = true;
+    let heard = false;
+    if (!gotAudio) setTimeout(() => { if (listening && !heard) { micBlocked = true; stopVoice(); } }, 6000);
     recog.onresult = e => {
+      heard = true;
       let text = "";
       for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
       cmdText.value = (baseText + " " + text).trim();
       buildPlan();
     };
     recog.onerror = e => {
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") hint("Spraakherkenning is geblokkeerd. De voicenote wordt wel opgenomen; typ het commando eronder.", true);
+      if (e.error === "not-allowed" || e.error === "service-not-allowed" || e.error === "audio-capture") {
+        if (gotAudio) hint("Spraakherkenning is geblokkeerd. De voicenote wordt wel opgenomen; typ het commando eronder.", true);
+        else micBlocked = true;
+      }
       else if (e.error !== "no-speech" && e.error !== "aborted") hint("Spraakherkenning gaf een fout (" + e.error + "). Typ of corrigeer het commando.", true);
     };
     recog.onend = () => { if (listening && !gotAudio) stopVoice(); };
     try { recog.start(); hint("Luistert… spreek je commando in en tik op de microfoon om te stoppen."); }
-    catch (e) { hint("Spraakherkenning kon niet starten. De voicenote wordt wel opgenomen.", true); }
+    catch (e) { if (gotAudio) hint("Spraakherkenning kon niet starten. De voicenote wordt wel opgenomen.", true); else { micBlocked = true; stopVoice(); } }
   } else {
     hint("Opname loopt. Je browser zet spraak niet om in tekst: typ na afloop het commando onder de voicenote.");
   }
@@ -763,6 +772,7 @@ function stopVoice() {
   if (mediaRec && mediaRec.state !== "inactive") mediaRec.stop();
   render();
   buildPlan();
+  if (micBlocked) { hint(DICTEER, true); cmdText.focus(); return; }
   hint(cmdText.value.trim() ? "Controleer hoe de Oppertet het commando verdeelt en tik op 'Naar Oppertet'." : "Er is geen tekst herkend. Typ het commando of probeer opnieuw.", !cmdText.value.trim());
 }
 
