@@ -29,10 +29,8 @@
     color: var(--text);
     font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
-  .app { display: grid; grid-template-columns: 1fr 360px; height: 100vh; }
-  header.top {
-    position: absolute; left: 20px; top: 16px; z-index: 2; pointer-events: none;
-  }
+  .app { display: grid; grid-template-columns: 1fr 380px; height: 100vh; }
+  header.top { position: absolute; left: 20px; top: 16px; z-index: 2; pointer-events: none; }
   header.top h1 { margin: 0; font-size: 20px; letter-spacing: .3px; }
   header.top h1 span { color: var(--accent); }
   header.top p { margin: 2px 0 0; color: var(--muted); font-size: 12px; max-width: 270px; }
@@ -42,6 +40,10 @@
   /* SVG styling */
   .flow { fill: none; stroke-width: 2; stroke-dasharray: 6 10; opacity: .55; animation: flow 1.6s linear infinite; }
   @keyframes flow { to { stroke-dashoffset: -32; } }
+  .channel { cursor: pointer; }
+  .channel .ch-vis { fill: none; stroke-linecap: round; opacity: .6; }
+  .channel:hover .ch-vis { opacity: 1; filter: brightness(1.25); }
+  .channel .ch-hit { fill: none; stroke: transparent; stroke-width: 16; pointer-events: stroke; }
   .island { cursor: pointer; }
   .island:hover .top-face { filter: brightness(1.15); }
   .desk { cursor: pointer; }
@@ -52,16 +54,34 @@
   .svg-num { font-size: 11px; font-weight: 600; }
   .brain-pulse { animation: pulse 2.8s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
   @keyframes pulse { 50% { opacity: .35; transform: scale(1.25); } }
+  .brain-listening .brain-pulse { animation-duration: .8s; }
   .screen-busy { animation: blink 1.2s steps(2) infinite; }
   @keyframes blink { 50% { opacity: .55; } }
+  .svg-mic { cursor: pointer; }
+  .svg-mic:hover circle { filter: brightness(1.2); }
 
   /* Side panel */
-  aside.panel {
-    background: var(--panel); border-left: 1px solid var(--line);
-    display: flex; flex-direction: column; min-height: 0;
+  aside.panel { background: var(--panel); border-left: 1px solid var(--line); overflow: auto; min-height: 0; }
+  section.block { padding: 16px 18px; border-bottom: 1px solid var(--line); }
+  section.block h2 { margin: 0 0 10px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  section.cmd { background: linear-gradient(180deg, rgba(240,160,75,.08), transparent); }
+  .cmd-row { display: flex; gap: 10px; align-items: stretch; }
+  button.mic {
+    flex: none; width: 56px; border-radius: 14px; border: 0; padding: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #1a120b;
+    display: grid; place-items: center;
   }
-  .panel-head { padding: 18px 18px 10px; border-bottom: 1px solid var(--line); }
-  .panel-head h2 { margin: 0 0 10px; font-size: 15px; }
+  button.mic svg { width: 26px; height: 26px; fill: currentColor; }
+  button.mic.rec { background: var(--warn); color: #fff; animation: recpulse 1s ease-in-out infinite; }
+  @keyframes recpulse { 50% { box-shadow: 0 0 0 8px rgba(239,93,93,.18); } }
+  .hint { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+  .hint.err { color: var(--warn); }
+  .plan { margin-top: 10px; display: grid; gap: 6px; }
+  .plan-line { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; background: var(--bg-2); border: 1px solid var(--line); border-left: 4px solid var(--dept, var(--accent)); border-radius: 8px; padding: 6px 8px; }
+  .plan-line select { padding: 4px 6px; font-size: 12px; }
+  .plan-line .pl-title { grid-column: 1 / -1; font-size: 12.5px; }
+  .plan-note { font-size: 12px; color: var(--done); }
+  audio { width: 100%; height: 32px; margin-top: 8px; }
   form.task-form { display: grid; gap: 8px; }
   label.f { display: grid; gap: 4px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
   select, input[type=text], textarea {
@@ -70,7 +90,8 @@
   }
   textarea { resize: vertical; min-height: 58px; }
   select:focus, input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  .row { display: flex; gap: 8px; align-items: center; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .check { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
   button {
     font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line);
@@ -78,6 +99,14 @@
   }
   button.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #1a120b; border: 0; font-weight: 700; }
   button:hover { filter: brightness(1.1); }
+  button:disabled { opacity: .5; cursor: default; }
+  details.newtask summary { cursor: pointer; font-weight: 700; font-size: 15px; list-style: none; }
+  details.newtask summary::before { content: "+ "; color: var(--accent); }
+  details.newtask[open] summary { margin-bottom: 10px; }
+  nav.tabs { display: flex; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); z-index: 1; }
+  nav.tabs button { flex: 1; border: 0; border-radius: 0; background: none; padding: 11px; color: var(--muted); border-bottom: 2px solid transparent; font-weight: 600; }
+  nav.tabs button.on { color: var(--text); border-bottom-color: var(--accent); }
+  nav.tabs .count { font-size: 11px; color: var(--accent); margin-left: 4px; }
   .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 12px 18px; border-bottom: 1px solid var(--line); }
   .summary div { background: var(--bg-2); border-radius: 8px; padding: 6px 8px; text-align: center; }
   .summary b { display: block; font-size: 18px; }
@@ -85,18 +114,23 @@
   .filters { display: flex; gap: 6px; padding: 10px 18px 0; flex-wrap: wrap; }
   .filters button { padding: 3px 9px; font-size: 12px; border-radius: 999px; }
   .filters button.on { border-color: var(--accent); color: var(--accent); }
-  ul.tasks { list-style: none; margin: 0; padding: 10px 12px 18px; overflow: auto; flex: 1; }
-  ul.tasks li {
+  ul.items { list-style: none; margin: 0; padding: 10px 12px 18px; }
+  ul.items li {
     background: var(--bg-2); border: 1px solid var(--line); border-left: 4px solid var(--dept, var(--accent));
     border-radius: 10px; padding: 9px 10px; margin: 0 6px 8px;
   }
   .t-title { font-weight: 600; }
   .t-meta { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
-  .t-actions { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+  .t-actions { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; align-items: center; }
   .chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; background: transparent; }
   .chip.volgende { color: var(--next); } .chip.bezig { color: var(--busy); } .chip.klaar { color: var(--done); }
-  .chip.approve { color: var(--warn); }
+  .chip.approve, .chip.warn { color: var(--warn); }
+  .chip.ok { color: var(--done); }
+  .chip.muted { color: var(--muted); }
   .t-actions .del { margin-left: auto; color: var(--muted); border: 0; background: none; padding: 2px 4px; }
+  .label { font-size: 10.5px; padding: 1px 6px; border-radius: 4px; background: var(--panel-2); color: var(--muted); margin-left: 4px; white-space: nowrap; }
+  .route { font-size: 11px; font-weight: 600; }
+  .route.direct { color: var(--done); } .route.oppertet { color: var(--accent); }
 
   /* Detail drawer */
   .drawer-wrap { position: absolute; inset: 0; background: rgba(10,8,6,.45); display: none; z-index: 5; }
@@ -110,7 +144,7 @@
   .drawer h3 { margin: 0; font-size: 20px; }
   .drawer .role { color: var(--muted); margin: 2px 0 14px; }
   .kaart { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px; }
-  .kaart h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--accent); display: flex; justify-content: space-between; }
+  .kaart h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--accent); display: flex; justify-content: space-between; gap: 8px; }
   .kaart h4 small { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 400; }
   .kaart dl { display: grid; grid-template-columns: 120px 1fr; gap: 4px 10px; margin: 0; }
   .kaart dt { color: var(--muted); }
@@ -123,12 +157,12 @@
   .team button { font-size: 12px; padding: 4px 9px; }
   .legend { position: absolute; left: 20px; bottom: 14px; display: flex; gap: 14px; color: var(--muted); font-size: 12px; z-index: 2; flex-wrap: wrap; }
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+  .dash { display: inline-block; width: 18px; height: 0; border-top: 2px dashed; margin-right: 5px; vertical-align: middle; }
 
   @media (max-width: 900px) {
     .app { grid-template-columns: 1fr; height: auto; }
     .stage { height: 78vh; min-height: 460px; }
-    aside.panel { border-left: 0; border-top: 1px solid var(--line); }
-    ul.tasks { max-height: none; }
+    aside.panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
     .drawer-wrap { position: fixed; }
   }
 </style>
@@ -143,47 +177,95 @@
     <svg id="office" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Isometrisch kantoor met zeven afdelingen rond de Oppertet en het Brein"></svg>
     <div class="legend">
       <span><i class="dot" style="background:var(--busy)"></i>bezig</span>
-      <span><i class="dot" style="background:var(--next)"></i>heeft een volgende taak</span>
+      <span><i class="dot" style="background:var(--next)"></i>volgende taak</span>
       <span><i class="dot" style="background:var(--idle)"></i>vrij</span>
-      <span><i class="dot" style="background:var(--warn)"></i>wacht op jouw goedkeuring</span>
+      <span><i class="dot" style="background:var(--warn)"></i>wacht op goedkeuring</span>
+      <span><i class="dash" style="border-color:var(--accent)"></i>via Oppertet</span>
+      <span><i class="dash" style="border-color:var(--done);border-top-style:solid"></i>directe lijn (klik voor kanaalkaart)</span>
     </div>
     <div class="drawer-wrap" id="drawerWrap">
       <div class="drawer" id="drawer" role="dialog" aria-modal="true"></div>
     </div>
   </main>
 
-  <aside class="panel">
-    <div class="panel-head">
-      <h2>Nieuwe taak</h2>
-      <form class="task-form" id="taskForm">
-        <label class="f">Afdeling
-          <select id="fDept"></select>
-        </label>
-        <label class="f">Toewijzen aan
-          <select id="fAgent"></select>
-        </label>
-        <label class="f">Taak
-          <textarea id="fTitle" placeholder="Bijv. Benchmark kamerprijzen Utrecht-centrum" required></textarea>
-        </label>
-        <div class="row">
-          <label class="check"><input type="checkbox" id="fApproval"> Vereist goedkeuring van de Raad</label>
-          <button class="primary" type="submit" style="margin-left:auto">Toevoegen</button>
-        </div>
-      </form>
+  <aside class="panel" id="panel">
+    <section class="block cmd" id="cmdBlock">
+      <h2>Commando aan Oppertet</h2>
+      <div class="cmd-row">
+        <button class="mic" id="micBtn" type="button" aria-label="Voicenote opnemen" title="Voicenote opnemen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+        </button>
+        <textarea id="cmdText" placeholder="Spreek of typ, bijv.: 'Laat Finance en Product een prijsvoorstel maken voor het wellness-arrangement en leg het aan mij voor.'"></textarea>
+      </div>
+      <p class="hint" id="cmdHint">Tik op de microfoon en spreek je commando in. Tik nog een keer om te stoppen.</p>
+      <div id="cmdAudio"></div>
+      <div class="plan" id="cmdPlan"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="cmdSend" type="button">Naar Oppertet</button>
+        <button id="cmdClear" type="button">Wissen</button>
+      </div>
+    </section>
+
+    <nav class="tabs" id="tabs">
+      <button data-tab="taken" class="on">Taken<span class="count" id="cntTaken"></span></button>
+      <button data-tab="berichten">Berichten<span class="count" id="cntMsg"></span></button>
+    </nav>
+
+    <div id="tab-taken">
+      <section class="block">
+        <details class="newtask">
+          <summary>Nieuwe taak</summary>
+          <form class="task-form" id="taskForm">
+            <label class="f">Afdeling <select id="fDept"></select></label>
+            <label class="f">Toewijzen aan <select id="fAgent"></select></label>
+            <label class="f">Taak <textarea id="fTitle" placeholder="Bijv. Benchmark kamerprijzen Utrecht-centrum" required></textarea></label>
+            <div class="row">
+              <label class="check"><input type="checkbox" id="fApproval"> Vereist goedkeuring van de Raad</label>
+              <button class="primary" type="submit" style="margin-left:auto">Toevoegen</button>
+            </div>
+          </form>
+        </details>
+      </section>
+      <div class="summary" id="summary"></div>
+      <div class="filters" id="filters"></div>
+      <ul class="items" id="taskList"></ul>
     </div>
-    <div class="summary" id="summary"></div>
-    <div class="filters" id="filters"></div>
-    <ul class="tasks" id="taskList"></ul>
+
+    <div id="tab-berichten" hidden>
+      <section class="block">
+        <h2>Bericht tussen afdelingen</h2>
+        <form class="task-form" id="msgForm">
+          <div class="grid2">
+            <label class="f">Van <select id="mFrom"></select></label>
+            <label class="f">Naar <select id="mTo"></select></label>
+          </div>
+          <label class="f">Soort
+            <select id="mType">
+              <option value="vraag">Vraag</option>
+              <option value="info">Informatie delen</option>
+              <option value="verzoek">Verzoek (maakt een taak bij de ontvanger)</option>
+            </select>
+          </label>
+          <label class="f">Bericht <textarea id="mText" required placeholder="Bijv. Wat is de minimale marge voor het wellness-arrangement?"></textarea></label>
+          <div class="row">
+            <span class="hint" id="mRoute" style="margin:0"></span>
+            <button class="primary" type="submit" style="margin-left:auto">Versturen</button>
+          </div>
+        </form>
+      </section>
+      <div class="summary" id="msgSummary"></div>
+      <ul class="items" id="msgList"></ul>
+    </div>
   </aside>
 </div>
 
 <script>
 /* =====================================================================
    DATA
-   Alles wat hieronder staat is fictieve pilotdata (Stichtse Hotelgroep).
-   Cultuurkaarten, profielkaarten, rolkaarten en toegangskaarten zijn
-   losse objecten, zodat ze later één-op-één vervangen kunnen worden door
-   de echte kaarten (bijv. ingelezen uit YAML-bestanden).
+   Alles hieronder is fictieve pilotdata (Stichtse Hotelgroep).
+   Cultuurkaarten, profielkaarten, rolkaarten, toegangskaarten en
+   kanaalkaarten zijn losse objecten, zodat ze later één-op-één vervangen
+   kunnen worden door de echte kaarten (bijv. ingelezen uit YAML).
    ===================================================================== */
 
 const PILOT = {
@@ -201,54 +283,87 @@ const CULTUUR_ORG = {
 
 /* Rolkaarten (wat mag een rol en hoe ver reikt hij). */
 const ROLKAARTEN = {
-  oppertet:   { titel: "Oppertet",    bereik: "Hele organisatie", autonomie: "Niveau 3: Zelfstandig",   handelingen: ["Taken verdelen over afdelingen", "Prioriteiten bepalen", "Escaleren naar de Raad", "Brein lezen en schrijven"] },
-  hoofdtet:   { titel: "Hoofdtet",    bereik: "Eigen afdeling",   autonomie: "Niveau 3: Zelfstandig",   handelingen: ["Taken verdelen binnen de afdeling", "Output van Tets accorderen", "Rapporteren aan de Oppertet", "Afdelingsgeheugen schrijven"] },
-  tet:        { titel: "Tet",         bereik: "Eigen taak",       autonomie: "Niveau 2: Uitvoerend",    handelingen: ["Taak uitvoeren met afdelingstools", "Concepten opleveren aan de Hoofdtet", "Brein lezen"] },
-  controltet: { titel: "Control Tet", bereik: "Hele organisatie (alleen lezen)", autonomie: "Niveau 2: Uitvoerend", handelingen: ["Output van alle afdelingen toetsen", "Bevindingen melden aan de Raad", "Taken blokkeren bij risico"] }
+  oppertet:   { titel: "Oppertet",    bereik: "Hele organisatie", autonomie: "Niveau 3: Zelfstandig",   handelingen: ["Commando's van de Raad vertalen naar taken", "Taken verdelen over afdelingen", "Prioriteiten bepalen", "Escalaties van directe lijnen beslechten", "Brein lezen en schrijven"] },
+  hoofdtet:   { titel: "Hoofdtet",    bereik: "Eigen afdeling",   autonomie: "Niveau 3: Zelfstandig",   handelingen: ["Taken verdelen binnen de afdeling", "Output van Tets accorderen", "Verzoeken via directe lijnen accepteren of escaleren", "Rapporteren aan de Oppertet"] },
+  tet:        { titel: "Tet",         bereik: "Eigen taak",       autonomie: "Niveau 2: Uitvoerend",    handelingen: ["Taak uitvoeren met afdelingstools", "Vragen stellen via directe lijnen", "Concepten opleveren aan de Hoofdtet", "Brein lezen"] },
+  controltet: { titel: "Control Tet", bereik: "Hele organisatie (alleen lezen)", autonomie: "Niveau 2: Uitvoerend", handelingen: ["Output van alle afdelingen toetsen", "Meelezen op alle lijnen", "Bevindingen melden aan de Raad", "Taken blokkeren bij risico"] }
 };
 
-/* Afdelingen met hun cultuurkaart (laag 2) en toegangskaart. */
+/* Afdelingen met hun cultuurkaart (laag 2), toegangskaart en trefwoorden
+   waarmee de Oppertet een commando aan de juiste afdeling koppelt
+   (een * betekent: woord begint hiermee). */
 const DEPTS = [
   { id: "ops", naam: "Operations", kleur: "#e8a33d",
     hoofdstuk: "Bedrijfsvoering & processen",
     kpi: ["Procesanalyses", "3 hotels"],
     cultuur: { waarden: ["Het systeem moet altijd draaien"], werkwijze: ["Eerst meten, dan verbeteren", "Elke wijziging is terug te draaien"] },
-    toegang: [["Brein", "rw"], ["Takensysteem", "rw"], ["Codebase agents", "rw"], ["Orderbeheer", "rw"], ["Boekhouding", "r"]] },
+    toegang: [["Brein", "rw"], ["Takensysteem", "rw"], ["Codebase agents", "rw"], ["Orderbeheer", "rw"], ["Boekhouding", "r"]],
+    trefwoorden: ["operations", "operatie*", "proces*", "onderhoud*", "order*", "fulfil*", "check-in", "checkin", "schoonma*", "logistiek*", "bedrijfsvoering"] },
   { id: "fin", naam: "Finance", kleur: "#5fbf8f",
     hoofdstuk: "Financieel advies & prijsstrategie",
     kpi: ["Marge-scenario's", "4"],
     cultuur: { waarden: ["Elke euro verantwoord"], werkwijze: ["Aannames expliciet", "Altijd een basis-, laag- en hoogscenario"] },
-    toegang: [["Brein", "rw"], ["Boekhouding", "rw"], ["Rekenmodellen", "rw"], ["Marktdata", "r"], ["Betalingen", "no"]] },
+    toegang: [["Brein", "rw"], ["Boekhouding", "rw"], ["Rekenmodellen", "rw"], ["Marktdata", "r"], ["Betalingen", "no"]],
+    trefwoorden: ["finance", "financ*", "prijs*", "prijz*", "kosten*", "budget*", "marge*", "omzet*", "business case", "yield", "tarie*", "begroting*"] },
   { id: "mkt", naam: "Marketing", kleur: "#e86a8a",
     hoofdstuk: "Positionering & marketingplan",
     kpi: ["Doelgroepen", "5"],
     cultuur: { waarden: ["De gast centraal"], werkwijze: ["Elke claim onderbouwd", "Testen boven meningen"] },
-    toegang: [["Brein", "rw"], ["Webonderzoek", "r"], ["Reviewdata", "r"], ["Contentbibliotheek", "rw"], ["Externe publicatie", "no"]] },
+    toegang: [["Brein", "rw"], ["Webonderzoek", "r"], ["Reviewdata", "r"], ["Contentbibliotheek", "rw"], ["Externe publicatie", "no"]],
+    trefwoorden: ["marketing", "campagne*", "doelgroep*", "persona*", "review*", "social*", "merk*", "positionering*", "advertent*", "communicatie*"] },
   { id: "rnd", naam: "R&D", kleur: "#7f8fe8",
     hoofdstuk: "Innovatie & trends",
     kpi: ["Trends getoetst", "12"],
     cultuur: { waarden: ["Nieuwsgierig, kritisch op hype"], werkwijze: ["Alleen wat aantoonbaar werkt", "Snelle experimenten met begrensd risico"] },
-    toegang: [["Brein", "rw"], ["Webonderzoek", "r"], ["Sandbox", "rw"], ["Marktdata", "r"]] },
+    toegang: [["Brein", "rw"], ["Webonderzoek", "r"], ["Sandbox", "rw"], ["Marktdata", "r"]],
+    trefwoorden: ["r&d", "r en d", "research", "onderzoek*", "trend*", "innovat*", "technolog*", "experiment*"] },
   { id: "hr", naam: "HR", kleur: "#c98be0",
     hoofdstuk: "Personeel & organisatie",
     kpi: ["Agents beheerd", "21"],
     cultuur: { waarden: ["Goede agents verdienen goede inzet"], werkwijze: ["Rollen en mandaten altijd actueel", "Performance als input, niet als oordeel"] },
-    toegang: [["Brein", "rw"], ["Agentregister", "rw"], ["Profielkaarten", "rw"], ["Performancedata", "r"]] },
+    toegang: [["Brein", "rw"], ["Agentregister", "rw"], ["Profielkaarten", "rw"], ["Performancedata", "r"]],
+    trefwoorden: ["hr", "personeel*", "bezetting*", "werving*", "werven", "rooster*", "medewerker*", "agentregister", "profielkaart*"] },
   { id: "risk", naam: "Risk & Safety", kleur: "#ef6b5b",
     hoofdstuk: "Risico's & compliance",
     kpi: ["Open risico's", "2"],
     cultuur: { waarden: ["Veiligheid gaat voor snelheid"], werkwijze: ["Toetsen tegen wet en regels", "Melden zonder omwegen"] },
-    toegang: [["Brein", "r"], ["Alle afdelingsoutput", "r"], ["Auditlog", "rw"], ["Tool-scanner", "rw"]] },
+    toegang: [["Brein", "r"], ["Alle afdelingsoutput", "r"], ["Auditlog", "rw"], ["Tool-scanner", "rw"]],
+    trefwoorden: ["risk", "risico*", "compliance", "veiligheid*", "safety", "wet", "wetgeving", "regelgeving", "avg", "privacy", "toets*", "scan*"] },
   { id: "prod", naam: "Product", kleur: "#4fbfd0",
     hoofdstuk: "Propositie & gastbeleving",
     kpi: ["Concepten", "3"],
     cultuur: { waarden: ["Wat we maken moet kloppen voor de gast"], werkwijze: ["Van gastreis naar propositie", "Klein beginnen, snel bijsturen"] },
-    toegang: [["Brein", "rw"], ["Reviewdata", "r"], ["Ontwerpbord", "rw"], ["Takensysteem", "rw"]] }
+    toegang: [["Brein", "rw"], ["Reviewdata", "r"], ["Ontwerpbord", "rw"], ["Takensysteem", "rw"]],
+    trefwoorden: ["product*", "propositie*", "concept*", "gastreis*", "arrangement*", "beleving*", "wellness", "pakket*"] }
+];
+
+/* Kanaalkaarten: directe lijnen tussen afdelingen (zie ANALYSE-afdelingscommunicatie.md).
+   Paren die hier niet staan lopen via de Oppertet. Risk & Safety heeft een
+   controlelijn naar iedereen en hoeft daarom niet per paar te staan. */
+const KANALEN = [
+  { a: "fin", b: "prod", doel: "Prijs en business case van elke propositie", voorbeelden: ["Marge-check op een nieuw arrangement", "Kostprijs van een gastreis-verbetering"] },
+  { a: "fin", b: "mkt",  doel: "Prijsstrategie en positionering als één verhaal", voorbeelden: ["Prijsniveau per doelgroep", "Campagnebudget binnen de begroting"] },
+  { a: "mkt", b: "prod", doel: "Gastinzichten en reviews naar de propositie", voorbeelden: ["Top-5 klachten per hotel", "Welke doelgroep past bij welk concept"] },
+  { a: "ops", b: "prod", doel: "Toetsen of een concept op locatie uitvoerbaar is", voorbeelden: ["Kan het binnenstadhotel late check-out aan?", "Benodigde processen voor wellness"] },
+  { a: "ops", b: "hr",   doel: "Bezetting, roosters, onderhoud van agents en agentregister", voorbeelden: ["Personeel voor het nieuwe ontbijtproces", "Nieuwe Tet registreren na onderhoud"] },
+  { a: "rnd", b: "prod", doel: "Trends en technologie naar concepten", voorbeelden: ["Trend duurzaam verblijf vertalen naar een arrangement", "Self-check-in als onderdeel van de gastreis"] },
+  { a: "ops", b: "fin",  doel: "Proceskosten en orderfulfilment raken de boekhouding", voorbeelden: ["Kosten per check-in", "Orderdata naar de boekhouding"] },
+  { a: "rnd", b: "ops",  doel: "Implementatie van hoteltechnologie", voorbeelden: ["Pilot self-check-in snelweghotel", "Impact van nieuwe tooling op processen"] }
+];
+const CONTROLELIJN = "risk";
+
+const SPELREGELS = [
+  "Alleen informatie, afstemming en kleine verzoeken; een verzoek levert hooguit één taak op.",
+  "De Hoofdtet van de ontvanger accepteert het verzoek of escaleert het.",
+  "Elk bericht wordt gelogd in het Brein; de Oppertet leest mee.",
+  "Escaleren naar de Oppertet bij conflict over prioriteit, weigering of impact op de deadline.",
+  "Toegang blijft per afdeling: de ontvanger voert uit met de eigen tools.",
+  "Risk & Safety leest mee op alle lijnen."
 ];
 
 /* Agents met profielkaart (laag 3). Een profielkaart kan rechten alleen inperken. */
 const AGENTS = [
-  { id: "oppertet", naam: "Oppertet", rol: "oppertet", dept: null, specialisme: "Orchestratie", kenmerken: ["Gevoed door de Raad", "Verdeelt het advies in hoofdstukken"] },
+  { id: "oppertet", naam: "Oppertet", rol: "oppertet", dept: null, specialisme: "Orchestratie", kenmerken: ["Gevoed door de Raad", "Neemt voicenote-commando's aan", "Verdeelt het advies in hoofdstukken"] },
 
   { id: "ops-h",  naam: "Hoofdtet Operations", rol: "hoofdtet", dept: "ops", specialisme: "Bedrijfsvoering" },
   { id: "ops-1",  naam: "Proces-Tet",          rol: "tet",      dept: "ops", specialisme: "Procesanalyse per hotel" },
@@ -293,32 +408,47 @@ const SEED_TASKS = [
   { dept: "risk", agent: "risk-c2",title: "Bronnencheck hoofdstuk Finance", status: "volgende" },
   { dept: "risk", agent: "risk-1", title: "Nieuwe tool 'review-scraper' scannen", status: "bezig", approval: true },
   { dept: "prod", agent: "prod-1", title: "Gastreis binnenstadhotel uittekenen", status: "bezig" },
-  { dept: "prod", agent: "prod-h", title: "Concept wellness-arrangement Heuvelrug", status: "klaar" }
+  { dept: "prod", agent: "prod-h", title: "Concept wellness-arrangement Heuvelrug", status: "klaar" },
+  { dept: "fin",  agent: null,     title: "Marge-check wellness-arrangement", status: "volgende", via: "prod" }
+];
+
+const SEED_MESSAGES = [
+  { from: "mkt", to: "prod", soort: "info",    text: "Top-3 klacht Heuvelrug: geen avondprogramma. Input voor het wellness-concept.", route: "direct", status: "afgeleverd" },
+  { from: "prod", to: "fin", soort: "verzoek", text: "Marge-check wellness-arrangement", route: "direct", status: "afgeleverd" },
+  { from: "hr", to: "mkt",   soort: "vraag",   text: "Kunnen we employer branding meenemen in het marketingplan?", route: "oppertet", status: "bij Oppertet" }
 ];
 
 const HISTORY = {
-  "oppertet": ["Advies opgeknipt in 7 hoofdstukken", "Planning pilot vastgelegd in het Brein"],
+  "oppertet": ["Advies opgeknipt in 7 hoofdstukken", "Planning pilot vastgelegd in het Brein", "8 directe lijnen tussen afdelingen geopend (zie kanaalkaarten)"],
   "risk-c1":  ["Eerste versie hoofdstuk Marketing teruggestuurd: claims zonder bron"],
   "hr-h":     ["Alle 21 agents geregistreerd met rol- en profielkaart"]
 };
 
 /* =====================================================================
-   STATE (taken worden lokaal in de browser bewaard)
+   STATE (taken, berichten en commando's worden lokaal in de browser
+   bewaard; opgenomen voicenotes alleen zolang de pagina open is)
    ===================================================================== */
-const STORE_KEY = "tettet-office-v1";
+const KEYS = { tasks: "tettet-office-v1", msgs: "tettet-messages-v1", cmds: "tettet-commands-v1" };
 const deptById = Object.fromEntries(DEPTS.map(d => [d.id, d]));
 const agentById = Object.fromEntries(AGENTS.map(a => [a.id, a]));
-let tasks = load();
+const now = Date.now();
+let tasks = load(KEYS.tasks, () => SEED_TASKS.map((t, i) => ({ id: "t" + (i + 1), approval: false, ...t, created: now - (SEED_TASKS.length - i) * 3600e3 })));
+let messages = load(KEYS.msgs, () => SEED_MESSAGES.map((m, i) => ({ id: "m" + (i + 1), ...m, created: now - (3 - i) * 1800e3 })));
+let commands = load(KEYS.cmds, () => []);
+const audioById = {};
 let filter = "alle";
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {}
-  return SEED_TASKS.map((t, i) => ({ id: "t" + (i + 1), approval: false, ...t, created: Date.now() - (SEED_TASKS.length - i) * 3600e3 }));
+function load(key, seed) {
+  try { const raw = localStorage.getItem(key); if (raw) return JSON.parse(raw); } catch (e) {}
+  return seed();
 }
-function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(tasks)); } catch (e) {} }
+function save() {
+  try {
+    localStorage.setItem(KEYS.tasks, JSON.stringify(tasks));
+    localStorage.setItem(KEYS.msgs, JSON.stringify(messages));
+    localStorage.setItem(KEYS.cmds, JSON.stringify(commands));
+  } catch (e) {}
+}
 
 function agentStatus(id) {
   const mine = tasks.filter(t => t.agent === id);
@@ -327,6 +457,21 @@ function agentStatus(id) {
   return "vrij";
 }
 const STATUS_COLOR = { bezig: "var(--busy)", volgende: "var(--next)", vrij: "var(--idle)", klaar: "var(--done)" };
+
+/* Kanalen */
+const chKey = (a, b) => [a, b].sort().join("-");
+const kanaalByKey = Object.fromEntries(KANALEN.map(k => [chKey(k.a, k.b), k]));
+function routeFor(a, b) {
+  if (a === b) return null;
+  if (kanaalByKey[chKey(a, b)]) return "direct";
+  if (a === CONTROLELIJN || b === CONTROLELIJN) return "controle";
+  return "oppertet";
+}
+const isDirect = r => r === "direct" || r === "controle";
+const savedHandoffs = () => messages.filter(m => isDirect(m.route) && m.status !== "geëscaleerd").length * 2;
+function channelsOf(id) {
+  return KANALEN.filter(k => k.a === id || k.b === id).map(k => k.a === id ? k.b : k.a);
+}
 
 /* =====================================================================
    ISOMETRISCH TEKENEN
@@ -369,15 +514,12 @@ function desk(g, a, x, y, color, big) {
   const dg = el("g", { class: "desk", tabindex: 0, role: "button", "aria-label": a.naam }, g);
   const st = agentStatus(a.id);
   const w = big ? 1.3 : 1.0, d = .55;
-  // agent (achter het bureau, dus eerst tekenen)
   const [ax, ay] = iso(x + w / 2, y - .25);
   el("ellipse", { cx: ax, cy: ay - 6, rx: 7.5, ry: 9, fill: shade(color, .5) }, dg);
   el("circle", { cx: ax, cy: ay - 19, r: 6.5, fill: "#e9d6c3", stroke: STATUS_COLOR[st], "stroke-width": 2.5, class: "agent-head" }, dg);
   if (a.rol === "hoofdtet") el("path", { d: `M${ax - 6} ${ay - 25} l3 -6 l3 4 l3 -4 l3 6 z`, fill: "#f6c75a" }, dg);
   if (a.rol === "controltet") el("circle", { cx: ax, cy: ay - 19, r: 10, fill: "none", stroke: "#ef6b5b", "stroke-dasharray": "2 3" }, dg);
-  // bureau
   box(dg, x, y, w, d, 9, "#5a4a3d");
-  // scherm
   const [mx, my] = iso(x + w / 2, y + .1);
   el("rect", { x: mx - 7, y: my - 21, width: 14, height: 9, rx: 1.5, fill: st === "bezig" ? "#ffd38a" : "#2b3440", class: st === "bezig" ? "screen-busy" : "" }, dg);
   const pending = tasks.some(t => t.agent === a.id && t.approval && t.status !== "klaar");
@@ -392,56 +534,97 @@ function desk(g, a, x, y, color, big) {
 
 const CENTER = [600, 480];
 const SLOTS = [[-1.9, -1.35], [0.25, -1.35], [-1.9, 0.45], [0.25, 0.45]];
+const POS = Object.fromEntries(DEPTS.map((d, i) => {
+  const ang = -Math.PI / 2 + i * 2 * Math.PI / DEPTS.length;
+  return [d.id, [CENTER[0] + 430 * Math.cos(ang), CENTER[1] + 300 * Math.sin(ang)]];
+}));
+
+/* Gebogen pad tussen twee eilanden, met een bocht naar buiten zodat het niet
+   samenvalt met de lijnen naar het Brein. */
+function channelPath(a, b) {
+  const [x1, y1] = POS[a], [x2, y2] = POS[b];
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  let dx = mx - CENTER[0], dy = my - CENTER[1];
+  const len = Math.hypot(dx, dy);
+  const dist = Math.hypot(x2 - x1, y2 - y1);
+  if (len < 40) { dx = -(y2 - y1); dy = x2 - x1; }
+  const n = Math.hypot(dx, dy) || 1;
+  const bend = Math.min(150, 40 + dist * .12);
+  return `M${x1} ${y1} Q${mx + dx / n * bend} ${my + dy / n * bend} ${x2} ${y2}`;
+}
+
+let listening = false;
 
 function render() {
   svg.textContent = "";
   const defs = el("defs", {}, svg);
   const rg = el("radialGradient", { id: "brainGlow" }, defs);
-  el("stop", { offset: "0%", "stop-color": "#ffd28a", "stop-opacity": ".95" }, rg);
-  el("stop", { offset: "60%", "stop-color": "#f0a04b", "stop-opacity": ".35" }, rg);
+  el("stop", { offset: "0%", "stop-color": listening ? "#ff9b9b" : "#ffd28a", "stop-opacity": ".95" }, rg);
+  el("stop", { offset: "60%", "stop-color": listening ? "#ef5d5d" : "#f0a04b", "stop-opacity": ".35" }, rg);
   el("stop", { offset: "100%", "stop-color": "#f0a04b", "stop-opacity": "0" }, rg);
 
+  const layerChannels = el("g", {}, svg);
   const layerFlow = el("g", {}, svg);
   const layerIslands = el("g", {}, svg);
   const layerCards = el("g", {}, svg);
+  el("g", { id: "pulses" }, svg);
 
-  // posities van de eilanden op een ellips rond het midden
-  const pos = DEPTS.map((d, i) => {
-    const ang = -Math.PI / 2 + i * 2 * Math.PI / DEPTS.length;
-    return [CENTER[0] + 430 * Math.cos(ang), CENTER[1] + 300 * Math.sin(ang)];
+  // directe lijnen tussen afdelingen
+  KANALEN.forEach(k => {
+    const id = "ch-" + chKey(k.a, k.b);
+    const traffic = messages.filter(m => chKey(m.from, m.to) === chKey(k.a, k.b)).length;
+    const w = 2.5 + Math.min(3, traffic * .8);
+    const d = channelPath(k.a, k.b);
+    const g = el("g", { class: "channel", tabindex: 0, role: "button", "aria-label": `Directe lijn ${deptById[k.a].naam} en ${deptById[k.b].naam}` }, layerChannels);
+    el("path", { d, id, class: "ch-vis", stroke: deptById[k.a].kleur, "stroke-width": w, "stroke-dasharray": "14 14" }, g);
+    el("path", { d, class: "ch-vis", stroke: deptById[k.b].kleur, "stroke-width": w, "stroke-dasharray": "14 14", "stroke-dashoffset": 14 }, g);
+    el("path", { d, class: "ch-hit" }, g);
+    const t = el("title", {}, g); t.textContent = `${deptById[k.a].naam} ↔ ${deptById[k.b].naam}: ${k.doel}`;
+    g.addEventListener("click", () => openChannel(chKey(k.a, k.b)));
+    g.addEventListener("keydown", e => { if (e.key === "Enter") openChannel(chKey(k.a, k.b)); });
   });
 
-  // informatiestromen
-  pos.forEach(([x, y], i) => {
+  // informatiestromen naar het Brein
+  DEPTS.forEach(dp => {
+    const [x, y] = POS[dp.id];
     const mx = (x + CENTER[0]) / 2, my = (y + CENTER[1]) / 2 + 30;
-    el("path", { d: `M${CENTER[0]} ${CENTER[1] - 30} Q${mx} ${my} ${x} ${y}`, class: "flow", stroke: DEPTS[i].kleur }, layerFlow);
+    el("path", { d: `M${CENTER[0]} ${CENTER[1] - 30} Q${mx} ${my} ${x} ${y}`, id: "flow-" + dp.id, class: "flow", stroke: dp.kleur }, layerFlow);
   });
 
   // centraal platform: Oppertet + Brein
-  const cg = el("g", { transform: `translate(${CENTER[0]},${CENTER[1]})`, class: "island" }, layerIslands);
+  const cg = el("g", { transform: `translate(${CENTER[0]},${CENTER[1]})`, class: "island" + (listening ? " brain-listening" : "") }, layerIslands);
   box(cg, -2.6, -2.6, 5.2, 5.2, 14, "#3b3029", "top-face");
   el("circle", { cx: 0, cy: -48, r: 46, fill: "url(#brainGlow)", class: "brain-pulse" }, cg);
-  el("circle", { cx: 0, cy: -48, r: 20, fill: "#f6b25e", stroke: "#ffe2b0", "stroke-width": 2 }, cg);
+  el("circle", { cx: 0, cy: -48, r: 20, fill: listening ? "#ef7d6d" : "#f6b25e", stroke: "#ffe2b0", "stroke-width": 2 }, cg);
   el("path", { d: "M-10 -50 q5 -10 10 0 q5 -10 10 0 M-12 -42 q6 6 12 0 q6 6 12 0 M0 -62 v28", stroke: "#7a4a1c", "stroke-width": 2, fill: "none", "stroke-linecap": "round" }, cg);
-  svgText(cg, 0, -100, "Brein · gedeeld geheugen", "svg-sub", "middle", "#ffe2b0");
+  svgText(cg, 0, -100, listening ? "Brein luistert…" : "Brein · gedeeld geheugen", "svg-sub", "middle", "#ffe2b0");
   desk(cg, agentById.oppertet, -.65, 1.0, "#f0a04b", true);
 
-  // kaart boven het midden
-  const brainTasks = tasks.length, waiting = tasks.filter(t => t.approval && t.status !== "klaar").length;
-  const ck = el("g", { transform: `translate(${CENTER[0] - 120},${CENTER[1] - 190})`, style: "cursor:pointer" }, layerCards);
-  el("rect", { width: 240, height: 50, rx: 10, class: "card-bg", stroke: "#f0a04b" }, ck);
-  svgText(ck, 120, 20, "Oppertet & Brein", "svg-title");
-  svgText(ck, 120, 38, `${AGENTS.length} agents · ${brainTasks} taken · ${waiting} wacht op Raad`, "svg-sub");
-  ck.addEventListener("click", () => openAgent("oppertet"));
+  // kaart boven het midden, met microfoon
+  const waiting = tasks.filter(t => t.approval && t.status !== "klaar").length;
+  const atOppertet = messages.filter(m => m.status === "bij Oppertet" || m.status === "geëscaleerd").length;
+  const ck = el("g", { transform: `translate(${CENTER[0] - 160},${CENTER[1] - 200})` }, layerCards);
+  const ckBody = el("g", { style: "cursor:pointer" }, ck);
+  el("rect", { width: 320, height: 62, rx: 10, class: "card-bg", stroke: "#f0a04b" }, ckBody);
+  svgText(ckBody, 14, 20, "Oppertet & Brein", "svg-title", "start");
+  svgText(ckBody, 14, 37, `${AGENTS.length} agents · ${tasks.length} taken · ${waiting} wacht op Raad`, "svg-sub", "start");
+  svgText(ckBody, 14, 52, `${atOppertet} bericht(en) bij Oppertet · ${savedHandoffs()} overdrachten bespaard`, "svg-sub", "start");
+  ckBody.addEventListener("click", () => openAgent("oppertet"));
+  const mic = el("g", { class: "svg-mic", transform: "translate(290,31)", role: "button", tabindex: 0, "aria-label": "Voicenote aan Oppertet" }, ck);
+  el("circle", { r: 17, fill: listening ? "var(--warn)" : "var(--accent)" }, mic);
+  el("path", { d: "M0 3a3 3 0 0 0 3-3V-6a3 3 0 0 0-6 0V0a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H-7a7 7 0 0 0 6 6.92V10h2V6.92A7 7 0 0 0 7 0H5z", fill: listening ? "#fff" : "#1a120b" }, mic);
+  const mt = el("title", {}, mic); mt.textContent = "Voicenote aan Oppertet";
+  mic.addEventListener("click", toggleVoice);
+  mic.addEventListener("keydown", e => { if (e.key === "Enter") toggleVoice(); });
 
   // afdelingseilanden
-  DEPTS.forEach((d, i) => {
-    const [x, y] = pos[i];
+  DEPTS.forEach(d => {
+    const [x, y] = POS[d.id];
     const g = el("g", { transform: `translate(${x},${y})`, class: "island", tabindex: 0, role: "button", "aria-label": d.naam }, layerIslands);
     box(g, -2.3, -1.9, 4.6, 3.8, 12, shade(d.kleur, .55), "top-face");
-    // gekleurde rand op het platform
     const rim = [iso(-2.3, -1.9), iso(2.3, -1.9), iso(2.3, 1.9), iso(-2.3, 1.9)].map(([a, b]) => [a, b - 12]);
     el("polygon", { points: pts(rim), fill: "none", stroke: d.kleur, "stroke-width": 2 }, g);
+    if (d.id === CONTROLELIJN) el("polygon", { points: pts(rim.map(([a, b]) => [a * 1.12, b * 1.12 - 1])), fill: "none", stroke: d.kleur, "stroke-width": 1.2, "stroke-dasharray": "3 5", opacity: .8 }, g);
     g.addEventListener("click", () => openDept(d.id));
     g.addEventListener("keydown", e => { if (e.key === "Enter") openDept(d.id); });
 
@@ -460,6 +643,7 @@ function render() {
     el("rect", { x: 0, y: 0, width: 6, height: 84, rx: 3, fill: d.kleur }, k);
     svgText(k, 14, 18, d.naam, "svg-title", "start");
     svgText(k, 160, 18, `${team.length} agents`, "svg-sub", "end");
+    const lijnen = d.id === CONTROLELIJN ? "controlelijn" : `${channelsOf(d.id).length} directe lijnen`;
     svgText(k, 14, 34, `${d.kpi[0]}: ${d.kpi[1]}`, "svg-sub", "start");
     [["bezig", n("bezig"), "var(--busy)", 14], ["volgende", n("volgende"), "var(--next)", 60], ["klaar", n("klaar"), "var(--done)", 118]].forEach(([lbl, v, c, lx]) => {
       svgText(k, lx, 53, String(v), "svg-num", "start", c);
@@ -467,7 +651,7 @@ function render() {
     });
     el("rect", { x: 14, y: 64, width: 144, height: 5, rx: 2.5, fill: "#3a322b" }, k);
     el("rect", { x: 14, y: 64, width: Math.max(2, 144 * progress), height: 5, rx: 2.5, fill: d.kleur }, k);
-    svgText(k, 14, 79, `Hoofdstuk: ${Math.round(progress * 100)}%`, "svg-sub", "start").setAttribute("font-size", "9.5");
+    svgText(k, 14, 79, `${Math.round(progress * 100)}% klaar · ${lijnen}`, "svg-sub", "start").setAttribute("font-size", "9.5");
     if (pend) {
       el("circle", { cx: 168, cy: 4, r: 10, fill: "var(--warn)" }, k);
       svgText(k, 168, 8, String(pend), "svg-num", "middle", "#fff");
@@ -479,12 +663,206 @@ function render() {
   renderPanel();
 }
 
+/* Een lichtpuls die over een pad loopt (bericht onderweg). */
+function pulse(pathId, color, reverse = false, delay = 0) {
+  setTimeout(() => {
+    const layer = document.getElementById("pulses");
+    if (!layer || !document.getElementById(pathId)) return;
+    const c = el("circle", { r: 7, fill: color, stroke: "#fff", "stroke-width": 2 }, layer);
+    const am = el("animateMotion", { dur: "1.1s", fill: "freeze", keyPoints: reverse ? "1;0" : "0;1", keyTimes: "0;1", calcMode: "linear" }, c);
+    const mp = el("mpath", {}, am);
+    mp.setAttribute("href", "#" + pathId);
+    am.beginElement && am.beginElement();
+    setTimeout(() => c.remove(), 1200);
+  }, delay);
+}
+function pulseMessage(m) {
+  const color = deptById[m.from].kleur;
+  if (m.route === "direct") {
+    const k = kanaalByKey[chKey(m.from, m.to)];
+    pulse("ch-" + chKey(m.from, m.to), color, k.a !== m.from);
+  } else {
+    pulse("flow-" + m.from, color, true);
+    if (m.status !== "bij Oppertet") pulse("flow-" + m.to, color, false, 1100);
+  }
+}
+
+/* =====================================================================
+   VOICENOTE-COMMANDO AAN DE OPPERTET
+   Spraak wordt in de browser omgezet naar tekst (Web Speech API, nl-NL).
+   De opname zelf wordt ook bewaard als voicenote zolang de pagina open is.
+   Ondersteunt de browser geen spraakherkenning, dan blijft de opname
+   bewaard en typ je het commando eronder.
+   ===================================================================== */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const micBtn = document.getElementById("micBtn"), cmdText = document.getElementById("cmdText"),
+      cmdHint = document.getElementById("cmdHint"), cmdPlan = document.getElementById("cmdPlan"),
+      cmdAudio = document.getElementById("cmdAudio"), cmdSend = document.getElementById("cmdSend");
+let recog = null, mediaRec = null, mediaStream = null, chunks = [], baseText = "", currentAudio = null, plan = null;
+
+function hint(msg, err) { cmdHint.textContent = msg; cmdHint.classList.toggle("err", !!err); }
+
+function toggleVoice() { listening ? stopVoice() : startVoice(); }
+
+async function startVoice() {
+  document.getElementById("cmdBlock").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  baseText = cmdText.value.trim();
+  let gotAudio = false;
+  if (navigator.mediaDevices && window.MediaRecorder) {
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRec = new MediaRecorder(mediaStream);
+      chunks = [];
+      mediaRec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+      mediaRec.onstop = () => {
+        if (chunks.length) {
+          currentAudio = URL.createObjectURL(new Blob(chunks, { type: mediaRec.mimeType || "audio/webm" }));
+          cmdAudio.innerHTML = `<audio controls src="${currentAudio}"></audio>`;
+        }
+        mediaStream.getTracks().forEach(t => t.stop());
+      };
+      mediaRec.start();
+      gotAudio = true;
+    } catch (e) { /* geen microfoontoegang voor opname; spraakherkenning kan nog wel werken */ }
+  }
+  if (!gotAudio && !SR) { hint("Geen toegang tot de microfoon. Geef de browser toestemming of typ je commando.", true); return; }
+
+  listening = true;
+  micBtn.classList.add("rec");
+  micBtn.setAttribute("aria-label", "Opname stoppen");
+  render();
+
+  if (SR) {
+    recog = new SR();
+    recog.lang = "nl-NL";
+    recog.interimResults = true;
+    recog.continuous = true;
+    recog.onresult = e => {
+      let text = "";
+      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+      cmdText.value = (baseText + " " + text).trim();
+      buildPlan();
+    };
+    recog.onerror = e => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") hint("Spraakherkenning is geblokkeerd. De voicenote wordt wel opgenomen; typ het commando eronder.", true);
+      else if (e.error !== "no-speech" && e.error !== "aborted") hint("Spraakherkenning gaf een fout (" + e.error + "). Typ of corrigeer het commando.", true);
+    };
+    recog.onend = () => { if (listening && !gotAudio) stopVoice(); };
+    try { recog.start(); hint("Luistert… spreek je commando in en tik op de microfoon om te stoppen."); }
+    catch (e) { hint("Spraakherkenning kon niet starten. De voicenote wordt wel opgenomen.", true); }
+  } else {
+    hint("Opname loopt. Je browser zet spraak niet om in tekst: typ na afloop het commando onder de voicenote.");
+  }
+}
+
+function stopVoice() {
+  listening = false;
+  micBtn.classList.remove("rec");
+  micBtn.setAttribute("aria-label", "Voicenote opnemen");
+  if (recog) { try { recog.stop(); } catch (e) {} recog = null; }
+  if (mediaRec && mediaRec.state !== "inactive") mediaRec.stop();
+  render();
+  buildPlan();
+  hint(cmdText.value.trim() ? "Controleer hoe de Oppertet het commando verdeelt en tik op 'Naar Oppertet'." : "Er is geen tekst herkend. Typ het commando of probeer opnieuw.", !cmdText.value.trim());
+}
+
+/* De Oppertet vertaalt een commando naar taken per afdeling. */
+function kwMatch(text, kw) {
+  const esc = kw.replace(/\*$/, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const tail = kw.endsWith("*") ? "" : "(?![a-zà-ÿ])";
+  return new RegExp("(^|[^a-zà-ÿ])" + esc + tail, "i").test(text);
+}
+function parseCommand(raw) {
+  const text = raw.trim();
+  if (!text) return null;
+  const low = text.toLowerCase();
+  const compact = low.replace(/[\s-]/g, "");
+  const agents = AGENTS.filter(a => a.dept && compact.includes(a.naam.toLowerCase().replace(/[\s-]/g, "")));
+  const depts = new Set(agents.map(a => a.dept));
+  DEPTS.forEach(d => { if (d.trefwoorden.some(kw => kwMatch(low, kw))) depts.add(d.id); });
+  const approval = /goedkeur|akkoord|voorleggen|leg (het )?(aan|voor)|aan mij voor/i.test(low);
+  const urgent = /spoed|urgent|meteen|vandaag nog|z\.?s\.?m|zo snel mogelijk/i.test(low);
+  let title = text.replace(/^(hey |hoi |oké |ok )?(oppertet|brein)[,:]?\s*/i, "")
+    .replace(/,?\s*(en )?(leg (het|dit|dat) (aan mij |daarna )?voor|voorleggen aan mij|ter goedkeuring)[^.!?]*/i, "")
+    .replace(/\s*\b(met spoed|spoed|urgent|zo snel mogelijk|z\.?s\.?m\.?)\b/ig, "")
+    .replace(/\s{2,}/g, " ").trim().replace(/[.!,]+$/, "");
+  title = title.charAt(0).toUpperCase() + title.slice(1);
+  if (title.length > 140) title = title.slice(0, 137) + "…";
+  const lines = [...depts].map(dept => ({ dept, agent: (agents.find(a => a.dept === dept) || {}).id || "" }));
+  if (!lines.length) lines.push({ dept: "", agent: "" });
+  return { text, title, approval, urgent, lines };
+}
+
+function buildPlan() {
+  plan = parseCommand(cmdText.value);
+  drawPlan();
+}
+/* Toont hoe de Oppertet het commando verdeelt; afdeling en agent zijn per regel aan te passen. */
+function drawPlan() {
+  if (!plan) { cmdPlan.innerHTML = ""; return; }
+  const deptOpts = sel => `<option value="">Kies afdeling…</option>` + DEPTS.map(d => `<option value="${d.id}" ${d.id === sel ? "selected" : ""}>${esc(d.naam)}</option>`).join("");
+  const agentOpts = (dept, sel) => `<option value="">Hoofdtet verdeelt</option>` + AGENTS.filter(a => a.dept === dept).map(a => `<option value="${a.id}" ${a.id === sel ? "selected" : ""}>${esc(a.naam)}</option>`).join("");
+  const depts = [...new Set(plan.lines.map(l => l.dept).filter(Boolean))];
+  const pairs = [];
+  for (let i = 0; i < depts.length; i++) for (let j = i + 1; j < depts.length; j++) if (isDirect(routeFor(depts[i], depts[j]))) pairs.push(`${deptById[depts[i]].naam} ↔ ${deptById[depts[j]].naam}`);
+  cmdPlan.innerHTML = `<div class="t-meta">Oppertet maakt hiervan ${plan.lines.length} taak/taken:
+      <b>${esc(plan.title)}</b>${plan.approval ? ' <span class="label" style="color:var(--warn)">voorleggen aan Raad</span>' : ""}${plan.urgent ? ' <span class="label" style="color:var(--busy)">spoed</span>' : ""}</div>` +
+    plan.lines.map((l, i) => `<div class="plan-line" style="--dept:${l.dept ? deptById[l.dept].kleur : "var(--line)"}">
+        <select data-i="${i}" data-k="dept" aria-label="Afdeling">${deptOpts(l.dept)}</select>
+        <button type="button" data-rm="${i}" class="del" style="border:0;background:none;color:var(--muted)" aria-label="Regel verwijderen">✕</button>
+        <select data-i="${i}" data-k="agent" aria-label="Agent" ${l.dept ? "" : "disabled"} style="grid-column:1/-1">${l.dept ? agentOpts(l.dept, l.agent) : "<option>—</option>"}</select>
+      </div>`).join("") +
+    (plan.lines.length < DEPTS.length ? `<button type="button" id="planAdd" style="font-size:12px;padding:4px 8px;justify-self:start">+ afdeling toevoegen</button>` : "") +
+    (pairs.length ? `<div class="plan-note">Werken samen via directe lijn: ${pairs.map(esc).join(", ")}</div>` : "");
+  cmdPlan.querySelectorAll("select[data-k]").forEach(s => s.onchange = () => {
+    const l = plan.lines[+s.dataset.i];
+    l[s.dataset.k] = s.value;
+    if (s.dataset.k === "dept") l.agent = "";
+    drawPlan();
+  });
+  cmdPlan.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => {
+    plan.lines.splice(+b.dataset.rm, 1);
+    if (!plan.lines.length) plan.lines.push({ dept: "", agent: "" });
+    drawPlan();
+  });
+  const add = document.getElementById("planAdd");
+  if (add) add.onclick = () => { plan.lines.push({ dept: "", agent: "" }); drawPlan(); };
+}
+
+document.getElementById("cmdSend").addEventListener("click", sendCommand);
+document.getElementById("cmdClear").addEventListener("click", () => { cmdText.value = ""; cmdPlan.innerHTML = ""; cmdAudio.innerHTML = ""; currentAudio = null; plan = null; hint("Tik op de microfoon en spreek je commando in. Tik nog een keer om te stoppen."); });
+micBtn.addEventListener("click", toggleVoice);
+let parseTimer;
+cmdText.addEventListener("input", () => { clearTimeout(parseTimer); parseTimer = setTimeout(buildPlan, 250); });
+
+function sendCommand() {
+  if (listening) stopVoice();
+  if (!plan) buildPlan();
+  if (!plan) { hint("Spreek of typ eerst een commando.", true); return; }
+  const lines = plan.lines.filter(l => l.dept);
+  if (!lines.length) { hint("De Oppertet herkent geen afdeling. Kies er een in de lijst.", true); return; }
+  const cid = "c" + Date.now();
+  const ids = lines.map((l, i) => {
+    const t = { id: "t" + Date.now() + i, dept: l.dept, agent: l.agent || null, title: plan.title,
+                status: plan.urgent ? "bezig" : "volgende", approval: plan.approval, created: Date.now(), bron: currentAudio ? "voicenote" : "commando", cmd: cid };
+    tasks.unshift(t);
+    return t.id;
+  });
+  commands.unshift({ id: cid, text: plan.text, created: Date.now(), taken: ids, voicenote: !!currentAudio });
+  if (currentAudio) audioById[cid] = currentAudio;
+  save(); render();
+  lines.forEach((l, i) => pulse("flow-" + l.dept, "#f0a04b", false, i * 250));
+  hint(`Oppertet heeft ${lines.length} taak/taken uitgezet bij ${lines.map(l => deptById[l.dept].naam).join(", ")}.`);
+  cmdText.value = ""; cmdPlan.innerHTML = ""; cmdAudio.innerHTML = ""; currentAudio = null; plan = null;
+  switchTab("taken");
+}
+
 /* =====================================================================
    TAKENPANEEL
    ===================================================================== */
 const fDept = document.getElementById("fDept"), fAgent = document.getElementById("fAgent");
 
-function initForm() {
+function initForms() {
   fDept.innerHTML = DEPTS.map(d => `<option value="${d.id}">${esc(d.naam)}</option>`).join("");
   fDept.addEventListener("change", fillAgents);
   fillAgents();
@@ -498,10 +876,39 @@ function initForm() {
     document.getElementById("fApproval").checked = false;
     save(); render();
   });
+
+  const mFrom = document.getElementById("mFrom"), mTo = document.getElementById("mTo");
+  const opts = DEPTS.map(d => `<option value="${d.id}">${esc(d.naam)}</option>`).join("");
+  mFrom.innerHTML = opts; mTo.innerHTML = opts; mTo.value = "prod";
+  mFrom.onchange = mTo.onchange = updateRouteHint;
+  updateRouteHint();
+  document.getElementById("msgForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const text = document.getElementById("mText").value.trim();
+    if (!text) return;
+    if (mFrom.value === mTo.value) { updateRouteHint(); return; }
+    sendMessage(mFrom.value, mTo.value, document.getElementById("mType").value, text);
+    document.getElementById("mText").value = "";
+  });
+
+  document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 }
 function fillAgents() {
   const team = AGENTS.filter(a => a.dept === fDept.value);
   fAgent.innerHTML = `<option value="">Hoofdtet verdeelt</option>` + team.map(a => `<option value="${a.id}">${esc(a.naam)}</option>`).join("");
+}
+function updateRouteHint() {
+  const a = document.getElementById("mFrom").value, b = document.getElementById("mTo").value;
+  const r = routeFor(a, b), h = document.getElementById("mRoute");
+  h.innerHTML = !r ? `<span class="route oppertet">Kies twee verschillende afdelingen</span>`
+    : r === "direct" ? `<span class="route direct">Directe lijn</span> · 2 overdrachten bespaard`
+    : r === "controle" ? `<span class="route direct">Controlelijn Risk & Safety</span> · direct`
+    : `<span class="route oppertet">Via Oppertet</span> · geen directe lijn`;
+}
+function switchTab(tab) {
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  document.getElementById("tab-taken").hidden = tab !== "taken";
+  document.getElementById("tab-berichten").hidden = tab !== "berichten";
 }
 
 const NEXT = { volgende: "bezig", bezig: "klaar", klaar: "volgende" };
@@ -509,6 +916,9 @@ const NEXT = { volgende: "bezig", bezig: "klaar", klaar: "volgende" };
 function renderPanel() {
   const c = s => tasks.filter(t => t.status === s).length;
   const pend = tasks.filter(t => t.approval && t.status !== "klaar").length;
+  document.getElementById("cntTaken").textContent = tasks.filter(t => t.status !== "klaar").length || "";
+  const openMsgs = messages.filter(m => m.status === "bij Oppertet" || m.status === "geëscaleerd").length;
+  document.getElementById("cntMsg").textContent = openMsgs || "";
   document.getElementById("summary").innerHTML =
     `<div><b style="color:var(--busy)">${c("bezig")}</b><small>bezig</small></div>
      <div><b style="color:var(--next)">${c("volgende")}</b><small>volgende</small></div>
@@ -527,8 +937,12 @@ function renderPanel() {
     const d = deptById[t.dept], a = t.agent ? agentById[t.agent] : null;
     const li = document.createElement("li");
     li.style.setProperty("--dept", d.kleur);
+    const labels = (t.via ? `<span class="label">via ${esc(deptById[t.via].naam)}</span>` : "") +
+                   (t.bron ? `<span class="label">${t.bron === "voicenote" ? "voicenote" : "commando"}</span>` : "");
+    const audio = t.cmd && audioById[t.cmd] ? `<audio controls src="${audioById[t.cmd]}"></audio>` : "";
     li.innerHTML = `<div class="t-title">${esc(t.title)}</div>
-      <div class="t-meta">${esc(d.naam)} · ${a ? esc(a.naam) : "Hoofdtet verdeelt"}</div>
+      <div class="t-meta">${esc(d.naam)} · ${a ? esc(a.naam) : "Hoofdtet verdeelt"}${labels}</div>
+      ${audio}
       <div class="t-actions">
         <button class="chip ${t.status}" title="Klik om de status te wijzigen">${t.status}</button>
         ${t.approval && t.status !== "klaar" ? `<button class="chip approve" title="Goedkeuren als Raad">goedkeuren</button>` : ""}
@@ -539,10 +953,70 @@ function renderPanel() {
     li.querySelector(".del").onclick = () => { tasks = tasks.filter(x => x !== t); save(); render(); };
     ul.appendChild(li);
   });
+
+  renderMessages();
 }
 
 /* =====================================================================
-   DETAILVENSTER: profiel-, cultuur-, rol- en toegangskaarten
+   BERICHTEN TUSSEN AFDELINGEN
+   ===================================================================== */
+function deliver(m) {
+  m.status = "afgeleverd";
+  if (m.soort === "verzoek" && !m.taskId) {
+    const t = { id: "t" + Date.now(), dept: m.to, agent: null, title: m.text.length > 120 ? m.text.slice(0, 117) + "…" : m.text,
+                status: "volgende", approval: false, created: Date.now(), via: m.from };
+    tasks.unshift(t);
+    m.taskId = t.id;
+  }
+}
+function sendMessage(from, to, soort, text) {
+  const route = routeFor(from, to);
+  const m = { id: "m" + Date.now(), from, to, soort, text, route: route === "controle" ? "direct" : route, created: Date.now(), status: "bij Oppertet" };
+  if (route === "controle") m.controle = true;
+  if (isDirect(route)) deliver(m);
+  messages.unshift(m);
+  save(); render();
+  pulseMessage(m);
+}
+
+function renderMessages() {
+  const direct = messages.filter(m => m.route === "direct").length;
+  const viaO = messages.filter(m => m.route === "oppertet").length;
+  const open = messages.filter(m => m.status === "bij Oppertet" || m.status === "geëscaleerd").length;
+  document.getElementById("msgSummary").innerHTML =
+    `<div><b style="color:var(--done)">${direct}</b><small>direct</small></div>
+     <div><b style="color:var(--accent)">${viaO}</b><small>via Oppertet</small></div>
+     <div><b style="color:var(--warn)">${open}</b><small>wacht op Oppertet</small></div>
+     <div><b>${savedHandoffs()}</b><small>overdr. bespaard</small></div>`;
+  const ul = document.getElementById("msgList");
+  ul.innerHTML = messages.length ? "" : `<li style="border-left-color:var(--line)"><span class="t-meta">Nog geen berichten.</span></li>`;
+  messages.forEach(m => {
+    const li = document.createElement("li");
+    li.style.setProperty("--dept", deptById[m.from].kleur);
+    const routeLbl = m.route === "direct" ? `<span class="route direct">${m.controle ? "controlelijn" : "direct"}</span>` : `<span class="route oppertet">via Oppertet</span>`;
+    const stCls = m.status === "afgeleverd" ? "ok" : m.status === "tegengehouden" ? "muted" : "warn";
+    li.innerHTML = `<div class="t-meta"><b style="color:${deptById[m.from].kleur}">${esc(deptById[m.from].naam)}</b> → <b style="color:${deptById[m.to].kleur}">${esc(deptById[m.to].naam)}</b> · ${esc(m.soort)} · ${routeLbl}</div>
+      <div class="t-title" style="font-weight:500;margin-top:3px">${esc(m.text)}</div>
+      <div class="t-actions">
+        <span class="chip ${stCls}">${esc(m.status)}</span>
+        ${m.taskId ? `<span class="label">taak aangemaakt bij ${esc(deptById[m.to].naam)}</span>` : ""}
+        ${m.status === "bij Oppertet" || m.status === "geëscaleerd" ? `<button class="chip ok" data-act="door">doorzetten</button><button class="chip muted" data-act="stop">tegenhouden</button>` : ""}
+        ${m.route === "direct" && m.status === "afgeleverd" ? `<button class="chip warn" data-act="esc" title="Bij conflict, weigering of deadline-impact">escaleren</button>` : ""}
+        <button class="del" data-act="del" title="Verwijderen" aria-label="Verwijderen">✕</button>
+      </div>`;
+    li.querySelectorAll("[data-act]").forEach(b => b.onclick = () => {
+      const act = b.dataset.act;
+      if (act === "door") { deliver(m); save(); render(); pulse("flow-" + m.to, deptById[m.from].kleur); }
+      if (act === "stop") { m.status = "tegengehouden"; save(); render(); }
+      if (act === "esc")  { m.status = "geëscaleerd"; save(); render(); pulse("flow-" + m.from, "#ef5d5d", true); }
+      if (act === "del")  { messages = messages.filter(x => x !== m); save(); render(); }
+    });
+    ul.appendChild(li);
+  });
+}
+
+/* =====================================================================
+   DETAILVENSTER: profiel-, cultuur-, rol-, toegangs- en kanaalkaarten
    ===================================================================== */
 const drawerWrap = document.getElementById("drawerWrap"), drawer = document.getElementById("drawer");
 drawerWrap.addEventListener("click", e => { if (e.target === drawerWrap) closeDrawer(); });
@@ -551,6 +1025,17 @@ function closeDrawer() { drawerWrap.classList.remove("open"); }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 const list = arr => `<ul>${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
 const PERM = { rw: ["lezen + schrijven", "rw"], r: ["alleen lezen", "r"], no: ["geen toegang", "no"] };
+
+function openDrawer(html) {
+  drawer.innerHTML = `<button class="close">Sluiten</button>` + html;
+  drawer.querySelector(".close").onclick = closeDrawer;
+  drawer.querySelectorAll("[data-a]").forEach(b => b.onclick = () => openAgent(b.dataset.a));
+  drawer.querySelectorAll("[data-ch]").forEach(b => b.onclick = () => openChannel(b.dataset.ch));
+  drawer.querySelectorAll("[data-d]").forEach(b => b.onclick = () => openDept(b.dataset.d));
+  drawerWrap.classList.add("open");
+  drawer.scrollTop = 0;
+  drawer.querySelector(".close").focus();
+}
 
 function cultuurKaarten(d) {
   let h = `<div class="kaart"><h4>Cultuurkaart organisatie <small>laag 1 · waarden winnen</small></h4>
@@ -572,53 +1057,89 @@ function rolKaart(rolId) {
     <dl><dt>Bereik</dt><dd>${esc(r.bereik)}</dd><dt>Autonomie</dt><dd>${esc(r.autonomie)}</dd></dl>
     <strong style="display:block;margin-top:6px">Handelingen</strong>${list(r.handelingen)}</div>`;
 }
+function lijnenKaart(id) {
+  if (id === CONTROLELIJN) return `<div class="kaart" style="border-color:${deptById[id].kleur}"><h4>Communicatie <small>controlelijn</small></h4>
+    <p style="margin:0">Risk & Safety heeft een directe controlelijn met alle afdelingen: meelezen, toetsvragen stellen en taken blokkeren. Elke afdeling kan Risk & Safety direct om een toets vragen.</p></div>`;
+  const ch = channelsOf(id);
+  const via = DEPTS.filter(d => d.id !== id && d.id !== CONTROLELIJN && !ch.includes(d.id));
+  return `<div class="kaart"><h4>Communicatie <small>kanaalkaarten</small></h4>
+    <strong>Directe lijnen</strong>
+    <div class="team" style="margin:6px 0 8px">${ch.map(o => `<button data-ch="${chKey(id, o)}"><span class="dot" style="background:${deptById[o].kleur}"></span>${esc(deptById[o].naam)}</button>`).join("") || '<span class="t-meta">Geen</span>'}</div>
+    <strong>Via Oppertet</strong>
+    <div style="margin-top:6px">${via.map(d => `<span class="tag">${esc(d.naam)}</span>`).join("") || '<span class="t-meta">Geen</span>'}</div>
+    <p class="t-meta" style="margin:6px 0 0">Risk & Safety is altijd direct bereikbaar via de controlelijn.</p></div>`;
+}
 function geschiedenis(items) {
   return `<div class="kaart"><h4>Geschiedenis</h4>${items.length ? list(items) : `<span class="t-meta">Nog geen geschiedenis.</span>`}</div>`;
 }
-function taskLine(t) { return `${t.title} (${t.status}${t.approval && t.status !== "klaar" ? ", wacht op Raad" : ""})`; }
+function taskLine(t) { return `${t.title} (${t.status}${t.approval && t.status !== "klaar" ? ", wacht op Raad" : ""}${t.via ? ", via " + deptById[t.via].naam : ""})`; }
 
 function openAgent(id) {
   const a = agentById[id], d = a.dept ? deptById[a.dept] : null;
   const st = agentStatus(id);
   const rapporteert = a.rol === "oppertet" ? "De Raad (Sjoerd)" : a.rol === "hoofdtet" ? "Oppertet" : a.rol === "controltet" ? "Hoofdtet Risk & Safety · meldt aan de Raad" : `Hoofdtet ${d.naam}`;
-  const mine = tasks.filter(t => t.agent === id || (id === "oppertet"));
-  const hist = [...(HISTORY[id] || []), ...tasks.filter(t => t.agent === id).map(taskLine)];
-  drawer.innerHTML = `<button class="close" onclick="closeDrawer()">Sluiten</button>
-    <h3>${esc(a.naam)}</h3>
+  let extra = "";
+  let hist = [...(HISTORY[id] || []), ...tasks.filter(t => t.agent === id).map(taskLine)];
+  if (id === "oppertet") {
+    const open = messages.filter(m => m.status === "bij Oppertet" || m.status === "geëscaleerd");
+    extra = `<div class="kaart"><h4>Commando's van de Raad <small>${commands.length} ontvangen</small></h4>
+      ${commands.length ? `<ul>${commands.slice(0, 8).map(c => `<li>${c.voicenote ? "🎙 " : ""}${esc(c.text)} <span class="t-meta">→ ${c.taken.length} taak/taken</span>${audioById[c.id] ? `<audio controls src="${audioById[c.id]}"></audio>` : ""}</li>`).join("")}</ul>` : `<span class="t-meta">Nog geen commando's. Gebruik de microfoon bij het Brein of in het paneel.</span>`}</div>
+      <div class="kaart"><h4>Berichten bij de Oppertet <small>${open.length} open · ${savedHandoffs()} overdrachten bespaard</small></h4>
+      ${open.length ? list(open.map(m => `${deptById[m.from].naam} → ${deptById[m.to].naam}: ${m.text} (${m.status})`)) : `<span class="t-meta">Niets open.</span>`}</div>`;
+    hist = [...(HISTORY.oppertet || []), `${tasks.length} taken in het hele kantoor`];
+  }
+  openDrawer(`<h3>${esc(a.naam)}</h3>
     <p class="role">${esc(ROLKAARTEN[a.rol].titel)}${d ? " · " + esc(d.naam) : ""} · <span style="color:${STATUS_COLOR[st]}">${st}</span></p>
     <div class="kaart" style="border-color:${d ? d.kleur : "var(--accent)"}"><h4>Profielkaart <small>laag 3 · fictief, later te vervangen</small></h4>
       <dl><dt>Naam</dt><dd>${esc(a.naam)}</dd><dt>Rol</dt><dd>${esc(ROLKAARTEN[a.rol].titel)}</dd>
-      <dt>Afdeling</dt><dd>${d ? esc(d.naam) : "Midden: orchestratie"}</dd><dt>Rapporteert aan</dt><dd>${esc(rapporteert)}</dd>
+      <dt>Afdeling</dt><dd>${d ? `<a href="#" data-d="${d.id}" style="color:${d.kleur}">${esc(d.naam)}</a>` : "Midden: orchestratie"}</dd><dt>Rapporteert aan</dt><dd>${esc(rapporteert)}</dd>
       <dt>Specialisme</dt><dd>${esc(a.specialisme)}</dd>
       <dt>Kenmerken</dt><dd>${(a.kenmerken || ["Nog in te vullen"]).map(k => `<span class="tag">${esc(k)}</span>`).join("")}</dd></dl></div>
+    ${extra}
     ${cultuurKaarten(d)}
     ${rolKaart(a.rol)}
     ${toegangKaart(d, a.inperking)}
-    ${geschiedenis(id === "oppertet" ? [...(HISTORY.oppertet || []), `${mine.length} taken in het hele kantoor`] : hist)}`;
-  drawerWrap.classList.add("open");
-  drawer.querySelector(".close").focus();
+    ${geschiedenis(hist)}`);
 }
 
 function openDept(id) {
   const d = deptById[id], team = AGENTS.filter(a => a.dept === id);
   const dt = tasks.filter(t => t.dept === id);
-  drawer.innerHTML = `<button class="close" onclick="closeDrawer()">Sluiten</button>
-    <h3 style="color:${d.kleur}">${esc(d.naam)}</h3>
+  openDrawer(`<h3 style="color:${d.kleur}">${esc(d.naam)}</h3>
     <p class="role">Adviesboek: ${esc(d.hoofdstuk)} · ${team.length} agents</p>
     <div class="kaart" style="border-color:${d.kleur}"><h4>Team</h4>
       <div class="team">${team.map(a => `<button data-a="${a.id}"><span class="dot" style="background:${STATUS_COLOR[agentStatus(a.id)]}"></span>${esc(a.naam)}</button>`).join("")}</div></div>
+    ${lijnenKaart(id)}
     ${cultuurKaarten(d)}
     ${toegangKaart(d)}
     <div class="kaart"><h4>Rollen in deze afdeling</h4>${[...new Set(team.map(a => ROLKAARTEN[a.rol].titel))].map(r => `<span class="tag">${esc(r)}</span>`).join("")}</div>
-    ${geschiedenis([...team.flatMap(a => HISTORY[a.id] || []), ...dt.map(t => (t.agent ? agentById[t.agent].naam + ": " : "") + taskLine(t))])}`;
-  drawer.querySelectorAll("[data-a]").forEach(b => b.onclick = () => openAgent(b.dataset.a));
-  drawerWrap.classList.add("open");
-  drawer.querySelector(".close").focus();
+    ${geschiedenis([...team.flatMap(a => HISTORY[a.id] || []), ...dt.map(t => (t.agent ? agentById[t.agent].naam + ": " : "") + taskLine(t))])}`);
+}
+
+function openChannel(key) {
+  const k = kanaalByKey[key], A = deptById[k.a], B = deptById[k.b];
+  const msgs = messages.filter(m => chKey(m.from, m.to) === key);
+  openDrawer(`<h3><span style="color:${A.kleur}">${esc(A.naam)}</span> ↔ <span style="color:${B.kleur}">${esc(B.naam)}</span></h3>
+    <p class="role">Kanaalkaart · directe lijn · ${msgs.length} bericht(en) · ${msgs.filter(m => m.status !== "geëscaleerd").length * 2} overdrachten bespaard</p>
+    <div class="kaart" style="border-image:linear-gradient(90deg, ${A.kleur}, ${B.kleur}) 1"><h4>Doel</h4><p style="margin:0">${esc(k.doel)}</p>
+      <strong style="display:block;margin-top:8px">Voorbeelden</strong>${list(k.voorbeelden)}</div>
+    <div class="kaart"><h4>Spelregels <small>gelden voor alle directe lijnen</small></h4>${list(SPELREGELS)}</div>
+    <div class="kaart"><h4>Toegang <small>blijft per afdeling</small></h4>
+      <p class="t-meta" style="margin:0 0 6px">Een directe lijn geeft geen toegang tot elkaars tools. Elke kant voert uit met de eigen toegangskaart.</p>
+      <div class="team"><button data-d="${A.id}">${esc(A.naam)}</button><button data-d="${B.id}">${esc(B.naam)}</button></div></div>
+    <div class="kaart"><h4>Berichten</h4>${msgs.length ? list(msgs.map(m => `${deptById[m.from].naam} → ${deptById[m.to].naam} (${m.soort}): ${m.text} · ${m.status}`)) : `<span class="t-meta">Nog geen verkeer op deze lijn.</span>`}
+      <div class="row" style="margin-top:10px"><button class="primary" id="chSend">Bericht sturen over deze lijn</button></div></div>`);
+  document.getElementById("chSend").onclick = () => {
+    closeDrawer();
+    switchTab("berichten");
+    document.getElementById("mFrom").value = k.a; document.getElementById("mTo").value = k.b; updateRouteHint();
+    document.getElementById("mText").focus();
+  };
 }
 
 /* ===================================================================== */
 document.getElementById("pilot").textContent = `${PILOT.naam} · ${PILOT.omschrijving}`;
-initForm();
+initForms();
 render();
 </script>
 </body>
