@@ -2,89 +2,90 @@
 
 ## Het idee
 
-Een organisatie van AI-agents in een **afgesloten omgeving**. Eén agent, de
-**manager**, stuurt de andere agents aan. Jij bent de baas en volgt alles via
-een **dashboard in spelletjesstijl**: een kantoorgebouw van bovenaf, waar je
-de agents ziet werken, lopen, vergaderen en rusten, zoals in een echt
-bedrijf.
+Een organisatie van AI-agents in een **afgesloten omgeving**, met een
+duidelijke hiërarchie:
 
-| Spelelement | Wat het in de organisatie betekent |
-|---|---|
-| Manager (UILBERT) | De orkestrator-agent die werk verdeelt en bewaakt |
-| Bureau in een afdeling | Een worker-agent met een specialisme |
-| Envelopje heen / terug | Een opdracht van de manager / een verslag terug |
-| Vergaderzaal | Overleg: status ophalen, daarna werk verdelen |
-| Energie | Capaciteit (later: resterend budget van een agent) |
-| Level / XP | Ervaring, afgeronde taken |
-| Wilde bug + gevecht | Een fout of incident tijdens het werk |
-| Poort + firewall | De grens van de afgesloten omgeving |
+```
+DE BAAS (jij) → GODFRED (directeur) → AFDELINGSHOOFDEN → AGENTS
+```
+
+Jij stuurt alleen Godfred aan. Godfred stuurt de afdelingshoofden aan via
+het **prikbord** in het midden van het gebouw. De hoofden sturen hun agents
+aan. De output loopt dezelfde weg terug: agent → hoofd (controle) → Godfred
+(goedkeuren of revisie) → baas (project af). Dat is de **feedbackloop**.
+
+Je volgt alles via een dashboard in retro-spelstijl: een kantoorgebouw van
+bovenaf waar je ziet wie werkt, wie taken ophaalt en wie output brengt.
 
 ## Architectuur
 
 ```
-            ┌──────────────┐  commando's   ┌──────────────┐  gebeurtenissen  ┌─────────────┐
- staat ───▶ │   MANAGER    │ ────────────▶ │ ORGANISATIE  │ ───────────────▶ │  DASHBOARD  │
-            │ director.js  │               │   org.js     │                  │ world/ui.js │
-            └──────────────┘               └──────────────┘                  └─────────────┘
-                   ▲                              │
-                   └──────────── staat ───────────┘
+            ┌──────────────────────┐  commando's   ┌──────────────┐  gebeurtenissen  ┌─────────────┐
+ staat ───▶ │ BREINEN (brains.js)  │ ────────────▶ │ ORGANISATIE  │ ───────────────▶ │  DASHBOARD  │
+            │ Godfred + hoofden    │               │   org.js     │                  │ world/ui.js │
+            └──────────────────────┘               └──────────────┘                  └─────────────┘
 ```
 
-Drie lagen, strikt gescheiden:
+1. **Breinen** (`js/brains.js`) kijken naar de staat en geven alleen
+   **commando's**. Godfred heeft één brein, elk afdelingshoofd een eigen.
+2. **Organisatie** (`js/org.js`) controleert of iemand een commando mag geven
+   (een hoofd kan alleen zijn eigen team aansturen), voert het uit, laat
+   iedereen lopen en publiceert **gebeurtenissen**.
+3. **Dashboard** (`js/world.js`, `js/ui.js`) luistert alleen.
 
-1. **Manager** (`js/director.js`) kijkt naar de staat en geeft alleen
-   **commando's**. Hij verandert zelf niets.
-2. **Organisatie** (`js/org.js`) voert commando's uit, laat agents lopen,
-   werken en vergaderen, en publiceert **gebeurtenissen**.
-3. **Dashboard** (`js/world.js`, `js/ui.js`) luistert alleen naar
-   gebeurtenissen en de staat.
+### Commando's
 
-De baas (jij) gebruikt dezelfde commando's via de knoppen. Er is dus één
-weg om iets in de organisatie te veranderen.
-
-### Commando's (wat de manager kan)
-
-| Commando | Velden | Effect |
+| Wie | Commando | Effect |
 |---|---|---|
-| `assign` | `questId`, `agentIds[]` | Werk toewijzen aan één of meer agents |
-| `meeting` | `topic` | Iedereen naar de vergaderzaal |
-| `rest` | `agentId` | Agent naar de lounge |
-| `guard` | `agentId` | Agent bij de poort posten |
-| `createQuest` | `dept`, `title?`, `difficulty?` | Nieuw werk inplannen |
-| `say` | `agentId`, `text` | Tekstballon |
+| Baas | `order {title, dept?, difficulty}` | Opdracht aan Godfred |
+| Baas | `meeting`, `rest` | Algemene vergadering, agent naar pauze |
+| Godfred | `plan {projectId}` | Opdracht opknippen in taken per afdeling |
+| Godfred | `initiative {dept}` | Zelf werk bedenken |
+| Godfred | `post` | Naar het prikbord lopen en taken ophangen |
+| Godfred | `review {taskId}` + `feedback {taskId, verdict, note}` | Output beoordelen: `goed` of `revisie` |
+| Godfred | `meeting {scope: 'mt'|'alle'}` | Overleg |
+| Hoofd | `pickup {count}` | Taken van het prikbord halen |
+| Hoofd | `assign {taskId, agentId}` | Taak aan een agent geven |
+| Hoofd | `review {taskId}` + `check {taskId, verdict, note}` | Werk controleren: `ok` of `beter` |
+| Hoofd | `deliver` | Gecontroleerde output naar Godfred brengen |
+| Hoofd | `rest`, `guard` | Agent naar pauze, agent op wacht |
 
-### Gebeurtenissen (wat het dashboard ziet)
+### Levensloop van een taak
+
+`concept` → `bord` → `opgehaald` → `bezig` → `controle` → `gecontroleerd`
+→ `onderweg` → `ingeleverd` → `goedgekeurd`.
+
+Twee terugkoppelingen: het hoofd kan een taak terugzetten op zijn stapel
+(`beter`), Godfred kan hem terughangen op het prikbord (`revisie`).
+
+### Gebeurtenissen
 
 ```json
-{ "kind": "order", "from": 1, "to": [4, 5], "text": "UILBERT → DEX & PIP: \"API koppelen\"", "time": "DAG 2 10:15" }
+{ "kind": "feedback", "from": 1, "to": [8], "text": "GODFRED: \"Klantanalyse\" moet over. Graag met concrete cijfers.", "time": "DAG 2 10:15" }
 ```
 
-Soorten: `order`, `report`, `plan`, `meeting`, `say`, `quest`, `levelup`,
-`bug`, `win`, `lose`, `security`, `alarm`, `recruit`, `warn`, `info`.
+Soorten: `opdracht`, `project`, `plan`, `post`, `pickup`, `order`, `output`,
+`check`, `deliver`, `approve`, `feedback`, `meeting`, `rest`, `say`,
+`security`, `alarm`, `recruit`, `warn`, `info`, `levelup`.
 
 ## Fase 1: simulatie (klaar)
 
-- Opengewerkt kantoor met vijf afdelingen, een managerkantoor, een centrale
-  vergaderzaal, een lounge en een wachthuisje bij de poort.
-- Regelgebaseerde manager: dagelijkse stand-up, crisisoverleg, werk
-  verdelen (duo's voor zware klussen), wachtrooster, rust geven, backlog
-  aanvullen.
-- Agents lopen echt over de plattegrond (routes zoeken), zitten aan hun
-  eigen bureau, halen koffie, rapporteren bij de manager en slapen 's nachts
-  in de lounge.
+- Kantoor met vijf afdelingen (elk een hoofd + 2 à 3 agents), directiekamer,
+  centraal prikbord, vergaderzaal, lounge en poortwacht.
+- Regelgebaseerde breinen voor Godfred en de hoofden, met de volledige
+  keten en beide feedbackloops.
+- Kwaliteit per taak (sterren) hangt af van level en revisies.
 
 ## Fase 2: echte agents
 
-1. **Manager wordt een AI-agent.** De commando's hierboven worden zijn
-   *tools* (`assign_task`, `call_meeting`, `send_to_rest`, `post_guard`,
-   `create_task`). De staat van de organisatie gaat als context mee.
-   `director.js` wordt dan een dunne laag die de tool-calls van het model
-   doorgeeft aan `org.execute()`.
-2. **Workers worden AI-agents.** Elke worker krijgt een rol-prompt passend
-   bij zijn afdeling en alleen de tools van die afdeling. Een `assign`
-   start een echte taak, en het resultaat komt terug als `report`.
-3. **Vergaderingen worden echt.** Elke worker levert een korte status in,
-   de manager vat samen en verdeelt het werk opnieuw.
+1. **Godfred wordt een AI-agent.** Zijn commando's worden zijn *tools*.
+   `brains.js` stuurt dan de staat naar het model en geeft de tool-calls
+   door aan `org.execute()`. Het beoordelen (`feedback`) wordt echt: Godfred
+   leest de output en legt de lat.
+2. **Afdelingshoofden worden AI-agents** met hun eigen, kleinere set tools
+   en alleen zicht op hun eigen afdeling.
+3. **Agents worden AI-agents.** Een `assign` start een echte taak; het
+   resultaat is de output die door de keten terugloopt.
 4. **Afgesloten omgeving.** Agents draaien in een container zonder vrije
    internettoegang. Het netwerkbeleid is de poort: geblokte verbindingen
    verschijnen als "indringer geblokt".
@@ -97,16 +98,19 @@ Soorten: `order`, `report`, `plan`, `meeting`, `say`, `quest`, `levelup`,
 
 | Rol | Model | Waarom |
 |---|---|---|
-| Manager | Claude Opus 5.5 | Beslist over iedereen. Kwaliteit van plannen telt het zwaarst. |
-| Workers (denkwerk: code, data) | Claude Sonnet 5.5 | Goed en een stuk goedkoper. Er draaien er veel tegelijk. |
-| Workers (simpel/veel: samenvatten, sorteren) | Claude Haiku 5.5 | Zeer goedkoop voor hoog volume. |
+| Godfred | Claude Opus 5.5 | Plant en beoordeelt alles. Kwaliteit telt het zwaarst. |
+| Afdelingshoofden | Claude Sonnet 5.5 | Verdelen en controleren binnen één afdeling. |
+| Agents (denkwerk: code, data) | Claude Sonnet 5.5 | Goed en een stuk goedkoper. Er draaien er veel tegelijk. |
+| Agents (simpel/veel: samenvatten, sorteren) | Claude Haiku 5.5 | Zeer goedkoop voor hoog volume. |
 | Uitzonderlijk zware klussen | Claude Fable 5.1 | Het krachtigst, maar ruim 2x de prijs van Opus. Alleen gericht inzetten. |
 
 ## Fase 3: ideeën
 
 - Goedkeuringen: een agent die iets riskants wil, vraagt het via het
   dialoogvenster aan de baas ("BITBIT wil deployen. JA / NEE").
-- Afdelingsoverleg (alleen één team) naast de grote vergadering.
+- Afdelingsoverleg (hoofd + eigen team) naast het MT-overleg.
+- Jij als baas kunt een goedgekeurd project alsnog afkeuren: de lus gaat dan
+  nog één laag hoger.
 - Evolutie: na genoeg levels een nieuwe sprite en meer tools.
 - Meerdere verdiepingen of gebouwen = meerdere projecten.
 

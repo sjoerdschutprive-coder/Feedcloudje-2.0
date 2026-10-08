@@ -146,28 +146,6 @@ window.FC = window.FC || {};
     },
   };
 
-  const BUG = {
-    palette: { r: '#d63c3c', m: '#7b3fa0' },
-    half: [
-      '........',
-      '...k....',
-      '....k...',
-      '.....kkk',
-      '....krrr',
-      '...krwwr',
-      '...krwkr',
-      '..kkrrrr',
-      '.k.kmmmk',
-      'k.kmmmmk',
-      '..kmmmmk',
-      '.kkmmmmk',
-      'k.kmmmmk',
-      '...kmmmk',
-      '....kkkk',
-      '........',
-    ],
-  };
-
   function build(def) {
     const pal = Object.assign({}, BASE, def.palette);
     const canvas = document.createElement('canvas');
@@ -188,7 +166,7 @@ window.FC = window.FC || {};
 
   const cache = {};
   function sprite(species) {
-    if (!cache[species]) cache[species] = build(species === 'BUG' ? BUG : SPECIES[species]);
+    if (!cache[species]) cache[species] = build(SPECIES[species]);
     return cache[species];
   }
 

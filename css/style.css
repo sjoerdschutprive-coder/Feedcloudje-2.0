@@ -233,7 +233,6 @@ body {
 
 .status { font-size: 10px; }
 .status.working { color: #2e6fd8; }
-.status.battling { color: var(--accent); }
 .status.resting { color: #d64f7a; }
 .status.guarding { color: #5b6478; }
 
@@ -251,11 +250,13 @@ body {
   margin: 4px 0;
 }
 .dept-count { color: var(--accent-2); }
-.team-row.lead { background: #fff6d6; }
-.type-tag.lead-tag { background: var(--accent-2); color: var(--ink); text-shadow: none; }
+.team-row.role-director { background: #fff6d6; }
+.team-row.role-head { background: #f1ede0; }
+.team-row.role-agent { margin-left: 14px; }
+.type-tag.role-director { background: var(--accent-2); color: var(--ink); text-shadow: none; }
 .status.meeting { color: #5873b5; }
 .status.coffee { color: #8b5a2b; }
-.status.visiting { color: #a8743f; }
+.status.reviewing { color: #a8743f; }
 
 /* Detailkaart in "dex"-stijl */
 .detail {
@@ -309,14 +310,6 @@ body {
 .form-row { display: flex; gap: 6px; }
 .form-row select:first-child { flex: 1; }
 
-.quest {
-  padding: 8px;
-  border-bottom: 2px dashed var(--paper-2);
-}
-.quest .line { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; }
-.quest .meta { font-size: 10px; color: var(--muted); margin: 4px 0; display: flex; justify-content: space-between; gap: 6px; }
-.quest.klaar { opacity: 0.55; }
-.quest.custom .line::before { content: "★ "; color: var(--accent); }
 .section-title { font-size: 10px; color: var(--muted); margin: 12px 0 4px; }
 
 /* ---------- logboek ---------- */
@@ -329,9 +322,10 @@ body {
 }
 .log-list .time { color: var(--muted); font-size: 9px; display: block; }
 .log-list .levelup { color: #2e6fd8; }
-.log-list .quest { color: #2f9e5b; }
-.log-list .bug, .log-list .lose { color: #b0446a; }
-.log-list .win { color: #7b3fa0; }
+.log-list .feedback { color: var(--accent); }
+.log-list .approve { color: #2f9e5b; }
+.log-list .opdracht, .log-list .project { color: #7b3fa0; }
+.log-list .post, .log-list .pickup, .log-list .deliver, .log-list .check, .log-list .output { color: #5b6478; }
 .log-list .alarm, .log-list .warn { color: var(--accent); }
 .log-list .security { color: #5b6478; }
 .log-list .recruit { color: #e07b24; }
@@ -340,93 +334,80 @@ body {
 .log-list .plan { color: var(--muted); }
 .log-list .meeting { color: #5873b5; }
 
-/* ---------- gevechtsscherm ---------- */
-
-/* Klein venster in de hoek, zodat het kantoor zichtbaar blijft. */
-.battle {
-  position: absolute;
-  right: 22px;
-  bottom: 22px;
-  width: min(46%, 520px);
-  aspect-ratio: 4 / 3.3;
-  background: linear-gradient(#f8f8e8 0 58%, #c8e8a8 58% 100%);
-  border: 4px solid var(--ink);
-  border-radius: 8px;
-  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35);
-  line-height: 1.4;
-  display: flex;
-  flex-direction: column;
-  animation: battle-in 0.5s steps(5);
-  overflow: hidden;
-}
-.battle-title {
-  background: var(--ink);
-  color: var(--accent-2);
-  font-size: 11px;
-  padding: 4px 8px;
-}
-.battle-title span { color: #fff; }
-@keyframes battle-in {
-  from { clip-path: inset(0 50% 0 50%); }
-  to { clip-path: inset(0 0 0 0); }
-}
-
-.battle-field { position: relative; flex: 1; }
-
-.infobox {
-  position: absolute;
-  width: 46%;
-  background: var(--paper);
-  border: 3px solid var(--ink);
-  border-radius: 8px 8px 8px 0;
-  padding: 5px 8px;
-  font-size: 11px;
-}
-.infobox.enemy { top: 8%; left: 5%; }
-.infobox.ally { bottom: 8%; right: 5%; border-radius: 8px 8px 0 8px; }
-.infobox .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.infobox .hp { margin-top: 6px; }
-.infobox .hp-label {
-  font-size: 9px;
-  background: var(--ink);
-  color: var(--accent-2);
-  padding: 1px 4px;
-  border-radius: 3px;
-}
-.infobox .num { justify-content: flex-end; font-size: 11px; margin-top: 4px; }
-
-.mon { position: absolute; width: 22%; aspect-ratio: 1.2; }
-.enemy-mon { top: 6%; right: 10%; }
-.ally-mon { bottom: 4%; left: 8%; width: 26%; }
-.platform {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 28%;
-  background: #a8d888;
-  border: 3px solid #6a9a50;
-  border-radius: 50%;
-}
-.mon-sprite { position: absolute; left: 10%; right: 10%; bottom: 12%; }
-.mon-sprite canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
-.mon-sprite.hit { animation: hit 0.4s steps(4); }
-.mon-sprite.faint { animation: faint 0.6s forwards; }
-@keyframes hit { 25%, 75% { opacity: 0; transform: translateX(4px); } }
-@keyframes faint { to { transform: translateY(60%); opacity: 0; } }
-
-.battle-text {
-  margin: 0 6px 6px;
-  padding: 8px 12px;
-  font-size: 12px;
-  min-height: 46px;
-}
-
 @media (max-width: 700px) {
-  .battle { width: calc(100% - 44px); }
   body { padding: 8px; font-size: 12px; }
   .brand { font-size: 15px; }
-  .battle-text, .dialog { font-size: 12px; }
-  .infobox { font-size: 10px; padding: 4px 6px; width: 46%; }
-  .battle-text { padding: 8px 10px; min-height: 40px; }
+  .dialog { font-size: 12px; }
+  .tab { font-size: 10px; }
 }
+
+/* ---------- prikbord & output ---------- */
+
+.badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 4px;
+  margin-left: 2px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 9px;
+}
+
+.task, .project {
+  padding: 8px;
+  border-bottom: 2px dashed var(--paper-2);
+}
+.task .line, .project .line { display: flex; justify-content: space-between; gap: 6px; font-size: 11px; }
+.task .meta, .project .meta {
+  font-size: 9px;
+  color: var(--muted);
+  margin: 4px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.task .bar, .project .bar { height: 7px; }
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+.flag {
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #fff;
+  margin-left: 4px;
+}
+.flag.boss { background: #7b3fa0; }
+.flag.rev { background: var(--accent); }
+.flag.fix { background: #a8743f; }
+.note {
+  font-size: 9px;
+  font-style: italic;
+  color: #6b4a1a;
+  background: #fff6d6;
+  border-radius: 4px;
+  padding: 4px 6px;
+  margin-top: 4px;
+}
+.stars { color: #e0a800; }
+.project.klaar { opacity: 0.7; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.chip {
+  font-size: 8px;
+  border: 2px solid;
+  border-radius: 4px;
+  padding: 1px 4px;
+  background: #fff;
+}
+.chip.ok { background: #d8f3c8; }
+.chip.ok::before { content: "✓ "; }
+.section-title b { color: var(--accent); }
+.empty { font-size: 11px; color: var(--muted); padding: 12px 4px; }

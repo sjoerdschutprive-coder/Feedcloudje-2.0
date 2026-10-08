@@ -25,7 +25,7 @@ window.FC = window.FC || {};
   };
 
   // Toestanden waarin een agent zit (geen loop-animatie).
-  const SEATED = new Set(['working', 'idle', 'meeting', 'battling', 'resting', 'coffee', 'visiting']);
+  const SEATED = new Set(['working', 'idle', 'meeting', 'reviewing', 'resting', 'coffee']);
 
   function px(ctx, x, y, w, h, color) {
     ctx.fillStyle = color;
@@ -239,7 +239,7 @@ window.FC = window.FC || {};
       for (let y = 0; y < MAP.H; y++) {
         for (let x = 0; x < MAP.W; x++) {
           const f = MAP.furn[y][x];
-          if (f && (f.kind === 'desk' || f.kind === 'bossdesk' || f.kind === 'table')) this.props.push({ x, y, f });
+          if (f && ['desk', 'headdesk', 'bossdesk', 'table'].includes(f.kind)) this.props.push({ x, y, f });
         }
       }
 
@@ -289,21 +289,61 @@ window.FC = window.FC || {};
         return;
       }
       const boss = p.f.kind === 'bossdesk';
+      const head = p.f.kind === 'headdesk';
+      const top = boss ? '#7a3a2a' : head ? '#8a5530' : '#b07a48';
+      const front = boss ? '#5a2a1e' : head ? '#6b3f22' : '#86562f';
+      const inset = boss ? 0 : 1;
       px(ctx, x, y - 3, T, 14, C.outline);
-      px(ctx, x + (boss ? 0 : 1), y - 2, T - (boss ? 0 : 2), 8, boss ? '#7a3a2a' : '#b07a48');
-      px(ctx, x + (boss ? 0 : 1), y + 6, T - (boss ? 0 : 2), 4, boss ? '#5a2a1e' : '#86562f');
-      // Beeldscherm: licht op als er iemand achter werkt.
+      px(ctx, x + inset, y - 2, T - inset * 2, 8, top);
+      px(ctx, x + inset, y + 6, T - inset * 2, 4, front);
+      // Beeldscherm: licht op als er iemand achter werkt of controleert.
       const occ = occupants.get(`${p.x},${p.y - 1}`);
       if (!boss || p.x === 16) {
-        const working = occ && (occ.state === 'working' || occ.state === 'battling');
+        const busy = occ && (occ.state === 'working' || occ.state === 'reviewing');
         const flick = Math.floor(this.time * 6 + p.x) % 3;
         px(ctx, x + 4, y - 7, 8, 6, C.outline);
-        px(ctx, x + 5, y - 6, 6, 4, working ? (occ.state === 'battling' ? '#ff6b6b' : flick ? '#7fe0ff' : '#b8f0ff') : '#2a3b5c');
-        if (working && occ.state === 'working') px(ctx, x + 6, y - 5 + flick % 2, 3, 1, '#2a3b5c');
+        px(ctx, x + 5, y - 6, 6, 4, busy ? (flick ? '#7fe0ff' : '#b8f0ff') : '#2a3b5c');
+        if (busy) px(ctx, x + 6, y - 5 + flick % 2, 3, 1, '#2a3b5c');
         px(ctx, x + 7, y - 1, 2, 1, C.outline);
+      }
+      if (head) {
+        // Vlaggetje in de kleur van de afdeling + naambordje.
+        const col = this.org.deptColor(p.f.dept);
+        px(ctx, x + 13, y - 9, 1, 9, C.outline);
+        px(ctx, x + 9, y - 9, 4, 3, col);
+        px(ctx, x + 3, y + 6, 10, 3, '#ffd23f');
       }
       if (boss && p.x === 15) { px(ctx, x + 4, y - 6, 2, 5, '#ffd23f'); px(ctx, x + 3, y - 7, 4, 2, '#ffe27a'); }
       if (boss && p.x === 17) { px(ctx, x + 4, y - 3, 7, 4, '#ffffff'); px(ctx, x + 5, y - 2, 5, 1, '#9aa3b5'); }
+    }
+
+    // Het prikbord in het midden van het gebouw, met een kaartje per taak.
+    drawBoard(ctx) {
+      const B = MAP.BOARD;
+      const x0 = B.x0 * T + 2, x1 = (B.x1 + 1) * T - 2;
+      const y0 = B.y * T - 7, y1 = B.y * T + 15;
+      px(ctx, x0 - 1, y0 - 1, x1 - x0 + 2, y1 - y0 + 2, C.outline);
+      px(ctx, x0, y0, x1 - x0, y1 - y0, '#6b3f22');
+      px(ctx, x0 + 2, y0 + 2, x1 - x0 - 4, y1 - y0 - 4, '#c8955a');
+      const cards = this.org.state.tasks.filter(t => t.status === 'bord');
+      const cols = 8, cw = 8, ch = 5;
+      cards.slice(0, cols * 3).forEach((t, i) => {
+        const cx = x0 + 4 + (i % cols) * (cw + 1);
+        const cy = y0 + 3 + Math.floor(i / cols) * (ch + 1);
+        px(ctx, cx, cy, cw, ch, '#ffffff');
+        px(ctx, cx, cy, cw, 2, this.org.deptColor(t.dept));
+        if (t.revision) px(ctx, cx + cw - 2, cy + ch - 2, 2, 2, '#e8453c');
+        if (t.boss) px(ctx, cx + 1, cy + 3, 2, 1, '#ffd23f');
+      });
+      if (cards.length > cols * 3) text(ctx, `+${cards.length - cols * 3}`, x1 - 14, y1 - 8, '#ffffff', 6);
+      // bordje
+      const label = 'PRIKBORD';
+      ctx.font = 'bold 6px "Courier New", monospace';
+      const tw = Math.ceil(ctx.measureText(label).width) + 6;
+      const lx = Math.round((x0 + x1) / 2 - tw / 2), ly = y0 - 9;
+      px(ctx, lx - 1, ly - 1, tw + 2, 9, C.outline);
+      px(ctx, lx, ly, tw, 7, '#ffd23f');
+      text(ctx, label, lx + 3, ly, C.outline, 6);
     }
 
     drawAgent(ctx, a) {
@@ -326,6 +366,15 @@ window.FC = window.FC || {};
     drawAgentOverlay(ctx, a) {
       const X = Math.round(a.x * T), Y = Math.round(a.y * T) - 5;
       const org = this.org;
+      // Stapeltje taakkaarten dat iemand bij zich draagt.
+      if (a.carry && a.carry.length && a.state === 'walking') {
+        a.carry.slice(0, 4).forEach((id, i) => {
+          const t = org.task(id);
+          px(ctx, X + 1 + i, Y - 6 - i * 2, 9, 6, C.outline);
+          px(ctx, X + 2 + i, Y - 5 - i * 2, 7, 4, '#ffffff');
+          if (t) px(ctx, X + 2 + i, Y - 5 - i * 2, 7, 1, org.deptColor(t.dept));
+        });
+      }
       if (a.id === this.selectedId) {
         const blink = Math.floor(this.time * 4) % 2;
         px(ctx, X + 5, Y - 9 - blink, 7, 2, '#ff3b3b');
@@ -334,14 +383,20 @@ window.FC = window.FC || {};
         px(ctx, X + 8, Y - 5 - blink, 1, 1, '#ff3b3b');
       }
       if (a.state === 'working') {
-        const q = org.quest(a.questId);
+        const q = org.task(a.taskId);
         if (q) {
           const pct = Math.min(1, q.progress / q.required);
           px(ctx, X + 1, Y - 3, 14, 4, C.outline);
           px(ctx, X + 2, Y - 2, Math.round(12 * pct), 2, '#ffd23f');
         }
-      } else if (a.state === 'battling') {
-        if (Math.floor(this.time * 4) % 2) { px(ctx, X + 7, Y - 8, 3, 6, '#ff3b3b'); px(ctx, X + 7, Y - 1, 3, 2, '#ff3b3b'); }
+      } else if (a.state === 'reviewing') {
+        // Document met vergrootglas: hoofd of Godfred controleert output.
+        px(ctx, X + 11, Y - 4, 6, 8, C.outline);
+        px(ctx, X + 12, Y - 3, 4, 6, '#ffffff');
+        px(ctx, X + 13, Y - 2, 2, 1, '#9aa3b5');
+        px(ctx, X + 13, Y, 2, 1, '#9aa3b5');
+        const bob = Math.floor(this.time * 3) % 2;
+        px(ctx, X + 14 + bob, Y + 1, 3, 3, '#3fa9f5');
       } else if (a.state === 'resting') {
         const ph = (this.time * 0.7 + a.id * 0.3) % 1;
         ctx.globalAlpha = 1 - ph;
@@ -354,12 +409,12 @@ window.FC = window.FC || {};
         px(ctx, X + 12, Y - 1, 5, 6, C.outline);
         px(ctx, X + 13, Y, 3, 4, '#ffd23f');
       }
-      if (a.role === 'lead') {
-        const lbl = 'MANAGER';
+      if (a.role === 'director' || a.role === 'head') {
+        const lbl = a.role === 'director' ? 'DIRECTEUR' : 'HOOFD';
         ctx.font = 'bold 5px "Courier New", monospace';
         const w = Math.ceil(ctx.measureText(lbl).width) + 4;
-        px(ctx, X + 8 - w / 2, Y + 19, w, 7, '#ffd23f');
-        text(ctx, lbl, X + 10 - w / 2, Y + 20, C.outline, 5);
+        px(ctx, X + 8 - w / 2, Y + 19, w, 7, a.role === 'director' ? '#ffd23f' : org.deptColor(a.dept));
+        text(ctx, lbl, X + 10 - w / 2, Y + 20, a.role === 'director' ? C.outline : '#ffffff', 5);
       }
     }
 
@@ -416,6 +471,8 @@ window.FC = window.FC || {};
         }
       }
 
+      this.drawBoard(ctx);
+
       // Agents en meubels samen sorteren op diepte.
       const occupants = new Map();
       for (const a of org.state.agents) occupants.set(`${Math.round(a.x)},${Math.round(a.y)}`, a);
@@ -452,21 +509,6 @@ window.FC = window.FC || {};
         text(ctx, p.text, X - w / 2 + 1, Y + 1, C.outline);
         text(ctx, p.text, X - w / 2, Y, p.color);
         ctx.globalAlpha = 1;
-      }
-
-      // Dag/nacht
-      const h = org.state.minute / 60;
-      let night = 0;
-      if (h >= 20 || h < 5) night = 1;
-      if (h >= 18 && h < 20) night = (h - 18) / 2;
-      if (h >= 5 && h < 7) night = 1 - (h - 5) / 2;
-      if (night > 0) {
-        ctx.fillStyle = `rgba(20, 24, 80, ${0.42 * night})`;
-        ctx.fillRect(0, 0, MAP.W * T, MAP.H * T);
-      }
-      if (h >= 17 && h < 19) {
-        ctx.fillStyle = `rgba(255, 140, 60, ${0.1 * (1 - Math.abs(h - 18))})`;
-        ctx.fillRect(0, 0, MAP.W * T, MAP.H * T);
       }
 
       ctx.setTransform(1, 0, 0, 1, 0, 0);

@@ -13,21 +13,21 @@
       <span>FEEDCLOUDJE <small>HQ</small></span>
     </div>
     <div class="stats">
-      <div class="stat" title="Speltijd"><span class="label">TIJD</span><span id="clock">DAG 1 07:00</span></div>
-      <div class="stat" title="Credits: verdien je met quests, besteed je aan werven"><span class="label">CREDITS</span><span id="credits">0 ⛁</span></div>
+      <div class="stat" title="Speltijd"><span class="label">TIJD</span><span id="clock">DAG 1 08:30</span></div>
+      <div class="stat" title="Verdien je met goedgekeurd werk, besteed je aan werven"><span class="label">CREDITS</span><span id="credits">0 ⛁</span></div>
       <div class="stat" title="Hoe goed de afgesloten omgeving dicht zit"><span class="label">FIREWALL</span>
         <span class="bar small"><span id="firewall-bar" class="fill"></span></span><span id="firewall">100%</span>
       </div>
-      <div class="stat"><span class="label">QUESTS</span><span id="quests-done">0</span></div>
-      <div class="stat"><span class="label">MEETINGS</span><span id="meetings">0</span></div>
-      <div class="stat"><span class="label">BUGS</span><span id="bugs-beaten">0</span></div>
-      <div class="stat"><span class="label">GEBLOKT</span><span id="blocked">0</span></div>
+      <div class="stat" title="Afgeronde projecten"><span class="label">PROJECTEN</span><span id="projects-done">0</span></div>
+      <div class="stat" title="Taken goedgekeurd door Godfred"><span class="label">GOEDGEKEURD</span><span id="tasks-approved">0</span></div>
+      <div class="stat" title="Taken die Godfred terugstuurde"><span class="label">REVISIES</span><span id="revisions">0</span></div>
+      <div class="stat" title="Indringers tegengehouden bij de poort"><span class="label">GEBLOKT</span><span id="blocked">0</span></div>
     </div>
     <div class="controls">
       <button id="btn-pause" class="btn" title="Pauze (spatie)">❚❚</button>
       <button id="btn-speed" class="btn" title="Snelheid">1x</button>
-      <button id="btn-meeting" class="btn" title="Roep een vergadering bijeen">VERGADER</button>
-      <button id="btn-recruit" class="btn btn-accent" title="Nieuwe medewerker werven">+ WERVEN</button>
+      <button id="btn-meeting" class="btn" title="Roep iedereen bijeen in de vergaderzaal">VERGADER</button>
+      <button id="btn-recruit" class="btn btn-accent" title="Nieuwe agent werven">+ WERVEN</button>
       <button id="btn-reset" class="btn btn-ghost" title="Opnieuw beginnen">↺</button>
     </div>
   </header>
@@ -35,25 +35,7 @@
   <main class="layout">
     <section class="world-col">
       <div class="world-frame box">
-        <canvas id="world" aria-label="Kaart van de organisatie"></canvas>
-
-        <div id="battle" class="battle hidden" aria-live="polite">
-          <div class="battle-title">GEVECHT <span id="b-where"></span></div>
-          <div class="battle-field">
-            <div class="infobox enemy">
-              <div class="row"><b id="b-enemy-name">BUG</b><span id="b-enemy-lvl">Lv1</span></div>
-              <div class="row hp"><span class="hp-label">HP</span><span class="bar"><span id="b-enemy-hp" class="fill"></span></span></div>
-            </div>
-            <div class="mon enemy-mon"><div class="platform"></div><div id="b-enemy-sprite" class="mon-sprite"></div></div>
-            <div class="mon ally-mon"><div class="platform"></div><div id="b-ally-sprite" class="mon-sprite"></div></div>
-            <div class="infobox ally">
-              <div class="row"><b id="b-ally-name">NAAM</b><span id="b-ally-lvl">Lv1</span></div>
-              <div class="row hp"><span class="hp-label">HP</span><span class="bar"><span id="b-ally-hp" class="fill"></span></span></div>
-              <div class="row num" id="b-ally-num">100/100</div>
-            </div>
-          </div>
-          <div class="battle-text box" id="b-text">Een wilde BUG verscheen!</div>
-        </div>
+        <canvas id="world" aria-label="Plattegrond van de organisatie"></canvas>
       </div>
 
       <div class="dialog box" id="dialog" title="Klik om door te gaan">
@@ -65,8 +47,9 @@
     <aside class="side-col">
       <nav class="tabs" role="tablist">
         <button class="tab active" data-tab="team" role="tab">TEAM</button>
-        <button class="tab" data-tab="quests" role="tab">QUESTS</button>
-        <button class="tab" data-tab="log" role="tab">LOGBOEK</button>
+        <button class="tab" data-tab="board" role="tab">PRIKBORD <span class="badge" id="board-count">0</span></button>
+        <button class="tab" data-tab="output" role="tab">OUTPUT</button>
+        <button class="tab" data-tab="log" role="tab">LOG</button>
       </nav>
 
       <div class="panel box" id="tab-team">
@@ -74,20 +57,24 @@
         <ul id="team-list" class="team-list"></ul>
       </div>
 
-      <div class="panel box hidden" id="tab-quests">
-        <form id="quest-form" class="quest-form">
-          <div class="form-title">NIEUWE OPDRACHT VAN DE BAAS</div>
-          <input id="q-title" type="text" maxlength="40" placeholder="Bijv. Nieuwsbrief schrijven" required>
+      <div class="panel box hidden" id="tab-board">
+        <form id="order-form" class="quest-form">
+          <div class="form-title">OPDRACHT VAN DE BAAS AAN GODFRED</div>
+          <input id="o-title" type="text" maxlength="50" placeholder="Bijv. Nieuwe website lanceren" required>
           <div class="form-row">
-            <select id="q-dept" aria-label="Afdeling"></select>
-            <select id="q-diff" aria-label="Moeilijkheid">
-              <option value="1">★</option><option value="2" selected>★★</option><option value="3">★★★</option>
+            <select id="o-dept" aria-label="Afdeling"></select>
+            <select id="o-size" aria-label="Omvang">
+              <option value="1">★</option><option value="2">★★</option><option value="3" selected>★★★</option>
               <option value="4">★★★★</option><option value="5">★★★★★</option>
             </select>
             <button class="btn btn-accent" type="submit">GEEF</button>
           </div>
         </form>
-        <ul id="quest-list" class="quest-list"></ul>
+        <ul id="pipeline" class="quest-list"></ul>
+      </div>
+
+      <div class="panel box hidden" id="tab-output">
+        <ul id="output-list" class="quest-list"></ul>
       </div>
 
       <div class="panel box hidden" id="tab-log">
@@ -98,7 +85,7 @@
 
   <script src="js/map.js"></script>
   <script src="js/sprites.js"></script>
-  <script src="js/director.js"></script>
+  <script src="js/brains.js"></script>
   <script src="js/org.js"></script>
   <script src="js/world.js"></script>
   <script src="js/ui.js"></script>
