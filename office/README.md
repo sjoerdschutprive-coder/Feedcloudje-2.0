@@ -3,29 +3,32 @@
 Interactief, isometrisch kantoor voor de Tet Tet-organisatie (pilot: consultancyadvies Stichtse Hotelgroep).
 Open `index.html` in een browser; er is geen build of server nodig.
 
-## Wat je ziet
+## Werking
 
-- **Midden:** de Oppertet en het Brein (gedeeld geheugen), met informatiestromen naar elke afdeling.
-- **Zeven afdelingseilanden** in een eigen kleur: Operations, Finance, Marketing, R&D, HR, Risk & Safety en Product. Elk eiland heeft bureaus voor de Hoofdtet (kroontje), de Tets en de Control Tets (rode stippelring).
-- **Statuskaart per afdeling:** het aantal agents, een kerncijfer, de stand bezig / volgende / klaar, de voortgang van het advieshoofdstuk en een rode badge als iets wacht op goedkeuring van de Raad.
-- **Takenpaneel rechts:** maak een taak aan voor een afdeling of een specifieke Tet. Klik op de status om die door te zetten (volgende → bezig → klaar) en keur taken goed als Raad. De taken worden lokaal in de browser bewaard.
-- **Voicenote aan de Oppertet:** tik op de microfoon (in het paneel of op de Brein-kaart) en spreek je commando in. De Oppertet zet het om naar tekst, herkent afdelingen, agents, "spoed" en "leg het aan mij voor", en laat zien hoe hij de taken verdeelt. Pas de verdeling aan waar nodig en stuur het door. De opname blijft afspeelbaar bij de taak zolang de pagina open is. Spraak naar tekst werkt in Chrome, Edge en Safari. In andere browsers wordt de voicenote wel opgenomen en typ je het commando eronder.
-- **Directe lijnen tussen afdelingen:** gebogen lijnen in de kleuren van beide afdelingen. Klik op een lijn voor de kanaalkaart. In de tab Berichten stuur je een vraag, informatie of een verzoek. Met een directe lijn gaat het bericht rechtstreeks, zonder lijn via de Oppertet (doorzetten of tegenhouden). Een verzoek maakt een taak aan bij de ontvanger. De onderbouwing staat in [ANALYSE-afdelingscommunicatie.md](ANALYSE-afdelingscommunicatie.md).
-- **Klik op een bureau** voor de profielkaart, de cultuurkaarten (organisatie en afdeling), de rolkaart, de toegangskaart en de geschiedenis. **Klik op een eiland** voor hetzelfde op afdelingsniveau.
+- **Het kantoor** vult het hele scherm. Zoom met scrollen, knijpen of de knoppen rechtsonder en sleep om te verschuiven. Ver ingezoomd verschijnen de namen van de agents bij hun bureau. De knop **?** toont de legenda.
+- **Doelstellingenbord** bij het Brein: de voortgang van de hele pilot, de dagen tot de deadline en drie KPI's. Klik erop voor alle KPI's.
+- **Klik op een eiland** en je gaat naar de pagina van die afdeling, met tegels voor Team, Cultuurkaart, Toegangskaart, Directe lijnen, Taken, Berichten, Rollen en Geschiedenis. Een tegel toont alleen de kern. Tik erop voor de volledige kaart.
+- **Klik op een bureau** (of kies iemand onder Team) voor de pagina van een agent, met Profielkaart, Cultuurkaarten, Rolkaart, Toegangskaart, Taken en Geschiedenis.
+- **Klik op het midden** voor Oppertet & Brein, met het volledige doelstellingenbord, alle taken, berichten die op de Oppertet wachten en wat op de Raad wacht.
+- **Klik op een directe lijn** voor de kanaalkaart: het doel, de spelregels en de berichten. De onderbouwing staat in [ANALYSE-afdelingscommunicatie.md](ANALYSE-afdelingscommunicatie.md).
 
-## Kaarten aanpassen
+Taken en berichten worden lokaal in de browser bewaard.
+
+Elke pagina heeft een eigen adres (`#fin`, `#agent-fin-1`, `#oppertet`, `#lijn-fin-prod`), zodat je er direct naartoe kunt linken.
+
+## Kaarten en KPI's aanpassen
 
 Alle data staat bovenin het script, in het blok `DATA`:
 
-| Object | Kaartlaag |
+| Object | Wat |
 |---|---|
+| `PILOT` | Doelstelling en deadline van het project |
+| `KPIS`, `BORD_KPIS` | KPI's op het doelstellingenbord (voorlopige set) en welke drie op het bord in het kantoor staan |
 | `CULTUUR_ORG` | Cultuurkaart organisatie (laag 1, waarden winnen) |
 | `DEPTS[].cultuur` | Cultuurkaart per afdeling (laag 2) |
 | `AGENTS` | Profielkaart per agent (laag 3; `inperking` kan rechten alleen beperken) |
 | `ROLKAARTEN` | Rolkaarten: Oppertet, Hoofdtet, Tet, Control Tet |
 | `DEPTS[].toegang` | Toegangskaart per afdeling (`rw`, `r`, `no`) |
-| `DEPTS[].trefwoorden` | Woorden waarmee de Oppertet een commando aan een afdeling koppelt |
-| `KANALEN` | Kanaalkaarten: directe lijnen tussen afdelingen (niet genoemd = via Oppertet) |
-| `SPELREGELS` | Spelregels die voor alle directe lijnen gelden |
+| `KANALEN`, `SPELREGELS` | Directe lijnen tussen afdelingen en de spelregels |
 
 De inhoud is fictief en bedoeld om later te vervangen door de echte kaarten uit de whitepaper.
