@@ -19,12 +19,14 @@
         <span class="bar small"><span id="firewall-bar" class="fill"></span></span><span id="firewall">100%</span>
       </div>
       <div class="stat"><span class="label">QUESTS</span><span id="quests-done">0</span></div>
+      <div class="stat"><span class="label">MEETINGS</span><span id="meetings">0</span></div>
       <div class="stat"><span class="label">BUGS</span><span id="bugs-beaten">0</span></div>
       <div class="stat"><span class="label">GEBLOKT</span><span id="blocked">0</span></div>
     </div>
     <div class="controls">
       <button id="btn-pause" class="btn" title="Pauze (spatie)">❚❚</button>
       <button id="btn-speed" class="btn" title="Snelheid">1x</button>
+      <button id="btn-meeting" class="btn" title="Roep een vergadering bijeen">VERGADER</button>
       <button id="btn-recruit" class="btn btn-accent" title="Nieuwe medewerker werven">+ WERVEN</button>
       <button id="btn-reset" class="btn btn-ghost" title="Opnieuw beginnen">↺</button>
     </div>
@@ -36,6 +38,7 @@
         <canvas id="world" aria-label="Kaart van de organisatie"></canvas>
 
         <div id="battle" class="battle hidden" aria-live="polite">
+          <div class="battle-title">GEVECHT <span id="b-where"></span></div>
           <div class="battle-field">
             <div class="infobox enemy">
               <div class="row"><b id="b-enemy-name">BUG</b><span id="b-enemy-lvl">Lv1</span></div>
@@ -95,6 +98,7 @@
 
   <script src="js/map.js"></script>
   <script src="js/sprites.js"></script>
+  <script src="js/director.js"></script>
   <script src="js/org.js"></script>
   <script src="js/world.js"></script>
   <script src="js/ui.js"></script>

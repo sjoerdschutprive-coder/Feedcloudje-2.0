@@ -7,12 +7,19 @@ window.FC = window.FC || {};
   const MAP = FC.map;
 
   const STATUS = {
-    idle: 'VRIJ', walking: 'ONDERWEG', working: 'AAN HET WERK',
-    resting: 'RUST', guarding: 'OP WACHT', battling: 'IN GEVECHT',
+    idle: 'WACHT OP OPDRACHT', walking: 'ONDERWEG', working: 'AAN HET WERK',
+    resting: 'RUST UIT', guarding: 'OP WACHT', battling: 'IN GEVECHT',
+    meeting: 'IN VERGADERING', coffee: 'KOFFIEPAUZE', visiting: 'BRENGT VERSLAG UIT',
   };
-  const INTENT = { work: 'NAAR WERK', rest: 'NAAR RUST', guard: 'NAAR POORT', wander: 'WANDELT' };
-  // Gebeurtenissen die groot in het dialoogvenster verschijnen.
-  const DIALOG_KINDS = new Set(['levelup', 'quest', 'bug', 'win', 'lose', 'alarm', 'security', 'recruit', 'warn', 'info']);
+  const INTENT = {
+    desk: 'NAAR BUREAU', rest: 'NAAR LOUNGE', guard: 'NAAR POORT', meeting: 'NAAR VERGADERING',
+    coffee: 'HAALT KOFFIE', report: 'NAAR MANAGER',
+  };
+  // Volgorde van de afdelingen in de TEAM-lijst.
+  const DEPT_ORDER = ['hq', 'lab', 'studio', 'bieb', 'werk', 'poort'];
+  // Gebeurtenissen die groot in het dialoogvenster verschijnen. Opdrachten
+  // en verslagen zie je als vliegende berichtjes op de kaart en in het logboek.
+  const DIALOG_KINDS = new Set(['levelup', 'quest', 'bug', 'win', 'lose', 'alarm', 'security', 'recruit', 'warn', 'info', 'meeting']);
   const POPUPS = {
     levelup: ['LEVEL UP!', '#ffd23f'], quest: ['KLAAR!', '#7dff8a'], win: ['GEWONNEN!', '#c79bff'],
     lose: ['AU!', '#ff6b6b'], security: ['GEBLOKT!', '#ffffff'], recruit: ['NIEUW!', '#ffb36b'],
@@ -41,6 +48,7 @@ window.FC = window.FC || {};
       this.dialogBusy = false;
       this.dialogTimer = null;
       this.rows = new Map();
+      this.sections = new Map();
       this.lastBattle = null;
       this.lastHp = { ally: null, enemy: null };
 
@@ -61,14 +69,20 @@ window.FC = window.FC || {};
         org.speed = speeds[(speeds.indexOf(org.speed) + 1) % speeds.length];
         $('btn-speed').textContent = `${org.speed}x`;
       });
+      $('btn-meeting').addEventListener('click', () => {
+        if (!org.execute({ type: 'meeting', topic: 'Overleg op verzoek van de baas' }, 'baas')) {
+          org.emit({ kind: 'warn', text: org.isNight() ? "Het is nacht. Vergaderen kan morgen weer." : 'Er loopt al een vergadering.' });
+        }
+      });
       $('btn-recruit').addEventListener('click', () => {
         const a = org.recruit();
         if (a) this.select(a.id);
       });
       $('btn-reset').addEventListener('click', () => {
         if (!confirm('Weet je zeker dat je opnieuw wilt beginnen? Alle voortgang gaat verloren.')) return;
-        this.rows.forEach(r => r.remove());
         this.rows.clear();
+        this.sections.clear();
+        $('team-list').innerHTML = '';
         this.select(null);
         org.reset();
         this.renderLog();
@@ -81,8 +95,7 @@ window.FC = window.FC || {};
         e.preventDefault();
         const title = $('q-title').value.trim();
         if (!title) return;
-        const q = org.addQuest($('q-dept').value, title, Number($('q-diff').value));
-        org.emit({ kind: 'info', text: `De baas plaatst een nieuwe opdracht: "${q.title}".` });
+        org.execute({ type: 'createQuest', dept: $('q-dept').value, title, difficulty: Number($('q-diff').value) }, 'baas');
         $('q-title').value = '';
         this.renderQuests();
       });
@@ -100,7 +113,7 @@ window.FC = window.FC || {};
 
     fillDeptSelect() {
       $('q-dept').innerHTML = FC.QUEST_DEPTS
-        .map(id => `<option value="${id}">${MAP.building(id).name}</option>`).join('');
+        .map(id => `<option value="${id}">${MAP.room(id).name}</option>`).join('');
     }
 
     showTab(tab) {
@@ -120,6 +133,11 @@ window.FC = window.FC || {};
     // ---------- gebeurtenissen ----------
 
     onEvent(e) {
+      if (e.kind === 'say') { this.world.say(e.agentId, e.text); return; }
+      if (e.from && e.to) {
+        const color = e.kind === 'report' ? '#ffe27a' : '#ffffff';
+        e.to.forEach(id => this.world.letter(e.from, id, color));
+      }
       if (DIALOG_KINDS.has(e.kind)) {
         this.dialogQueue.push(e.text);
         if (this.dialogQueue.length > 6) this.dialogQueue.splice(0, this.dialogQueue.length - 6);
@@ -173,6 +191,7 @@ window.FC = window.FC || {};
       $('quests-done').textContent = s.stats.questsDone;
       $('bugs-beaten').textContent = s.stats.bugsBeaten;
       $('blocked').textContent = s.stats.intrudersBlocked;
+      $('meetings').textContent = s.stats.meetings || 0;
       $('btn-recruit').disabled = s.credits < FC.RECRUIT_COST;
       $('btn-recruit').title = `Nieuwe medewerker werven (${FC.RECRUIT_COST} ⛁)`;
 
@@ -186,10 +205,27 @@ window.FC = window.FC || {};
       return STATUS[a.state] || a.state;
     }
 
-    renderTeam() {
+    section(dept) {
+      let sec = this.sections.get(dept);
+      if (sec) return sec;
       const list = $('team-list');
+      sec = document.createElement('li');
+      sec.className = 'dept';
+      sec.dataset.dept = dept;
+      sec.innerHTML = `<div class="dept-title"><span>${MAP.room(dept).name}</span><span class="dept-count"></span></div><ul></ul>`;
+      // Op vaste volgorde invoegen.
+      const order = DEPT_ORDER.indexOf(dept);
+      const after = [...list.children].find(el => DEPT_ORDER.indexOf(el.dataset.dept) > order);
+      list.insertBefore(sec, after || null);
+      this.sections.set(dept, sec);
+      return sec;
+    }
+
+    renderTeam() {
       const agents = this.org.state.agents;
+      const counts = {};
       for (const a of agents) {
+        counts[a.dept] = (counts[a.dept] || 0) + 1;
         let row = this.rows.get(a.id);
         if (!row) {
           row = document.createElement('li');
@@ -203,18 +239,23 @@ window.FC = window.FC || {};
             </div>`;
           row.querySelector('.pic').appendChild(FC.sprites.spriteCanvas(a.species, 3));
           row.addEventListener('click', () => this.select(this.selectedId === a.id ? null : a.id));
-          list.appendChild(row);
+          this.section(a.dept).querySelector('ul').appendChild(row);
           this.rows.set(a.id, row);
         }
         row.classList.toggle('selected', a.id === this.selectedId);
+        row.classList.toggle('lead', a.role === 'lead');
         row.querySelector('.name').textContent = a.name;
         row.querySelector('.lvl').textContent = `Lv${a.level}`;
         setBar(row.querySelector('.fill'), a.energy);
-        row.querySelector('.kind').innerHTML = typeTag(a.type);
+        row.querySelector('.kind').innerHTML = a.role === 'lead' ? '<span class="type-tag lead-tag">MANAGER</span>' : typeTag(a.type);
         const st = row.querySelector('.status');
         st.textContent = this.statusLabel(a);
         st.className = `status ${a.state}`;
       }
+      this.sections.forEach((sec, dept) => {
+        const n = counts[dept] || 0;
+        sec.querySelector('.dept-count').textContent = dept === 'hq' ? '' : `${n} agent${n === 1 ? '' : 's'}`;
+      });
     }
 
     renderDetail() {
@@ -233,6 +274,7 @@ window.FC = window.FC || {};
               <div class="kv">
                 <span>ENERGIE</span><span class="bar"><span class="fill" data-k="hp"></span></span>
                 <span>XP</span><span class="bar"><span class="fill xp" data-k="xp"></span></span>
+                <span>AFDELING</span><span class="d-dept"></span>
                 <span>STATUS</span><span class="d-status"></span>
                 <span>TAAK</span><span class="d-task"></span>
                 <span>RECORD</span><span class="d-record"></span>
@@ -246,16 +288,19 @@ window.FC = window.FC || {};
           </div>`;
         el.querySelector('.pic').appendChild(FC.sprites.spriteCanvas(a.species, 6));
         el.querySelector('.dex').textContent = FC.sprites.SPECIES[a.species].dex;
-        el.querySelector('.d-rest').addEventListener('click', () => this.org.sendToRest(a.id));
+        el.querySelector('.d-rest').addEventListener('click', () => this.org.execute({ type: 'rest', agentId: a.id }, 'baas'));
         el.querySelector('.d-close').addEventListener('click', () => this.select(null));
       }
       el.querySelector('h3').textContent = `${a.name}  Lv${a.level}`;
-      el.querySelector('.sub').innerHTML = `#${String(a.id).padStart(3, '0')} ${a.species} ${typeTag(a.type)}`;
+      el.querySelector('.sub').innerHTML = `#${String(a.id).padStart(3, '0')} ${a.species} ${a.role === 'lead' ? '<span class="type-tag lead-tag">MANAGER</span>' : typeTag(a.type)}`;
+      el.querySelector('.d-dept').textContent = MAP.room(a.dept).name;
       setBar(el.querySelector('[data-k=hp]'), a.energy);
       setBar(el.querySelector('[data-k=xp]'), a.xp / FC.xpNeeded(a.level) * 100, 'xp');
       el.querySelector('.d-status').textContent = this.statusLabel(a);
       const q = this.org.quest(a.questId);
-      el.querySelector('.d-task').textContent = q ? `${q.title} (${Math.floor(q.progress / q.required * 100)}%)` : '—';
+      el.querySelector('.d-task').textContent = a.role === 'lead'
+        ? 'Werk verdelen, vergaderingen leiden, de poort bewaakt houden'
+        : q ? `${q.title} (${Math.floor(q.progress / q.required * 100)}%)` : '—';
       el.querySelector('.d-record').textContent = `${a.stats.quests} quests · ${a.stats.bugs} bugs · ${a.stats.blocked} geblokt`;
       el.querySelector('.d-rest').disabled = a.state === 'resting' || a.intent === 'rest' || a.state === 'battling';
     }
@@ -271,13 +316,14 @@ window.FC = window.FC || {};
           html += `<li class="section-title">${{ actief: 'BEZIG', open: 'OPEN', klaar: 'AFGEROND' }[q.status]}</li>`;
           lastStatus = q.status;
         }
-        const b = MAP.building(q.dept);
-        const who = q.assignee ? this.org.agent(q.assignee) : null;
+        const b = MAP.room(q.dept);
+        const who = (q.assignees || []).map(id => this.org.agent(id)).filter(Boolean).map(a => a.name).join(' & ');
+        const from = q.custom ? 'VAN DE BAAS' : `VAN ${this.org.lead().name}`;
         const pct = Math.floor(q.progress / q.required * 100);
         html += `
           <li class="quest ${q.status}${q.custom ? ' custom' : ''}">
             <div class="line"><span>${esc(q.title)}</span><span>${'★'.repeat(q.difficulty)}</span></div>
-            <div class="meta"><span>${b.name}</span><span>${who ? esc(who.name) : (q.status === 'klaar' ? '✓' : 'wacht op iemand')}</span></div>
+            <div class="meta"><span>${b.name} · ${from}</span><span>${who ? esc(who) : (q.status === 'klaar' ? '✓' : 'nog niet verdeeld')}</span></div>
             <span class="bar"><span class="fill progress" style="width:${pct}%"></span></span>
             <div class="meta"><span>${pct}%</span><span>+${q.reward.xp} XP · +${q.reward.credits} ⛁</span></div>
           </li>`;
@@ -315,6 +361,7 @@ window.FC = window.FC || {};
       setBar($('b-ally-hp'), a.energy);
       $('b-ally-num').textContent = `${Math.round(a.energy)}/100`;
       $('b-text').textContent = b.text;
+      $('b-where').textContent = `· ${MAP.room(a.dept).name}`;
 
       const flash = (id, cls) => {
         const el = $(id);

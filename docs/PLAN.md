@@ -2,79 +2,116 @@
 
 ## Het idee
 
-Een organisatie die bestaat uit (AI-)medewerkers in een **afgesloten
-omgeving**. Jij bent de baas. Je volgt alles via een **dashboard in
-spelletjesstijl**: de organisatie is een dal, de afdelingen zijn gebouwen,
-de medewerkers zijn wezentjes die levelen, en problemen zijn "wilde bugs"
-waar tegen gevochten wordt.
-
-Het spelletjesgevoel is meer dan een jasje. Het maakt een paar dingen in één
-oogopslag zichtbaar:
+Een organisatie van AI-agents in een **afgesloten omgeving**. Eén agent, de
+**manager**, stuurt de andere agents aan. Jij bent de baas en volgt alles via
+een **dashboard in spelletjesstijl**: een kantoorgebouw van bovenaf, waar je
+de agents ziet werken, lopen, vergaderen en rusten, zoals in een echt
+bedrijf.
 
 | Spelelement | Wat het in de organisatie betekent |
 |---|---|
-| Energie / HP | Werkbelasting en capaciteit van een medewerker |
+| Manager (UILBERT) | De orkestrator-agent die werk verdeelt en bewaakt |
+| Bureau in een afdeling | Een worker-agent met een specialisme |
+| Envelopje heen / terug | Een opdracht van de manager / een verslag terug |
+| Vergaderzaal | Overleg: status ophalen, daarna werk verdelen |
+| Energie | Capaciteit (later: resterend budget van een agent) |
 | Level / XP | Ervaring, afgeronde taken |
-| Type | Specialisme (CODE, DATA, CREATIEF, ...) en welke afdeling past |
-| Quest | Een taak met moeilijkheid, voortgang en beloning |
-| Wilde bug + gevecht | Een incident of fout tijdens het werk |
-| Poort + firewall | De grens van de afgesloten omgeving en hoe veilig die is |
-| Dag/nacht | Werkritme. Wie wacht houdt, wie rust |
+| Wilde bug + gevecht | Een fout of incident tijdens het werk |
+| Poort + firewall | De grens van de afgesloten omgeving |
 
-## Fase 1: simulatie + dashboard (nu klaar)
+## Architectuur
 
-- Volledig offline, geen server, geen externe bestanden.
-- Zes afdelingen, zes soorten medewerkers, zelfsturend quest-systeem.
-- Bug-gevechten, levels, credits, werven.
-- Indringers bij de poort en een firewall-meter.
-- De baas kan zelf opdrachten geven.
-- Alles draait om **gebeurtenissen** (`org.emit({...})`). Het dashboard
-  luistert alleen daarnaar. Dat is bewust: zo kunnen we in fase 2 de
-  simulatie vervangen door echte agents zonder het dashboard om te bouwen.
+```
+            ┌──────────────┐  commando's   ┌──────────────┐  gebeurtenissen  ┌─────────────┐
+ staat ───▶ │   MANAGER    │ ────────────▶ │ ORGANISATIE  │ ───────────────▶ │  DASHBOARD  │
+            │ director.js  │               │   org.js     │                  │ world/ui.js │
+            └──────────────┘               └──────────────┘                  └─────────────┘
+                   ▲                              │
+                   └──────────── staat ───────────┘
+```
 
-## Fase 2: echte agents in een afgesloten omgeving
+Drie lagen, strikt gescheiden:
 
-Doel: de wezentjes worden echte AI-agents die echt werk doen.
+1. **Manager** (`js/director.js`) kijkt naar de staat en geeft alleen
+   **commando's**. Hij verandert zelf niets.
+2. **Organisatie** (`js/org.js`) voert commando's uit, laat agents lopen,
+   werken en vergaderen, en publiceert **gebeurtenissen**.
+3. **Dashboard** (`js/world.js`, `js/ui.js`) luistert alleen naar
+   gebeurtenissen en de staat.
 
-1. **Afgesloten omgeving**: een Docker-container (of een paar) zonder
-   internettoegang, behalve naar de AI-API. Elke afdeling krijgt een eigen
-   werkmap. De "poort" is het netwerkbeleid: alles wat naar buiten wil,
-   wordt gelogd en eventueel tegengehouden.
-2. **Agents**: elke medewerker is een agent (bijv. via de Claude Agent SDK)
-   met een rol-prompt die bij zijn type past, en alleen de tools van zijn
-   afdeling.
-3. **Orkestrator** (de "Planuil"): verdeelt quests, bewaakt het budget en
-   zet medewerkers in rust als ze hun limiet (tokens/kosten) bereiken.
-   Energie wordt dan echt: resterend budget per agent.
-4. **Eventbus**: een kleine Node-server die gebeurtenissen van de agents via
-   een WebSocket naar het dashboard stuurt, in hetzelfde formaat als nu:
+De baas (jij) gebruikt dezelfde commando's via de knoppen. Er is dus één
+weg om iets in de organisatie te veranderen.
 
-   ```json
-   { "kind": "quest", "agentId": 3, "text": "DEX rondde 'API koppelen' af!", "time": "DAG 2 10:15" }
-   ```
+### Commando's (wat de manager kan)
 
-   Soorten: `info`, `quest`, `levelup`, `bug`, `win`, `lose`, `security`,
-   `alarm`, `recruit`, `warn`.
-5. **Bugs worden echt**: een mislukte test, een fout in een tool-aanroep of
-   een geweigerde actie verschijnt als "wilde bug". Het gevecht is de poging
-   van de agent om het op te lossen.
-6. **Poort wordt echt**: elke uitgaande verbinding die het netwerkbeleid
-   tegenhoudt, verschijnt als "indringer geblokt".
+| Commando | Velden | Effect |
+|---|---|---|
+| `assign` | `questId`, `agentIds[]` | Werk toewijzen aan één of meer agents |
+| `meeting` | `topic` | Iedereen naar de vergaderzaal |
+| `rest` | `agentId` | Agent naar de lounge |
+| `guard` | `agentId` | Agent bij de poort posten |
+| `createQuest` | `dept`, `title?`, `difficulty?` | Nieuw werk inplannen |
+| `say` | `agentId`, `text` | Tekstballon |
 
-## Fase 3: uitbreidingen (ideeën)
+### Gebeurtenissen (wat het dashboard ziet)
 
-- Goedkeuringen: een agent die iets riskants wil doen, vraagt het via een
+```json
+{ "kind": "order", "from": 1, "to": [4, 5], "text": "UILBERT → DEX & PIP: \"API koppelen\"", "time": "DAG 2 10:15" }
+```
+
+Soorten: `order`, `report`, `plan`, `meeting`, `say`, `quest`, `levelup`,
+`bug`, `win`, `lose`, `security`, `alarm`, `recruit`, `warn`, `info`.
+
+## Fase 1: simulatie (klaar)
+
+- Opengewerkt kantoor met vijf afdelingen, een managerkantoor, een centrale
+  vergaderzaal, een lounge en een wachthuisje bij de poort.
+- Regelgebaseerde manager: dagelijkse stand-up, crisisoverleg, werk
+  verdelen (duo's voor zware klussen), wachtrooster, rust geven, backlog
+  aanvullen.
+- Agents lopen echt over de plattegrond (routes zoeken), zitten aan hun
+  eigen bureau, halen koffie, rapporteren bij de manager en slapen 's nachts
+  in de lounge.
+
+## Fase 2: echte agents
+
+1. **Manager wordt een AI-agent.** De commando's hierboven worden zijn
+   *tools* (`assign_task`, `call_meeting`, `send_to_rest`, `post_guard`,
+   `create_task`). De staat van de organisatie gaat als context mee.
+   `director.js` wordt dan een dunne laag die de tool-calls van het model
+   doorgeeft aan `org.execute()`.
+2. **Workers worden AI-agents.** Elke worker krijgt een rol-prompt passend
+   bij zijn afdeling en alleen de tools van die afdeling. Een `assign`
+   start een echte taak, en het resultaat komt terug als `report`.
+3. **Vergaderingen worden echt.** Elke worker levert een korte status in,
+   de manager vat samen en verdeelt het werk opnieuw.
+4. **Afgesloten omgeving.** Agents draaien in een container zonder vrije
+   internettoegang. Het netwerkbeleid is de poort: geblokte verbindingen
+   verschijnen als "indringer geblokt".
+5. **Eventbus.** Een kleine server stuurt de gebeurtenissen via een
+   WebSocket naar het dashboard, in precies het formaat van nu.
+6. **Energie = budget.** Hoeveel tokens of kosten een agent nog mag
+   gebruiken. Op = naar de lounge.
+
+### Welk model waarvoor (advies)
+
+| Rol | Model | Waarom |
+|---|---|---|
+| Manager | Claude Opus 5.5 | Beslist over iedereen. Kwaliteit van plannen telt het zwaarst. |
+| Workers (denkwerk: code, data) | Claude Sonnet 5.5 | Goed en een stuk goedkoper. Er draaien er veel tegelijk. |
+| Workers (simpel/veel: samenvatten, sorteren) | Claude Haiku 5.5 | Zeer goedkoop voor hoog volume. |
+| Uitzonderlijk zware klussen | Claude Fable 5.1 | Het krachtigst, maar ruim 2x de prijs van Opus. Alleen gericht inzetten. |
+
+## Fase 3: ideeën
+
+- Goedkeuringen: een agent die iets riskants wil, vraagt het via het
   dialoogvenster aan de baas ("BITBIT wil deployen. JA / NEE").
-- Evolutie: na genoeg levels krijgt een medewerker een nieuwe sprite en
-  meer tools.
-- Prestaties/badges per afdeling.
-- Geluid (8-bit piepjes bij level-up en alarm).
-- Meerdere dalen = meerdere projecten.
+- Afdelingsoverleg (alleen één team) naast de grote vergadering.
+- Evolutie: na genoeg levels een nieuwe sprite en meer tools.
+- Meerdere verdiepingen of gebouwen = meerdere projecten.
 
 ## Open vragen voor de baas
 
-- Wat moet de organisatie in het echt gaan doen? (Software bouwen,
-  content maken, onderzoek, een webshop draaien, ...)
-- Waar draait de afgesloten omgeving: je eigen computer, een server of in
-  de cloud?
-- Welke afdelingen wil je echt hebben? De huidige zes zijn een begin.
+- Wat moet de organisatie in het echt gaan doen?
+- Waar draait de afgesloten omgeving: je eigen computer, een server, de cloud?
+- Kloppen deze afdelingen, of wil je andere?

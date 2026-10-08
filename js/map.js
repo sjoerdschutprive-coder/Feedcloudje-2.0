@@ -1,103 +1,174 @@
-// Wereldkaart van de organisatie: een afgesloten dal, omringd door bos,
-// met één poort die bewaakt wordt door het beveiligingsteam.
+// Plattegrond van de organisatie: één opengewerkt kantoorgebouw in een
+// afgesloten dal. Het bos eromheen is de grens, de poort onderaan de enige
+// toegang. Binnen: afdelingen met bureaus, een gang, een centrale
+// vergaderzaal, het kantoor van de manager en een lounge.
 window.FC = window.FC || {};
 
 (function (FC) {
-  const W = 32;
-  const H = 20;
+  const W = 40;
+  const H = 26;
 
-  // Afdelingen = gebouwen op de kaart. `type` bepaalt welke medewerkers
-  // er het best werken (zoals een type-voordeel in een spel).
-  const BUILDINGS = [
-    { id: 'hq',     name: 'HOOFDKANTOOR', short: 'HQ',      type: 'STRATEGIE',   x: 13, y: 1,  w: 6, h: 4, roof: '#c0392b' },
-    { id: 'lab',    name: 'CODE-LAB',     short: 'LAB',     type: 'CODE',        x: 3,  y: 3,  w: 5, h: 3, roof: '#2e6fd8' },
-    { id: 'studio', name: 'STUDIO',       short: 'STUDIO',  type: 'CREATIEF',    x: 24, y: 3,  w: 5, h: 3, roof: '#d64fa0' },
-    { id: 'bieb',   name: 'DATABIEB',     short: 'BIEB',    type: 'DATA',        x: 3,  y: 11, w: 5, h: 3, roof: '#2f9e5b' },
-    { id: 'werk',   name: 'WERKPLAATS',   short: 'WERK',    type: 'OPERATIONS',  x: 24, y: 11, w: 5, h: 3, roof: '#e07b24' },
-    { id: 'rust',   name: 'HERSTELHUIS',  short: 'RUST',    type: null,          x: 10, y: 11, w: 4, h: 3, roof: '#ef6f8f' },
-    { id: 'poort',  name: 'POORTWACHT',   short: 'POORT',   type: 'BEVEILIGING', x: 18, y: 14, w: 3, h: 3, roof: '#5b6478' },
-  ];
-  BUILDINGS.forEach(b => {
-    b.door = { x: b.x + Math.floor(b.w / 2), y: b.y + b.h - 1 };
-  });
+  const grid = fill => Array.from({ length: H }, () => new Array(W).fill(fill));
+  // Tegels: T boom, . gras, , bloemen, = pad, ~ water, G poort,
+  //         # muur, f vloer, d deur
+  const tiles = grid('.');
+  const roomAt = grid(null); // welke ruimte hoort bij een vloertegel
+  const furn = grid(null);   // meubilair per tegel
 
-  const GATE = { x: 16, y: 19 };      // de enige toegang tot het dal
-  const GUARD_SPOT = { x: 16, y: 18 }; // waar de wachter staat
-
-  // Tegels: T boom, . gras, , bloemen, = pad, ~ water, B gebouw, D deur, G poort
-  const tiles = [];
-  for (let y = 0; y < H; y++) {
-    tiles.push(new Array(W).fill('.'));
-  }
-  const set = (x, y, t) => { if (x >= 0 && y >= 0 && x < W && y < H) tiles[y][x] = t; };
+  const inMap = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+  const set = (x, y, t) => { if (inMap(x, y)) tiles[y][x] = t; };
   const hline = (y, x1, x2, t) => { for (let x = x1; x <= x2; x++) set(x, y, t); };
   const vline = (x, y1, y2, t) => { for (let y = y1; y <= y2; y++) set(x, y, t); };
+  const place = (x, y, kind, extra) => { furn[y][x] = Object.assign({ kind }, extra); };
 
-  // Deterministische "random" zodat de kaart altijd hetzelfde is.
-  let seed = 7;
+  // `type` = welk soort medewerker hier thuishoort.
+  const ROOMS = [
+    { id: 'lab',     name: 'CODE-LAB',     type: 'CODE',        x0: 2,  y0: 2,  x1: 11, y1: 9,  floor: 'wood',       doorSide: 'bottom' },
+    { id: 'hq',      name: 'MANAGER',      type: 'STRATEGIE',   x0: 11, y0: 2,  x1: 20, y1: 9,  floor: 'carpetRed',  doorSide: 'bottom' },
+    { id: 'studio',  name: 'STUDIO',       type: 'CREATIEF',    x0: 20, y0: 2,  x1: 29, y1: 9,  floor: 'wood',       doorSide: 'bottom' },
+    { id: 'lounge',  name: 'LOUNGE',       type: null,          x0: 29, y0: 2,  x1: 37, y1: 9,  floor: 'tiles',      doorSide: 'bottom' },
+    { id: 'bieb',    name: 'DATABIEB',     type: 'DATA',        x0: 2,  y0: 12, x1: 11, y1: 18, floor: 'wood',       doorSide: 'top' },
+    { id: 'meeting', name: 'VERGADERZAAL', type: null,          x0: 11, y0: 12, x1: 29, y1: 18, floor: 'carpetBlue', doorSide: 'top', doorXs: [15, 25] },
+    { id: 'werk',    name: 'WERKPLAATS',   type: 'OPERATIONS',  x0: 29, y0: 12, x1: 37, y1: 18, floor: 'wood',       doorSide: 'top' },
+    { id: 'poort',   name: 'POORTWACHT',   type: 'BEVEILIGING', x0: 23, y0: 21, x1: 28, y1: 24, floor: 'concrete',   doorSide: 'top' },
+  ];
+  const CORRIDOR = { id: 'gang', name: 'GANG', floor: 'corridor' };
+
+  const GATE = { x: 20, y: 25 };
+  const GUARD_SPOT = { x: 20, y: 24 };
+
+  // ---------- buitenkant ----------
+  let seed = 11;
   const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (rnd() < 0.06) set(x, y, ',');
 
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      if (rnd() < 0.07) set(x, y, ',');
-    }
-  }
+  vline(1, 10, 20, '=');
+  vline(38, 10, 20, '=');
+  hline(20, 1, 38, '=');
+  vline(20, 21, 24, '=');
+  for (let y = 22; y <= 23; y++) hline(y, 6, 11, '~');
 
-  // Paden
-  hline(8, 2, 29, '=');
-  hline(17, 2, 29, '=');
-  vline(2, 8, 17, '=');
-  vline(29, 8, 17, '=');
-  vline(16, 5, 18, '=');
-  vline(5, 6, 8, '=');
-  vline(26, 6, 8, '=');
-  vline(5, 14, 17, '=');
-  vline(26, 14, 17, '=');
-  vline(12, 14, 17, '=');
-
-  // Vijver
-  for (let y = 10; y <= 12; y++) hline(y, 20, 22, '~');
-
-  // Bosrand (de afsluiting van de omgeving)
   hline(0, 0, W - 1, 'T');
   hline(H - 1, 0, W - 1, 'T');
   vline(0, 0, H - 1, 'T');
   vline(W - 1, 0, H - 1, 'T');
-  [[1, 1], [2, 1], [1, 2], [30, 1], [29, 1], [30, 2], [1, 18], [2, 18], [30, 18], [29, 18],
-   [9, 2], [10, 3], [21, 2], [22, 3], [9, 15], [8, 16], [23, 16], [22, 6], [9, 6]]
+  [[3, 22], [14, 23], [16, 22], [31, 22], [34, 23], [36, 21], [1, 24], [2, 24], [38, 24], [37, 24], [1, 1], [38, 1]]
     .forEach(([x, y]) => set(x, y, 'T'));
   set(GATE.x, GATE.y, 'G');
 
-  BUILDINGS.forEach(b => {
-    for (let y = b.y; y < b.y + b.h; y++) hline(y, b.x, b.x + b.w - 1, 'B');
-    set(b.door.x, b.door.y, 'D');
+  // ---------- het gebouw ----------
+  function buildRoom(r) {
+    for (let y = r.y0; y <= r.y1; y++) {
+      for (let x = r.x0; x <= r.x1; x++) {
+        const edge = x === r.x0 || x === r.x1 || y === r.y0 || y === r.y1;
+        if (edge) { set(x, y, '#'); continue; }
+        set(x, y, 'f');
+        roomAt[y][x] = r.id;
+      }
+    }
+  }
+  ROOMS.forEach(buildRoom);
+
+  // Gang tussen de twee rijen ruimtes, met uitgangen links en rechts.
+  for (let y = 10; y <= 11; y++) {
+    for (let x = 2; x <= 37; x++) {
+      if (x === 2 || x === 37) { set(x, y, 'd'); roomAt[y][x] = 'gang'; continue; }
+      set(x, y, 'f');
+      roomAt[y][x] = 'gang';
+    }
+  }
+
+  ROOMS.forEach(r => {
+    r.ix0 = r.x0 + 1; r.ix1 = r.x1 - 1; r.iy0 = r.y0 + 1; r.iy1 = r.y1 - 1;
+    const doorXs = r.doorXs || [Math.ceil((r.x0 + r.x1) / 2)];
+    const dy = r.doorSide === 'bottom' ? r.y1 : r.y0;
+    r.doors = doorXs.map(x => ({ x, y: dy }));
+    r.doors.forEach(d => { set(d.x, d.y, 'd'); roomAt[d.y][d.x] = r.id; });
+    r.seats = [];
   });
 
+  const room = id => ROOMS.find(r => r.id === id);
+
+  // Afdelingen met bureaus: rijen stoelen met het bureau eronder. De
+  // medewerker zit "achter" zijn bureau en kijkt de kijker aan.
+  ['lab', 'studio', 'bieb', 'werk'].forEach(id => {
+    const r = room(id);
+    const doorXs = r.doors.map(d => d.x);
+    const chairRows = r.doorSide === 'bottom' ? [r.iy0, r.iy0 + 3] : [r.iy0 + 1, r.iy0 + 3];
+    chairRows.forEach(cy => {
+      for (let x = r.ix0 + 1; x <= r.ix1 - 1; x++) {
+        if (doorXs.includes(x)) continue;
+        place(x, cy + 1, 'desk');
+        place(x, cy, 'chair');
+        r.seats.push({ x, y: cy });
+      }
+    });
+  });
+
+  // Poortwacht: klein wachthuisje met twee bureaus.
+  [[24, 22], [27, 22]].forEach(([x, y]) => {
+    place(x, y + 1, 'desk');
+    place(x, y, 'chair');
+    room('poort').seats.push({ x, y });
+  });
+
+  // Kantoor van de manager.
+  const BOSS_SEAT = { x: 16, y: 4 };
+  place(16, 4, 'chair');
+  [15, 16, 17].forEach(x => place(x, 5, 'bossdesk'));
+  place(12, 3, 'shelf'); place(13, 3, 'shelf'); place(19, 3, 'plant'); place(12, 8, 'plant');
+  const VISITOR_SPOTS = [{ x: 15, y: 7 }, { x: 17, y: 7 }, { x: 16, y: 7 }];
+  room('hq').seats.push(BOSS_SEAT);
+
+  // Lounge: zitzakken om uit te rusten en een koffieautomaat.
+  place(30, 3, 'coffee');
+  place(30, 8, 'plant');
+  const COFFEE_SPOTS = [{ x: 31, y: 3 }, { x: 30, y: 4 }];
+  const REST_SPOTS = [];
+  [3, 5, 7].forEach(y => [32, 34, 36].forEach(x => REST_SPOTS.push({ x, y })));
+  REST_SPOTS.push({ x: 30, y: 6 }, { x: 35, y: 8 });
+  REST_SPOTS.forEach((s, i) => place(s.x, s.y, 'beanbag', { color: i % 3 }));
+
+  // Centrale vergaderzaal: lange tafel met stoelen aan beide kanten.
+  const MEETING_SEATS = [];
+  for (let x = 16; x <= 24; x++) {
+    place(x, 15, 'table', { end: x === 16 ? 'left' : x === 24 ? 'right' : null });
+    place(x, 14, 'chair');
+    place(x, 16, 'chair');
+    MEETING_SEATS.push({ x, y: 14 }, { x, y: 16 });
+  }
+  const PRESENTER_SPOT = { x: 14, y: 15 };
+  [14, 15, 16].forEach(y => place(12, y, 'board', { part: y - 14 }));
+  place(28, 13, 'plant'); place(28, 17, 'plant'); place(12, 13, 'plant'); place(12, 17, 'plant');
+
+  // Gang
+  place(4, 10, 'plant'); place(35, 11, 'plant'); place(20, 10, 'plant');
+
+  const BLOCKING = new Set(['desk', 'bossdesk', 'table', 'shelf', 'coffee', 'plant', 'board']);
+
   const walkable = (x, y) => {
-    if (x < 0 || y < 0 || x >= W || y >= H) return false;
+    if (!inMap(x, y)) return false;
     const t = tiles[y][x];
-    return t === '.' || t === ',' || t === '=' || t === 'D';
+    if (!(t === '.' || t === ',' || t === '=' || t === 'f' || t === 'd')) return false;
+    const f = furn[y][x];
+    return !(f && BLOCKING.has(f.kind));
   };
 
-  // Kortste route over beloopbare tegels (BFS). Geeft lijst tegels terug
-  // exclusief de starttegel.
+  // Kortste route (BFS) over beloopbare tegels, exclusief de starttegel.
   function findPath(sx, sy, tx, ty) {
     sx = Math.round(sx); sy = Math.round(sy);
     if (sx === tx && sy === ty) return [];
     const key = (x, y) => y * W + x;
-    const prev = new Map();
+    const prev = new Map([[key(sx, sy), null]]);
     const queue = [[sx, sy]];
-    prev.set(key(sx, sy), null);
     const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-    while (queue.length) {
-      const [x, y] = queue.shift();
+    for (let i = 0; i < queue.length; i++) {
+      const [x, y] = queue[i];
       if (x === tx && y === ty) break;
       for (const [dx, dy] of dirs) {
         const nx = x + dx, ny = y + dy;
         const k = key(nx, ny);
         if (prev.has(k) || !walkable(nx, ny)) continue;
-        // Deuren alleen betreden als het de bestemming is.
-        if (tiles[ny][nx] === 'D' && !(nx === tx && ny === ty)) continue;
         prev.set(k, [x, y]);
         queue.push([nx, ny]);
       }
@@ -112,19 +183,12 @@ window.FC = window.FC || {};
     return path;
   }
 
-  function randomOpenTile() {
-    for (let i = 0; i < 200; i++) {
-      const x = 2 + Math.floor(Math.random() * (W - 4));
-      const y = 2 + Math.floor(Math.random() * (H - 4));
-      if (walkable(x, y) && tiles[y][x] !== 'D') return { x, y };
-    }
-    return { x: 16, y: 8 };
-  }
-
   FC.map = {
-    W, H, tiles, BUILDINGS, GATE, GUARD_SPOT,
-    building: id => BUILDINGS.find(b => b.id === id),
-    buildingForType: type => BUILDINGS.find(b => b.type === type),
-    walkable, findPath, randomOpenTile,
+    W, H, tiles, roomAt, furn, ROOMS, CORRIDOR, GATE, GUARD_SPOT,
+    BOSS_SEAT, VISITOR_SPOTS, COFFEE_SPOTS, REST_SPOTS, MEETING_SEATS, PRESENTER_SPOT,
+    room,
+    roomForType: type => ROOMS.find(r => r.type === type),
+    walkable, findPath,
+    spotKey: s => `${s.x},${s.y}`,
   };
 })(window.FC);
