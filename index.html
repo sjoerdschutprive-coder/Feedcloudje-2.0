@@ -27,6 +27,7 @@
     <div class="controls">
       <button id="btn-pause" class="btn" title="Pauze (spatie)">❚❚</button>
       <button id="btn-speed" class="btn" title="Snelheid">1x</button>
+      <button id="btn-order" class="btn btn-accent" title="Geef Godfred een opdracht">✉ OPDRACHT AAN GODFRED</button>
       <button id="btn-meeting" class="btn" title="Roep iedereen bijeen in de vergaderzaal">VERGADER</button>
       <button id="btn-reset" class="btn btn-ghost" title="Opnieuw beginnen">↺</button>
     </div>
@@ -60,7 +61,8 @@
       <div class="panel box hidden" id="tab-board">
         <form id="order-form" class="quest-form">
           <div class="form-title">OPDRACHT VAN SJOERD AAN GODFRED</div>
-          <input id="o-title" type="text" maxlength="50" placeholder="Bijv. Nieuwe website lanceren" required>
+          <p class="form-help">Typ wat je wilt, kies eventueel een afdeling en hoe groot het is, en klik GEEF. Godfred knipt het op, hangt het op het prikbord en meldt zich onder OUTPUT als het af is.</p>
+          <input id="o-title" type="text" maxlength="50" placeholder="Bijv. Webshop met betaalmodule lanceren" required>
           <div class="form-row">
             <select id="o-dept" aria-label="Afdeling"></select>
             <select id="o-size" aria-label="Omvang">

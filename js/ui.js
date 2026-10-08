@@ -85,6 +85,11 @@ window.FC = window.FC || {};
         org.speed = speeds[(speeds.indexOf(org.speed) + 1) % speeds.length];
         $('btn-speed').textContent = `${org.speed}x`;
       });
+      $('btn-order').addEventListener('click', () => {
+        this.showTab('board');
+        $('order-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        $('o-title').focus();
+      });
       $('btn-meeting').addEventListener('click', () => {
         if (!org.execute({ type: 'meeting', scope: 'alle', topic: 'Algemene vergadering op verzoek van Sjoerd' })) {
           org.emit({ kind: 'warn', text: 'Er loopt al een vergadering.' });

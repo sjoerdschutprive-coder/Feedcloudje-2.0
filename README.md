@@ -41,7 +41,7 @@ geel = output, rood = revisie of lek, paars = security, groen = goedgekeurd.
 
 ## Bediening
 
-- **PRIKBORD → Opdracht aan Godfred**: geef een titel en omvang. Kies zelf
+- **OPDRACHT AAN GODFRED** (knop rechtsboven): geef een titel en omvang. Kies zelf
   een afdeling of laat Godfred beslissen (hij kijkt naar woorden als
   "website", "logo", "onderzoek" en verdeelt grote opdrachten over meerdere
   afdelingen).

@@ -151,7 +151,7 @@ window.FC = window.FC || {};
         const p = this.addProject(pick(TEMPLATES[dept]), rand(1, 3), 'godfred', dept);
         this.planProject(p, true);
       });
-      this.emit({ kind: 'info', text: `Welkom bij ${this.state.name}! Geef GODFRED een opdracht via het PRIKBORD-tabblad.` });
+      this.emit({ kind: 'info', text: `Welkom bij ${this.state.name}! Klik rechtsboven op "OPDRACHT AAN GODFRED" om hem aan het werk te zetten.` });
     }
 
     load() {
