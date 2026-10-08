@@ -3,24 +3,32 @@
 //   DE BAAS (jij)  ──opdracht──▶  GODFRED  ──taken op het prikbord──▶  AFDELINGSHOOFDEN  ──▶  AGENTS
 //                  ◀──project af──          ◀──output (goed / revisie)──                  ◀──output──
 //
+//   RISK THREAT (MT-lid) scant ontwikkelwerk vóór het naar Godfred gaat,
+//   bewaakt poort en firewall en adviseert Godfred over risico's.
+//
 // Elk brein *kijkt* naar de staat en *geeft commando's*; het verandert zelf
 // nooit iets. org.js voert de commando's uit. Daardoor kan elk brein later
 // vervangen worden door een echte AI-agent die dezelfde commando's als tools
 // krijgt (zie docs/PLAN.md).
 //
 // Commando's van Godfred:   plan, initiative, post, review, feedback, meeting, say
-// Commando's van een hoofd: pickup, assign, review, check, deliver, rest, guard, say
+// Commando's van een hoofd: pickup, assign, review, check, deliver, rest, say
+// Commando's van RISK THREAT: review, verdict, harden, patrol, advise, say
 window.FC = window.FC || {};
 
 (function (FC) {
   const MT_EVERY = 6 * 60;         // speelminuten tussen MT-overleggen
   const INITIATIVE_EVERY = 15;     // hoe vaak Godfred zelf werk bedenkt
   const DELIVER_AFTER = 20;        // max. wachttijd voor gecontroleerde output
+  const PATROL_EVERY = 90;         // inspectieronde bij de poort
+  const ADVICE_EVERY = 240;        // niet vaker adviseren dan dit
 
   const REVISE_NOTES = ['Te oppervlakkig, ga dieper.', 'Mist de klantkant.', 'Maak het scherper.',
     'Graag met concrete cijfers.', 'Sluit nog niet aan op de rest van het project.'];
   const GOOD_NOTES = ['Precies wat we nodig hadden.', 'Sterk werk!', 'Goedgekeurd.', 'Netjes afgerond.', 'Hier kunnen we mee verder.'];
   const HEAD_NOTES = ['Check de randgevallen nog even.', 'Kan strakker.', 'Mist nog een stukje.'];
+  const LEAK_NOTES = ['Wachtwoord staat in de code.', 'Invoer wordt niet gecontroleerd.', 'Te ruime toegangsrechten.',
+    'Verouderde bibliotheek met bekend lek.', 'Gevoelige data niet versleuteld.'];
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
   // ---------- Godfred: de directeur ----------
@@ -50,9 +58,10 @@ window.FC = window.FC || {};
         cmd({ type: 'meeting', scope: 'mt', topic: 'MT-overleg met de afdelingshoofden' });
         return;
       }
-      if (s.firewall < 60 && now - mem.lastCrisis >= MT_EVERY) {
+      // Advies van RISK THREAT over de firewall: crisisoverleg.
+      if (mem.adviceAt > mem.lastCrisis) {
         mem.lastCrisis = now;
-        cmd({ type: 'meeting', scope: 'alle', topic: 'Crisisoverleg: de firewall staat onder druk!' });
+        cmd({ type: 'meeting', scope: 'mt', topic: 'Crisisoverleg op advies van RISK THREAT' });
         return;
       }
 
@@ -100,9 +109,8 @@ window.FC = window.FC || {};
         return;
       }
 
-      // 2. Zorgen voor het team.
+      // 2. Zorgen voor het team: wie leeg raakt, gaat naar het buffet.
       team.filter(a => a.state === 'working' && a.energy < 25).forEach(a => cmd({ type: 'rest', agentId: a.id }));
-      if (h.dept === 'poort') this.guardDuty(team, cmd);
 
       // 3. Taken van de eigen stapel verdelen (geen gelopen nodig).
       const free = team.filter(a => a.state === 'idle' && !a.taskId && a.energy >= 30);
@@ -129,23 +137,49 @@ window.FC = window.FC || {};
       const board = deptTasks('bord');
       if (board.length && free.length && !s.meeting) cmd({ type: 'pickup', count: free.length + 1 });
     }
+  }
 
-    guardDuty(team, cmd) {
-      const onDuty = team.find(a => a.state === 'guarding' || a.intent === 'guard');
-      const available = a => (a.state === 'idle' || a.state === 'coffee') && !a.taskId;
-      if (!onDuty) {
-        const cand = team.filter(a => a.energy >= 40 && available(a)).sort((p, q) => q.energy - p.energy)[0];
-        if (cand) cmd({ type: 'guard', agentId: cand.id });
-      } else if (onDuty.energy < 30) {
-        const relief = team.find(a => a !== onDuty && a.energy >= 70 && available(a));
-        if (relief) {
-          cmd({ type: 'guard', agentId: relief.id });
-          cmd({ type: 'rest', agentId: onDuty.id });
-        }
+  // ---------- RISK THREAT: risk & safety officer ----------
+
+  class RiskBrain {
+    constructor(org) { this.org = org; }
+
+    tick(r) {
+      const org = this.org;
+      const s = org.state;
+      if (r.state !== 'idle') return;
+      if (s.meeting && s.meeting.attendees.includes(r.id)) return;
+      const now = org.now();
+      const mem = s.memory;
+      const cmd = c => org.execute(c, r.id);
+
+      // 1. Een scan afronden: veilig of lek.
+      if (r.reviewDone) {
+        const t = org.task(r.reviewDone);
+        const leak = t.secRevision < 1 && (t.quality < 0.5 || Math.random() < 0.15);
+        cmd({ type: 'verdict', taskId: t.id, verdict: leak ? 'lek' : 'veilig', note: leak ? pick(LEAK_NOTES) : '' });
+        return;
       }
+
+      // 2. Godfred adviseren als de firewall zwak wordt.
+      if (s.firewall < 65 && now - mem.lastAdvice >= ADVICE_EVERY) {
+        cmd({ type: 'advise', note: `De firewall staat op ${Math.round(s.firewall)}%. Ik adviseer een crisisoverleg en extra waakzaamheid.` });
+        return;
+      }
+
+      // 3. Ontwikkelwerk scannen gaat voor.
+      const queue = s.tasks.filter(t => t.status === 'scan').sort((p, q) => p.id - q.id);
+      if (queue.length) { cmd({ type: 'review', taskId: queue[0].id }); return; }
+
+      // 4. Firewall versterken.
+      if (s.firewall < 100) { cmd({ type: 'harden' }); return; }
+
+      // 5. Inspectieronde bij de poort.
+      if (now - mem.lastPatrol >= PATROL_EVERY) cmd({ type: 'patrol' });
     }
   }
 
   FC.GodfredBrain = GodfredBrain;
   FC.HeadBrain = HeadBrain;
+  FC.RiskBrain = RiskBrain;
 })(window.FC);

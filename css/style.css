@@ -254,6 +254,10 @@ body {
 .team-row.role-head { background: #f1ede0; }
 .team-row.role-agent { margin-left: 14px; }
 .type-tag.role-director { background: var(--accent-2); color: var(--ink); text-shadow: none; }
+.type-tag.role-risk { background: #7b3fa0; }
+.team-row.role-risk { background: #f1e8f8; }
+.status.eating { color: #c27a00; }
+.status.hardening, .status.patrol { color: #7b3fa0; }
 .status.meeting { color: #5873b5; }
 .status.coffee { color: #8b5a2b; }
 .status.reviewing { color: #a8743f; }
@@ -323,6 +327,8 @@ body {
 .log-list .time { color: var(--muted); font-size: 9px; display: block; }
 .log-list .levelup { color: #2e6fd8; }
 .log-list .feedback { color: var(--accent); }
+.log-list .scan, .log-list .advies { color: #7b3fa0; }
+.log-list .snack { color: #c27a00; }
 .log-list .approve { color: #2f9e5b; }
 .log-list .opdracht, .log-list .project { color: #7b3fa0; }
 .log-list .post, .log-list .pickup, .log-list .deliver, .log-list .check, .log-list .output { color: #5b6478; }
@@ -388,6 +394,7 @@ body {
 .flag.boss { background: #7b3fa0; }
 .flag.rev { background: var(--accent); }
 .flag.fix { background: #a8743f; }
+.flag.sec { background: #7b3fa0; }
 .note {
   font-size: 9px;
   font-style: italic;
@@ -411,3 +418,23 @@ body {
 .chip.ok::before { content: "✓ "; }
 .section-title b { color: var(--accent); }
 .empty { font-size: 11px; color: var(--muted); padding: 12px 4px; }
+
+/* ---------- rolkaart ---------- */
+
+.rolecard {
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.rc-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.rc-head span { color: var(--muted); font-size: 9px; }
+.rc-mission { margin: 6px 0; }
+.rc-label { font-size: 9px; color: var(--muted); }
+.rc-tasks { margin: 2px 0 6px; padding-left: 16px; }
+.rc-grid { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; font-size: 9px; }
+.rc-grid > span:nth-child(odd) { color: var(--muted); }
+.rc-grid code { background: var(--paper-2); padding: 0 3px; border-radius: 3px; font-family: inherit; }

@@ -25,7 +25,7 @@ window.FC = window.FC || {};
   };
 
   // Toestanden waarin een agent zit (geen loop-animatie).
-  const SEATED = new Set(['working', 'idle', 'meeting', 'reviewing', 'resting', 'coffee']);
+  const SEATED = new Set(['working', 'idle', 'meeting', 'reviewing', 'resting', 'eating', 'hardening']);
 
   function px(ctx, x, y, w, h, color) {
     ctx.fillStyle = color;
@@ -133,6 +133,32 @@ window.FC = window.FC || {};
     }
   }
 
+  // Kleine versnaperingen (8x6) voor het buffet en boven etende agents.
+  function drawFood(ctx, item, x, y) {
+    switch (item) {
+      case 'koffie':
+        px(ctx, x, y, 4, 6, C.outline); px(ctx, x + 1, y + 1, 2, 4, '#7a4a24');
+        px(ctx, x + 5, y + 3, 3, 3, '#ffffff'); px(ctx, x + 5, y + 3, 3, 1, '#7a4a24');
+        break;
+      case 'fruit':
+        px(ctx, x, y + 3, 8, 3, '#b07a48');
+        px(ctx, x + 1, y + 1, 2, 2, '#e8453c'); px(ctx, x + 3, y, 2, 3, '#ffd23f'); px(ctx, x + 5, y + 1, 2, 2, '#5dbb3a');
+        break;
+      case 'broodje':
+        px(ctx, x, y + 1, 8, 2, '#e0b060'); px(ctx, x, y + 3, 8, 1, '#5dbb3a'); px(ctx, x, y + 4, 8, 2, '#c9964a');
+        break;
+      case 'smoothie':
+        px(ctx, x + 1, y + 1, 3, 5, '#f06bb5'); px(ctx, x + 4, y + 2, 3, 4, '#9ed8ff');
+        px(ctx, x + 2, y - 1, 1, 2, '#ffffff');
+        break;
+      case 'taart':
+        px(ctx, x, y + 2, 8, 4, '#ffe6f0'); px(ctx, x, y + 2, 8, 1, '#f06bb5'); px(ctx, x + 3, y, 2, 2, '#e8453c');
+        break;
+      default:
+        px(ctx, x + 2, y + 1, 4, 5, '#9ed8ff'); // water
+    }
+  }
+
   // Statisch meubilair (alles wat nooit voor een agent langs hoeft).
   function drawStaticFurniture(ctx, f, x, y) {
     switch (f.kind) {
@@ -149,13 +175,26 @@ window.FC = window.FC || {};
         px(ctx, x + 4, y + 6, 4, 2, '#ffffff');
         break;
       }
-      case 'coffee':
-        px(ctx, x + 2, y + 1, 12, 14, C.outline);
-        px(ctx, x + 3, y + 2, 10, 12, '#9aa3b5');
-        px(ctx, x + 4, y + 3, 8, 4, '#2a3b5c');
-        px(ctx, x + 10, y + 4, 1, 1, '#ff3b3b');
-        px(ctx, x + 6, y + 10, 4, 3, '#ffffff');
-        px(ctx, x + 7, y + 11, 2, 1, '#7a4a24');
+      case 'buffet': {
+        // Toonbank met de versnapering erop en een prijskaartje in XP.
+        px(ctx, x, y + 2, T, 13, C.outline);
+        px(ctx, x, y + 3, T, 7, '#e8c08a');
+        px(ctx, x, y + 10, T, 4, '#b07a48');
+        drawFood(ctx, f.item, x + 4, y + 2);
+        const m = (FC.MENU || []).find(i => i.id === f.item);
+        if (m) {
+          px(ctx, x + 3, y + 10, 10, 5, '#ffffff');
+          text(ctx, `${m.cost}`, x + 4, y + 10, C.outline, 5);
+        }
+        break;
+      }
+      case 'server':
+        px(ctx, x + 2, y, 12, 16, C.outline);
+        px(ctx, x + 3, y + 1, 10, 14, '#3b3f58');
+        for (let i = 0; i < 4; i++) {
+          px(ctx, x + 4, y + 2 + i * 3, 8, 2, '#2a2d40');
+          px(ctx, x + 10, y + 2 + i * 3, 1, 1, i % 2 ? '#3fc45a' : '#ffd23f');
+        }
         break;
       case 'plant':
         px(ctx, x + 5, y + 10, 6, 5, '#b5643a');
@@ -299,7 +338,7 @@ window.FC = window.FC || {};
       // Beeldscherm: licht op als er iemand achter werkt of controleert.
       const occ = occupants.get(`${p.x},${p.y - 1}`);
       if (!boss || p.x === 16) {
-        const busy = occ && (occ.state === 'working' || occ.state === 'reviewing');
+        const busy = occ && ['working', 'reviewing', 'hardening'].includes(occ.state);
         const flick = Math.floor(this.time * 6 + p.x) % 3;
         px(ctx, x + 4, y - 7, 8, 6, C.outline);
         px(ctx, x + 5, y - 6, 6, 4, busy ? (flick ? '#7fe0ff' : '#b8f0ff') : '#2a3b5c');
@@ -402,19 +441,25 @@ window.FC = window.FC || {};
         ctx.globalAlpha = 1 - ph;
         text(ctx, 'z', X + 11 + ph * 3, Y - 2 - ph * 8, '#ffffff', 7);
         ctx.globalAlpha = 1;
-      } else if (a.state === 'coffee') {
-        px(ctx, X + 12, Y + 1, 4, 4, '#ffffff');
-        px(ctx, X + 13, Y + 2, 2, 1, '#7a4a24');
-      } else if (a.state === 'guarding') {
+      } else if (a.state === 'eating' || (a.snack && a.intent === 'eat')) {
+        drawFood(ctx, a.snack, X + 10, Y - 2);
+      } else if (a.state === 'hardening') {
+        // Schildje dat oplaadt: RISK THREAT versterkt de firewall.
+        const blink = Math.floor(this.time * 3) % 2;
+        px(ctx, X + 11, Y - 4, 7, 7, C.outline);
+        px(ctx, X + 12, Y - 3, 5, 4, blink ? '#b9a3ff' : '#7b3fa0');
+        px(ctx, X + 13, Y + 1, 3, 1, '#7b3fa0');
+      } else if (a.state === 'patrol') {
         px(ctx, X + 12, Y - 1, 5, 6, C.outline);
         px(ctx, X + 13, Y, 3, 4, '#ffd23f');
       }
-      if (a.role === 'director' || a.role === 'head') {
-        const lbl = a.role === 'director' ? 'DIRECTEUR' : 'HOOFD';
+      const LABELS = { director: ['DIRECTEUR', '#ffd23f', C.outline], risk: ['RISK', '#7b3fa0', '#ffffff'] };
+      if (a.role !== 'agent') {
+        const [lbl, bg, fg] = LABELS[a.role] || ['HOOFD', org.deptColor(a.dept), '#ffffff'];
         ctx.font = 'bold 5px "Courier New", monospace';
         const w = Math.ceil(ctx.measureText(lbl).width) + 4;
-        px(ctx, X + 8 - w / 2, Y + 19, w, 7, a.role === 'director' ? '#ffd23f' : org.deptColor(a.dept));
-        text(ctx, lbl, X + 10 - w / 2, Y + 20, a.role === 'director' ? C.outline : '#ffffff', 5);
+        px(ctx, X + 8 - w / 2, Y + 19, w, 7, bg);
+        text(ctx, lbl, X + 10 - w / 2, Y + 20, fg, 5);
       }
     }
 

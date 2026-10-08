@@ -7,16 +7,18 @@ window.FC = window.FC || {};
   const MAP = FC.map;
 
   const STATUS = {
-    idle: 'WACHT OP TAAK', walking: 'ONDERWEG', working: 'AAN HET WERK', resting: 'PAUZE',
-    guarding: 'OP WACHT', meeting: 'IN VERGADERING', coffee: 'KOFFIE', reviewing: 'CONTROLEERT',
+    idle: 'WACHT OP TAAK', walking: 'ONDERWEG', working: 'AAN HET WERK', resting: 'PAUZE (WATER)',
+    meeting: 'IN VERGADERING', eating: 'EET IETS', reviewing: 'CONTROLEERT',
+    hardening: 'VERSTERKT FIREWALL', patrol: 'INSPECTIE BIJ POORT',
   };
-  const LEAD_IDLE = { director: 'AAN ZIJN BUREAU', head: 'STUURT TEAM AAN' };
+  const LEAD_IDLE = { director: 'AAN ZIJN BUREAU', head: 'STUURT TEAM AAN', risk: 'BEWAAKT HET NETWERK' };
   const INTENT = {
-    desk: 'NAAR BUREAU', rest: 'NAAR LOUNGE', guard: 'NAAR POORT', meeting: 'NAAR VERGADERING',
-    coffee: 'HAALT KOFFIE', post: 'NAAR PRIKBORD', pickup: 'HAALT TAKEN OP', deliver: 'NAAR GODFRED',
+    desk: 'NAAR BUREAU', rest: 'NAAR LOUNGE', meeting: 'NAAR VERGADERING', buffet: 'NAAR BUFFET',
+    eat: 'MET ETEN NAAR ZITPLEK', post: 'NAAR PRIKBORD', pickup: 'HAALT TAKEN OP', deliver: 'NAAR GODFRED',
+    patrol: 'NAAR DE POORT',
   };
-  const ROLE_LABEL = { director: 'DIRECTEUR', head: 'HOOFD', agent: 'AGENT' };
-  const DEPT_ORDER = ['hq', 'lab', 'studio', 'bieb', 'werk', 'poort'];
+  const ROLE_LABEL = { director: 'DIRECTEUR', head: 'HOOFD', agent: 'AGENT', risk: 'RISK & SAFETY' };
+  const DEPT_ORDER = ['hq', 'poort', 'lab', 'studio', 'bieb', 'werk'];
   // De pijplijn op het PRIKBORD-tabblad.
   const PIPELINE = [
     ['concept', 'BIJ GODFRED IN VOORBEREIDING'],
@@ -24,17 +26,18 @@ window.FC = window.FC || {};
     ['opgehaald', 'OP DE STAPEL VAN HET HOOFD'],
     ['bezig', 'IN UITVOERING'],
     ['controle', 'CONTROLE DOOR HOOFD'],
+    ['scan', 'SECURITY-SCAN DOOR RISK THREAT'],
     ['gecontroleerd', 'KLAAR VOOR GODFRED'],
     ['onderweg', 'ONDERWEG NAAR GODFRED'],
     ['ingeleverd', 'LIGT BIJ GODFRED'],
   ];
   // Gebeurtenissen die groot in het dialoogvenster verschijnen. De rest zie
   // je als vliegende berichtjes op de kaart en in het logboek.
-  const DIALOG_KINDS = new Set(['opdracht', 'project', 'feedback', 'meeting', 'alarm', 'recruit', 'warn', 'info', 'levelup']);
+  const DIALOG_KINDS = new Set(['opdracht', 'project', 'feedback', 'advies', 'meeting', 'alarm', 'warn', 'info', 'levelup']);
   const LETTER_COLORS = { order: '#ffffff', output: '#ffe27a', rest: '#c8f0ff' };
   const POPUPS = {
     levelup: ['LEVEL UP!', '#ffd23f'], approve: ['GOEDGEKEURD!', '#7dff8a'], feedback: ['REVISIE!', '#ff8a7a'],
-    security: ['GEBLOKT!', '#ffffff'], recruit: ['NIEUW!', '#ffb36b'],
+    security: ['GEBLOKT!', '#ffffff'], snack: ['NOM!', '#ffd23f'],
   };
 
   const hpClass = pct => (pct < 25 ? 'low' : pct < 50 ? 'mid' : '');
@@ -68,6 +71,7 @@ window.FC = window.FC || {};
 
     tag(a) {
       if (a.role === 'director') return '<span class="type-tag role-director">DIRECTEUR</span>';
+      if (a.role === 'risk') return '<span class="type-tag role-risk">MT · RISK &amp; SAFETY</span>';
       const color = this.org.deptColor(a.dept);
       return `<span class="type-tag" style="background:${color}">${ROLE_LABEL[a.role]}</span>`;
     }
@@ -84,10 +88,6 @@ window.FC = window.FC || {};
         if (!org.execute({ type: 'meeting', scope: 'alle', topic: 'Algemene vergadering op verzoek van de baas' })) {
           org.emit({ kind: 'warn', text: 'Er loopt al een vergadering.' });
         }
-      });
-      $('btn-recruit').addEventListener('click', () => {
-        const a = org.recruit();
-        if (a) this.select(a.id);
       });
       $('btn-reset').addEventListener('click', () => {
         if (!confirm('Weet je zeker dat je opnieuw wilt beginnen? Alle voortgang gaat verloren.')) return;
@@ -196,15 +196,14 @@ window.FC = window.FC || {};
     render() {
       const s = this.org.state;
       $('clock').textContent = this.org.clockLabel();
-      $('credits').textContent = `${s.credits} ⛁`;
+      $('snacks').textContent = s.stats.snacks;
+      $('leaks').textContent = s.stats.leaks;
       $('firewall').textContent = `${Math.round(s.firewall)}%`;
       setBar($('firewall-bar'), s.firewall);
       $('projects-done').textContent = s.stats.projectsDone;
       $('tasks-approved').textContent = s.stats.tasksApproved;
       $('revisions').textContent = s.stats.revisions;
       $('blocked').textContent = s.stats.intrudersBlocked;
-      $('btn-recruit').disabled = s.credits < FC.RECRUIT_COST;
-      $('btn-recruit').title = `Nieuwe agent werven (${FC.RECRUIT_COST} ⛁)`;
       $('board-count').textContent = s.tasks.filter(t => t.status === 'bord').length;
 
       if (this.tab === 'team') { this.renderTeam(); this.renderDetail(); }
@@ -237,7 +236,7 @@ window.FC = window.FC || {};
     renderTeam() {
       const counts = {};
       // Hoofden eerst, dan de agents.
-      const rank = { director: 0, head: 1, agent: 2 };
+      const rank = { director: 0, risk: 1, head: 1, agent: 2 };
       const agents = [...this.org.state.agents].sort((p, q) => rank[p.role] - rank[q.role] || p.id - q.id);
       for (const a of agents) {
         if (a.role === 'agent') counts[a.dept] = (counts[a.dept] || 0) + 1;
@@ -260,7 +259,7 @@ window.FC = window.FC || {};
         }
         row.classList.toggle('selected', a.id === this.selectedId);
         row.querySelector('.name').textContent = a.name;
-        row.querySelector('.lvl').textContent = `Lv${a.level}`;
+        row.querySelector('.lvl').textContent = a.role === 'agent' ? `Lv${a.level} · ${a.wallet} XP` : `Lv${a.level}`;
         setBar(row.querySelector('.fill'), a.energy);
         const st = row.querySelector('.status');
         st.textContent = this.statusLabel(a);
@@ -268,7 +267,7 @@ window.FC = window.FC || {};
       }
       this.sections.forEach((sec, dept) => {
         const n = counts[dept] || 0;
-        sec.querySelector('.dept-count').textContent = dept === 'hq' ? '' : `HOOFD + ${n} agent${n === 1 ? '' : 's'}`;
+        sec.querySelector('.dept-count').textContent = dept === 'hq' ? 'DIRECTIE' : dept === 'poort' ? 'MT-LID' : `HOOFD + ${n} agent${n === 1 ? '' : 's'}`;
       });
     }
 
@@ -288,6 +287,7 @@ window.FC = window.FC || {};
               <div class="kv">
                 <span>ENERGIE</span><span class="bar"><span class="fill" data-k="hp"></span></span>
                 <span>XP</span><span class="bar"><span class="fill xp" data-k="xp"></span></span>
+                ${a.role === 'agent' ? '<span>XP-SALDO</span><span class="d-wallet"></span>' : ''}
                 <span>AFDELING</span><span class="d-dept"></span>
                 <span>STATUS</span><span class="d-status"></span>
                 <span>TAAK</span><span class="d-task"></span>
@@ -296,17 +296,14 @@ window.FC = window.FC || {};
             </div>
           </div>
           <p class="dex"></p>
+          <div class="rolecard"></div>
           <div class="actions">
-            ${a.role === 'agent' ? '<button class="btn d-rest">STUUR NAAR PAUZE</button>' : ''}
+            ${a.role === 'agent' ? '<button class="btn d-rest">STUUR NAAR BUFFET</button>' : ''}
             <button class="btn btn-ghost d-close">SLUIT</button>
           </div>`;
         el.querySelector('.pic').appendChild(FC.sprites.spriteCanvas(a.species, 6));
-        const role = {
-          director: 'Directeur. Krijgt opdrachten van de baas, knipt ze op in taken, hangt ze op het prikbord en beoordeelt de output van de afdelingen.',
-          head: 'Afdelingshoofd. Haalt taken van het prikbord, verdeelt ze over het team, controleert het werk en brengt de output naar Godfred.',
-          agent: 'Agent. Voert taken uit aan het eigen bureau en levert de output in bij het afdelingshoofd.',
-        }[a.role];
-        el.querySelector('.dex').textContent = `${role} ${FC.sprites.SPECIES[a.species].dex}`;
+        el.querySelector('.dex').textContent = FC.sprites.SPECIES[a.species].dex;
+        el.querySelector('.rolecard').innerHTML = this.roleCard(a);
         const rest = el.querySelector('.d-rest');
         if (rest) rest.addEventListener('click', () => this.org.execute({ type: 'rest', agentId: a.id }));
         el.querySelector('.d-close').addEventListener('click', () => this.select(null));
@@ -320,13 +317,31 @@ window.FC = window.FC || {};
       const t = this.org.task(a.taskId || a.reviewTask);
       el.querySelector('.d-task').textContent = t ? `${t.title}${a.taskId ? ` (${Math.floor(t.progress / t.required * 100)}%)` : ''}` : '—';
       const st = a.stats;
-      el.querySelector('.d-record').textContent = a.role === 'director'
-        ? `${st.reviewed} beoordeeld`
-        : a.role === 'head'
-          ? `${st.checked} gecontroleerd · ${st.delivered} ingeleverd`
-          : `${st.tasks} af · ${st.approved} goedgekeurd · ${st.revisions} revisies`;
+      el.querySelector('.d-record').textContent = {
+        director: () => `${st.reviewed} beoordeeld`,
+        risk: () => `${st.scanned} gescand · ${st.leaks} lekken · ${st.blocked} geblokt`,
+        head: () => `${st.checked} gecontroleerd · ${st.delivered} ingeleverd`,
+        agent: () => `${st.tasks} af · ${st.approved} goedgekeurd · ${st.revisions} revisies · ${st.snacks} snacks`,
+      }[a.role]();
+      const wallet = el.querySelector('.d-wallet');
+      if (wallet) wallet.textContent = `${a.wallet} XP te besteden`;
       const rest = el.querySelector('.d-rest');
       if (rest) rest.disabled = a.state === 'resting' || a.intent === 'rest';
+    }
+
+    roleCard(a) {
+      const r = FC.ROLES[a.role];
+      if (!r) return '';
+      return `
+        <div class="rc-head"><b>ROLKAART · ${r.title}</b><span>${r.level}</span></div>
+        <p class="rc-mission">${esc(r.mission)}</p>
+        <div class="rc-label">TAKEN</div>
+        <ul class="rc-tasks">${r.tasks.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+        <div class="rc-grid">
+          <span>RAPPORTEERT AAN</span><span>${esc(r.reportsTo)}</span>
+          <span>STUURT AAN</span><span>${esc(r.leads)}</span>
+          ${r.rights.length ? `<span>COMMANDO'S</span><span>${r.rights.map(c => `<code>${c}</code>`).join(' ')}</span>` : ''}
+        </div>`;
     }
 
     taskLine(t) {
@@ -336,6 +351,7 @@ window.FC = window.FC || {};
         t.boss ? '<span class="flag boss">BAAS</span>' : '',
         t.revision ? `<span class="flag rev">REVISIE ${t.revision}</span>` : '',
         t.headRevision ? '<span class="flag fix">BIJGESCHAAFD</span>' : '',
+        t.secCheck ? `<span class="flag sec">${t.secured ? '🔒 VEILIG' : t.secRevision ? 'LEK GEDICHT' : 'SECURITY'}</span>` : '',
       ].join('');
       return `
         <li class="task">
@@ -388,7 +404,7 @@ window.FC = window.FC || {};
         return `
           <li class="task">
             <div class="line"><span><i class="dot" style="background:${org.deptColor(t.dept)}"></i>${esc(t.title)}</span><span class="stars">${'★'.repeat(FC.stars(t.quality))}</span></div>
-            <div class="meta"><span>${MAP.room(t.dept).name}${who ? ` · ${esc(who.name)}` : ''}</span><span>${t.revision ? `${t.revision}x revisie` : 'in één keer'}</span></div>
+            <div class="meta"><span>${MAP.room(t.dept).name}${who ? ` · ${esc(who.name)}` : ''}${t.secured ? ' · 🔒' : ''}</span><span>${t.revision ? `${t.revision}x revisie` : 'in één keer'}</span></div>
             <div class="note">GODFRED: "${esc(t.feedback)}"</div>
           </li>`;
       }).join('') || '<li class="empty">Nog niets goedgekeurd.</li>';

@@ -8,22 +8,36 @@
 //   opgehaald      op de stapel van het afdelingshoofd
 //   bezig          een agent werkt eraan
 //   controle       output ligt bij het hoofd
-//   gecontroleerd  goedgekeurd door het hoofd, wacht op bezorging
+//   scan           ligt bij RISK THREAT voor een security-scan (ontwikkelwerk)
+//   gecontroleerd  goedgekeurd door het hoofd (en veilig), wacht op bezorging
 //   onderweg       het hoofd loopt ermee naar Godfred
 //   ingeleverd     ligt bij Godfred
 //   goedgekeurd    klaar. (Of terug naar 'bord' als revisie.)
+//
+// XP: goedgekeurd werk levert XP op. XP telt voor het level en komt ook op
+// het XP-saldo, waarmee agents in de lounge iets van het buffet pakken om
+// hun energie aan te vullen.
 window.FC = window.FC || {};
 
 (function (FC) {
   const MAP = FC.map;
-  const SAVE_KEY = 'feedcloudje.org.v3';
+  const SAVE_KEY = 'feedcloudje.org.v4';
   const GAME_MINUTES_PER_SECOND = 8;
   const WALK_SPEED = 3.6;
-  const RECRUIT_COST = 200;
+  const EAT_MINUTES = 6;
+  // Het self-service buffet in de lounge. Prijs in XP, energie erbij.
+  const MENU = [
+    { id: 'koffie',   name: 'KOFFIE',   cost: 5,  energy: 15, color: '#7a4a24' },
+    { id: 'fruit',    name: 'FRUIT',    cost: 8,  energy: 25, color: '#5dbb3a' },
+    { id: 'broodje',  name: 'BROODJE',  cost: 12, energy: 40, color: '#e0b060' },
+    { id: 'smoothie', name: 'SMOOTHIE', cost: 18, energy: 60, color: '#f06bb5' },
+    { id: 'taart',    name: 'TAART',    cost: 30, energy: 100, color: '#ffe6f0' },
+  ];
   const MEETING_LENGTH = 25;
   const MEETING_MAX_WAIT = 40;
   const HEAD_REVIEW_MINUTES = 4;
   const GODFRED_REVIEW_MINUTES = 4;
+  const RISK_SCAN_MINUTES = 3;
 
   const TYPES = {
     CODE: { color: '#4a90e2' }, DATA: { color: '#3fae5a' }, CREATIEF: { color: '#f06bb5' },
@@ -37,14 +51,14 @@ window.FC = window.FC || {};
     studio: ['logo', 'ontwerp', 'campagne', 'video', 'post', 'tekst', 'huisstijl', 'design', 'social', 'nieuwsbrief', 'merk'],
     bieb:   ['onderzoek', 'analyse', 'data', 'rapport', 'markt', 'cijfers', 'klant', 'trend', 'concurrent'],
     werk:   ['planning', 'factuur', 'server', 'proces', 'inkoop', 'voorraad', 'backup', 'lancer', 'uitrol', 'support'],
-    poort:  ['beveilig', 'toegang', 'wachtwoord', 'privacy', 'audit', 'avg', 'veilig'],
   };
+  // Opdrachten met deze woorden gaan altijd langs RISK THREAT.
+  const SECURITY_WORDS = ['beveilig', 'toegang', 'wachtwoord', 'privacy', 'audit', 'avg', 'veilig', 'login', 'betaal', 'server', 'api'];
   const TEMPLATES = {
     lab:    ['Login-pagina bouwen', 'API koppelen', 'Tests schrijven', 'Database migreren', 'Performance tunen'],
     studio: ['Logo ontwerpen', 'Social post maken', 'Video monteren', 'Websiteteksten', 'Campagne bedenken'],
     bieb:   ['Marktonderzoek', 'Data opschonen', 'Klantanalyse', 'Weekrapport maken', 'Trends voorspellen'],
     werk:   ['Serveronderhoud', 'Back-up maken', 'Facturen verwerken', 'Planning bijwerken', 'Voorraad tellen'],
-    poort:  ['Toegang auditen', 'Wachtwoorden roteren', 'Pentest uitvoeren', 'Logs controleren'],
   };
 
   const NICKNAMES = ['PIP', 'NOVA', 'BRAM', 'LOTTE', 'JUUL', 'DEX', 'FENNA', 'MILO', 'SAAR', 'TIJN',
@@ -56,7 +70,8 @@ window.FC = window.FC || {};
   const PERMISSIONS = {
     baas:     ['order', 'meeting', 'rest'],
     director: ['plan', 'initiative', 'post', 'review', 'feedback', 'meeting', 'say'],
-    head:     ['pickup', 'assign', 'review', 'check', 'deliver', 'rest', 'guard', 'say'],
+    head:     ['pickup', 'assign', 'review', 'check', 'deliver', 'rest', 'say'],
+    risk:     ['review', 'verdict', 'harden', 'patrol', 'advise', 'say'],
   };
 
   const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
@@ -77,6 +92,7 @@ window.FC = window.FC || {};
       this.spots = new Map(); // bezette plekken (stoelen, zitzakken, ...) → agentId
       this.godfredBrain = new FC.GodfredBrain(this);
       this.headBrain = new FC.HeadBrain(this);
+      this.riskBrain = new FC.RiskBrain(this);
     }
 
     on(fn) { this.listeners.push(fn); }
@@ -96,20 +112,20 @@ window.FC = window.FC || {};
       this.state = {
         name: 'FEEDCLOUDJE',
         clock: 8 * 60 + 30,
-        credits: 150,
         firewall: 100,
         nextId: 1,
         agents: [],
         tasks: [],
         projects: [],
         meeting: null,
-        memory: { lastMt: 0, lastCrisis: -9999, lastInitiative: 0 },
-        stats: { projectsDone: 0, tasksApproved: 0, revisions: 0, intrudersBlocked: 0, breaches: 0, meetings: 0 },
+        memory: { lastMt: 0, lastCrisis: -9999, lastInitiative: 0, lastPatrol: 0, lastAdvice: -9999, adviceAt: -9999 },
+        stats: { projectsDone: 0, tasksApproved: 0, revisions: 0, leaks: 0, intrudersBlocked: 0, breaches: 0, meetings: 0, snacks: 0, xpSpent: 0 },
         log: [],
       };
       this.state.memory.lastMt = this.state.clock - 6 * 60 + 20; // eerste MT-overleg na ~20 minuten
       this.addAgent('PLANUIL', { role: 'director', name: 'GODFRED' });
-      [['BITBIT', 3], ['PIXELFEE', 3], ['DATADIL', 3], ['MOERBOT', 3], ['KLUISBEER', 2]].forEach(([species, n]) => {
+      this.addAgent('KLUISBEER', { role: 'risk', name: 'RISK THREAT' });
+      [['BITBIT', 3], ['PIXELFEE', 3], ['DATADIL', 3], ['MOERBOT', 3]].forEach(([species, n]) => {
         this.addAgent(species, { role: 'head' });
         for (let i = 0; i < n; i++) this.addAgent(species, { initial: true });
       });
@@ -171,6 +187,7 @@ window.FC = window.FC || {};
     project(id) { return this.state.projects.find(p => p.id === id); }
     director() { return this.state.agents.find(a => a.role === 'director'); }
     head(dept) { return this.state.agents.find(a => a.role === 'head' && a.dept === dept); }
+    risk() { return this.state.agents.find(a => a.role === 'risk'); }
     deptColor(dept) { const r = MAP.room(dept); return r.type ? TYPES[r.type].color : '#a8743f'; }
 
     freeDesk(dept) {
@@ -181,7 +198,8 @@ window.FC = window.FC || {};
       const role = opts.role || 'agent';
       const type = FC.sprites.SPECIES[species].type;
       const dept = role === 'director' ? 'hq' : MAP.roomForType(type).id;
-      const seat = role === 'director' ? MAP.BOSS_SEAT : role === 'head' ? MAP.room(dept).headSeat : this.freeDesk(dept);
+      const seat = role === 'director' ? MAP.BOSS_SEAT : role === 'risk' ? MAP.RISK_SEAT
+        : role === 'head' ? MAP.room(dept).headSeat : this.freeDesk(dept);
       if (!seat) return null;
       const used = new Set(this.state.agents.map(a => a.name));
       const free = NICKNAMES.filter(n => !used.has(n));
@@ -190,8 +208,10 @@ window.FC = window.FC || {};
         id: this.state.nextId++,
         name, species, type, role, dept,
         seat: { x: seat.x, y: seat.y },
-        level: role === 'director' ? 10 : role === 'head' ? rand(6, 8) : opts.initial ? rand(2, 5) : rand(1, 3),
+        level: role === 'director' ? 10 : role === 'agent' ? (opts.initial ? rand(2, 5) : rand(1, 3)) : rand(6, 8),
         xp: 0,
+        wallet: role === 'agent' ? rand(15, 40) : 0, // XP-saldo voor het buffet
+        snack: null,
         energy: 100,
         state: 'idle',
         intent: null,
@@ -203,7 +223,7 @@ window.FC = window.FC || {};
         path: [],
         facing: 1,
         timer: 0,
-        stats: { tasks: 0, approved: 0, revisions: 0, checked: 0, delivered: 0, reviewed: 0, blocked: 0 },
+        stats: { tasks: 0, approved: 0, revisions: 0, checked: 0, delivered: 0, reviewed: 0, scanned: 0, leaks: 0, blocked: 0, snacks: 0 },
       };
       this.state.agents.push(a);
       return a;
@@ -239,8 +259,11 @@ window.FC = window.FC || {};
         quality: 0,
         revision: 0,      // keren teruggestuurd door Godfred
         headRevision: 0,  // keren teruggestuurd door het hoofd
+        secCheck: dept === 'lab' || SECURITY_WORDS.some(w => project.title.toLowerCase().includes(w)),
+        secRevision: 0,   // keren teruggestuurd door RISK THREAT
+        secured: false,
         feedback: '',
-        reward: { xp: d * 12, credits: d * 15 },
+        reward: { xp: d * 12 },
         checkedAt: 0,
         doneAt: null,
       };
@@ -268,26 +291,6 @@ window.FC = window.FC || {};
       });
       p.status = 'loopt';
       return depts;
-    }
-
-    recruit() {
-      if (this.state.credits < RECRUIT_COST) {
-        this.emit({ kind: 'warn', text: `Niet genoeg credits. Werven kost ${RECRUIT_COST} ⛁.` });
-        return null;
-      }
-      const options = Object.keys(FC.sprites.SPECIES)
-        .filter(sp => sp !== 'PLANUIL' && this.freeDesk(MAP.roomForType(FC.sprites.SPECIES[sp].type).id));
-      if (!options.length) {
-        this.emit({ kind: 'warn', text: 'Alle bureaus zijn bezet. Er past niemand meer bij.' });
-        return null;
-      }
-      this.state.credits -= RECRUIT_COST;
-      const species = pick(options);
-      const a = this.addAgent(species);
-      a.x = MAP.GUARD_SPOT.x; a.y = MAP.GUARD_SPOT.y; // komt binnen via de poort
-      this.toDesk(a);
-      this.emit({ kind: 'recruit', agentId: a.id, text: `${a.name} de ${species} komt door de poort binnen en versterkt ${roomName(a.dept)}!` });
-      return a;
     }
 
     // ---------- plekken & beweging ----------
@@ -326,8 +329,36 @@ window.FC = window.FC || {};
     toDesk(a) { this.releaseSpot(a); this.moveTo(a, a.seat, 'desk'); }
 
     toRest(a) {
-      // Lounge vol? Dan maar even pauze aan het eigen bureau.
+      // Gratis pauze (alleen water): langzaam bijtanken. Lounge vol? Dan aan
+      // het eigen bureau.
       if (!this.goToSpot(a, MAP.REST_SPOTS, 'rest')) this.moveTo(a, a.seat, 'rest');
+    }
+
+    // Naar het buffet: kies de goedkoopste versnapering die de energie
+    // helemaal aanvult, of anders de beste die het XP-saldo toelaat.
+    toBuffet(a) {
+      const need = 100 - a.energy;
+      const affordable = MENU.filter(m => m.cost <= a.wallet);
+      if (!affordable.length) { this.toRest(a); return 'water'; }
+      const wanted = affordable.find(m => m.energy >= need) || affordable[affordable.length - 1];
+      const order = [wanted, ...affordable.filter(m => m !== wanted).reverse()];
+      for (const m of order) {
+        const spot = MAP.BUFFET.find(b => b.item === m.id);
+        if (this.goToSpot(a, [spot], 'buffet')) { a.snack = m.id; return m.id; }
+      }
+      return null; // buffet druk, straks nog een keer
+    }
+
+    buy(a) {
+      const m = MENU.find(x => x.id === a.snack);
+      if (!m || a.wallet < m.cost) { a.snack = null; this.toRest(a); return; }
+      a.wallet -= m.cost;
+      a.stats.snacks++;
+      this.state.stats.snacks++;
+      this.state.stats.xpSpent += m.cost;
+      this.emit({ kind: 'snack', agentId: a.id, text: `${a.name} pakt een ${m.name} bij het buffet (-${m.cost} XP).` });
+      this.say(a, `${m.name}! -${m.cost} XP`);
+      if (!this.goToSpot(a, MAP.REST_SPOTS, 'eat')) this.moveTo(a, a.seat, 'eat');
     }
 
     hasActiveTask(a) {
@@ -346,17 +377,24 @@ window.FC = window.FC || {};
         case 'rest':
           a.state = 'resting';
           break;
-        case 'coffee':
-          a.state = 'coffee';
-          a.timer = rand(8, 15);
+        case 'buffet':
+          this.buy(a);
+          break;
+        case 'eat': {
+          const m = MENU.find(x => x.id === a.snack);
+          a.state = 'eating';
+          a.timer = EAT_MINUTES;
+          a.eatGain = m ? m.energy / EAT_MINUTES : 0;
+          break;
+        }
+        case 'patrol':
+          a.state = 'patrol';
+          a.timer = 15;
+          this.say(a, 'Inspectieronde bij de poort.');
           break;
         case 'meeting':
           if (!this.state.meeting) { this.toDesk(a); break; }
           a.state = 'meeting';
-          break;
-        case 'guard':
-          a.state = 'guarding';
-          this.say(a, 'Ik sta op wacht!');
           break;
         case 'post':
           this.pinTasks(a);
@@ -484,12 +522,55 @@ window.FC = window.FC || {};
         }
         case 'review': {
           const t = this.task(cmd.taskId);
-          const wanted = role === 'director' ? 'ingeleverd' : 'controle';
+          const wanted = { director: 'ingeleverd', head: 'controle', risk: 'scan' }[role];
           if (!t || t.status !== wanted || actor.state !== 'idle') return false;
           if (role === 'head' && t.dept !== actor.dept) return false;
           actor.state = 'reviewing';
           actor.reviewTask = t.id;
-          actor.timer = role === 'director' ? GODFRED_REVIEW_MINUTES : HEAD_REVIEW_MINUTES;
+          actor.timer = role === 'director' ? GODFRED_REVIEW_MINUTES : role === 'risk' ? RISK_SCAN_MINUTES : HEAD_REVIEW_MINUTES;
+          return true;
+        }
+        case 'verdict': {
+          const t = this.task(cmd.taskId);
+          actor.reviewDone = null;
+          if (!t || t.status !== 'scan') return false;
+          actor.stats.scanned++;
+          const head = this.head(t.dept);
+          if (cmd.verdict === 'lek') {
+            t.status = 'opgehaald';
+            t.assignee = null;
+            t.secRevision++;
+            t.required += Math.round(t.required * 0.3);
+            t.feedback = cmd.note;
+            actor.stats.leaks++;
+            this.state.stats.leaks++;
+            this.emit({ kind: 'scan', from: actor.id, to: head ? [head.id] : [], agentId: actor.id, color: '#ff8a7a',
+              text: `${actor.name} vindt een beveiligingslek in "${t.title}": ${cmd.note} Terug naar ${head ? head.name : 'het hoofd'}.` });
+            this.say(actor, `Lek gevonden! ${cmd.note}`);
+          } else {
+            t.status = 'gecontroleerd';
+            t.secured = true;
+            t.checkedAt = this.now();
+            this.emit({ kind: 'scan', from: actor.id, to: head ? [head.id] : [], agentId: actor.id, color: '#b9a3ff',
+              text: `${actor.name} keurt "${t.title}" veilig. 🔒` });
+          }
+          return true;
+        }
+        case 'harden':
+          if (actor.state !== 'idle') return false;
+          actor.state = 'hardening';
+          actor.timer = 10;
+          return true;
+        case 'patrol':
+          if (actor.state !== 'idle') return false;
+          this.state.memory.lastPatrol = this.now();
+          return this.goToSpot(actor, [MAP.GUARD_SPOT], 'patrol');
+        case 'advise': {
+          this.state.memory.lastAdvice = this.now();
+          this.state.memory.adviceAt = this.now();
+          this.emit({ kind: 'advies', from: actor.id, to: [g.id], agentId: actor.id, color: '#b9a3ff',
+            text: `${actor.name} → ${g.name}: ${cmd.note}` });
+          this.say(actor, 'Advies aan Godfred!');
           return true;
         }
         case 'check': {
@@ -508,6 +589,12 @@ window.FC = window.FC || {};
             this.emit({ kind: 'check', from: actor.id, to: worker ? [worker.id] : [], agentId: actor.id, color: '#ff8a7a',
               text: `${actor.name} stuurt "${t.title}" terug: ${cmd.note}` });
             this.say(actor, cmd.note);
+          } else if (t.secCheck && !t.secured) {
+            // Ontwikkelwerk eerst langs RISK THREAT.
+            t.status = 'scan';
+            const r = this.risk();
+            this.emit({ kind: 'check', from: actor.id, to: r ? [r.id] : [], agentId: actor.id, color: '#b9a3ff',
+              text: `${actor.name} keurt "${t.title}" goed en laat hem scannen door RISK THREAT.` });
           } else {
             t.status = 'gecontroleerd';
             t.checkedAt = this.now();
@@ -550,19 +637,14 @@ window.FC = window.FC || {};
         case 'rest': {
           const a = this.agent(cmd.agentId);
           if (!a || a.role !== 'agent' || a.state === 'resting' || a.intent === 'rest') return false;
+          if (a.energy >= 95) return false;
           if (role === 'head' && a.dept !== actor.dept) return false;
+          if (['buffet', 'eat'].includes(a.intent) || a.state === 'eating') return false;
           // Een lopende taak blijft van deze agent; na de pauze gaat die verder.
+          const went = this.toBuffet(a);
+          if (!went) return false;
           this.emit({ kind: 'rest', from: actor ? actor.id : null, to: [a.id], agentId: a.id,
-            text: `${actor ? actor.name : 'DE BAAS'} stuurt ${a.name} naar de LOUNGE voor een pauze.` });
-          this.toRest(a);
-          return true;
-        }
-        case 'guard': {
-          const a = this.agent(cmd.agentId);
-          if (!a || a.dept !== actor.dept || a.role !== 'agent' || a.taskId) return false;
-          this.releaseSpot(a);
-          this.moveTo(a, MAP.GUARD_SPOT, 'guard');
-          this.emit({ kind: 'order', from: actor.id, to: [a.id], agentId: a.id, text: `${actor.name} → ${a.name}: bewaak de POORT!` });
+            text: `${actor ? actor.name : 'DE BAAS'} stuurt ${a.name} naar de lounge${went === 'water' ? ' (geen XP, dus water)' : ' voor iets van het buffet'}.` });
           return true;
         }
         case 'meeting':
@@ -584,12 +666,15 @@ window.FC = window.FC || {};
       t.status = 'goedgekeurd';
       t.feedback = note;
       t.doneAt = this.now();
-      s.credits += t.reward.credits;
       s.stats.tasksApproved++;
-      if (worker) { worker.stats.approved++; this.gainXp(worker, t.reward.xp); }
+      if (worker) {
+        worker.stats.approved++;
+        worker.wallet += t.reward.xp;
+        this.gainXp(worker, t.reward.xp);
+      }
       if (head) this.gainXp(head, Math.round(t.reward.xp / 3));
       this.emit({ kind: 'approve', from: g.id, to: head ? [head.id] : [], agentId: g.id, color: '#9dff9d',
-        text: `${g.name} keurt "${t.title}" goed ${'★'.repeat(stars(t.quality))}: ${note} +${t.reward.credits} ⛁` });
+        text: `${g.name} keurt "${t.title}" goed ${'★'.repeat(stars(t.quality))}: ${note}${worker ? ` +${t.reward.xp} XP voor ${worker.name}` : ''}` });
 
       const p = this.project(t.projectId);
       if (!p || p.status === 'klaar') return;
@@ -600,10 +685,8 @@ window.FC = window.FC || {};
       p.quality = tasks.reduce((sum, x) => sum + x.quality, 0) / tasks.length;
       s.stats.projectsDone++;
       if (p.source === 'baas') {
-        const bonus = p.difficulty * 20;
-        s.credits += bonus;
         this.emit({ kind: 'project', agentId: g.id,
-          text: `${g.name} → DE BAAS: "${p.title}" is af! ${plural(tasks.length)}, kwaliteit ${'★'.repeat(stars(p.quality))}. +${bonus} ⛁ bonus` });
+          text: `${g.name} → DE BAAS: "${p.title}" is af! ${plural(tasks.length)}, kwaliteit ${'★'.repeat(stars(p.quality))}.` });
         this.say(g, `Baas, "${p.title}" is af!`);
       }
     }
@@ -614,10 +697,9 @@ window.FC = window.FC || {};
       const s = this.state;
       if (s.meeting) return false;
       const g = this.director();
-      const busyWalking = a => ['post', 'pickup', 'deliver', 'guard'].includes(a.intent);
-      const attendees = s.agents.filter(a =>
-        (scope === 'mt' ? a.role !== 'agent' : true) &&
-        a.state !== 'guarding' && a.state !== 'reviewing' && !busyWalking(a));
+      const busy = a => ['post', 'pickup', 'deliver', 'patrol', 'buffet', 'eat'].includes(a.intent) ||
+        ['reviewing', 'hardening', 'patrol', 'eating'].includes(a.state);
+      const attendees = s.agents.filter(a => (scope === 'mt' ? a.role !== 'agent' : true) && !busy(a));
       s.meeting = { topic, scope, phase: 'verzamelen', attendees: [], timer: 0 };
       attendees.forEach(a => {
         const ok = a.role === 'director'
@@ -659,6 +741,10 @@ window.FC = window.FC || {};
         const inbox = s.tasks.filter(t => t.status === 'ingeleverd').length;
         return pick([`${running} projecten lopen.`, `Firewall: ${Math.round(s.firewall)}%.`,
           inbox ? `${inbox} stukken liggen bij mij.` : 'Mijn inbox is leeg!', 'Kwaliteit boven snelheid.', 'Hoe staan de afdelingen ervoor?']);
+      }
+      if (a.role === 'risk') {
+        return pick([`Firewall: ${Math.round(s.firewall)}%.`, `${s.stats.intrudersBlocked} aanvallen geblokt.`,
+          `${s.stats.leaks} lekken onderschept.`, 'Advies: security vanaf het begin meenemen.', 'Geen onbekende bijlagen openen!']);
       }
       if (a.role === 'head') {
         const mine = s.tasks.filter(t => t.dept === a.dept);
@@ -704,14 +790,17 @@ window.FC = window.FC || {};
       for (const a of s.agents) {
         if (a.role === 'director') this.godfredBrain.tick(a);
         else if (a.role === 'head') this.headBrain.tick(a);
+        else if (a.role === 'risk') this.riskBrain.tick(a);
       }
-      // Oude afgeronde taken en projecten opruimen.
-      const done = s.tasks.filter(t => t.status === 'goedgekeurd');
+      // Oude afgeronde taken en projecten van Godfred zelf opruimen.
+      // Opdrachten van de baas blijven altijd bewaard.
+      const own = id => { const p = this.project(id); return !p || p.source !== 'baas'; };
+      const done = s.tasks.filter(t => t.status === 'goedgekeurd' && own(t.projectId));
       if (done.length > 60) {
         const drop = new Set(done.slice(0, done.length - 60).map(t => t.id));
         s.tasks = s.tasks.filter(t => !drop.has(t.id));
       }
-      const finished = s.projects.filter(p => p.status === 'klaar');
+      const finished = s.projects.filter(p => p.status === 'klaar' && p.source !== 'baas');
       if (finished.length > 30) {
         const drop = new Set(finished.slice(0, finished.length - 30).map(p => p.id));
         s.projects = s.projects.filter(p => !drop.has(p.id));
@@ -725,14 +814,15 @@ window.FC = window.FC || {};
           const t = this.task(a.taskId);
           if (!t || t.status !== 'bezig' || t.assignee !== a.id) { a.taskId = null; a.state = 'idle'; break; }
           t.progress += (1 + a.level * 0.25) * 1.5;
-          a.energy = clamp(a.energy - 0.12, 0, 100);
+          a.energy = clamp(a.energy - 0.2, 0, 100);
           if (t.progress >= t.required) this.finishTask(a, t);
           break;
         }
         case 'idle':
-          if (a.role !== 'agent') break;
-          if (a.energy < 15) { this.toRest(a); break; }
-          if (!this.state.meeting && Math.random() < 0.003) this.goToSpot(a, MAP.COFFEE_SPOTS, 'coffee');
+          if (a.role !== 'agent' || this.state.meeting) break;
+          // Zelf iets halen als de energie laag is, of af en toe een koffie.
+          if (a.energy < 35) this.toBuffet(a);
+          else if (a.energy < 85 && a.wallet >= 20 && Math.random() < 0.004) this.toBuffet(a);
           break;
         case 'reviewing':
           if (--a.timer <= 0) {
@@ -742,19 +832,19 @@ window.FC = window.FC || {};
           }
           break;
         case 'resting':
-          a.energy = clamp(a.energy + (a.spot ? 1.5 : 0.8), 0, 100);
-          if (a.energy >= 100) this.toDesk(a);
+          a.energy = clamp(a.energy + (a.spot ? 1 : 0.6), 0, 100);
+          if (a.energy >= 70) this.toDesk(a);
           break;
-        case 'coffee':
-          a.energy = clamp(a.energy + 0.3, 0, 100);
+        case 'eating':
+          a.energy = clamp(a.energy + a.eatGain, 0, 100);
+          if (--a.timer <= 0) { a.snack = null; this.toDesk(a); }
+          break;
+        case 'hardening':
+          this.state.firewall = clamp(this.state.firewall + 1, 0, 100);
+          if (--a.timer <= 0 || this.state.firewall >= 100) a.state = 'idle';
+          break;
+        case 'patrol':
           if (--a.timer <= 0) this.toDesk(a);
-          break;
-        case 'guarding':
-          a.energy = clamp(a.energy - 0.05, 0, 100);
-          if (a.energy < 12) {
-            this.emit({ kind: 'warn', agentId: a.id, text: `${a.name} is te moe om de wacht te houden en verlaat de POORT!` });
-            this.toRest(a);
-          }
           break;
         default:
           break;
@@ -786,23 +876,29 @@ window.FC = window.FC || {};
 
     // ---------- beveiliging van de afgesloten omgeving ----------
 
+    // RISK THREAT houdt de poort en de firewall in de gaten. Zit hij in een
+    // vergadering, dan is de poort kwetsbaarder.
     tickSecurity() {
       const s = this.state;
-      const guard = s.agents.find(a => a.state === 'guarding');
-      if (guard) s.firewall = clamp(s.firewall + 0.03, 0, 100);
-      if (Math.random() > 0.004) return;
-      const intruder = pick(['een onbekende bot', 'een spammer', 'een port-scanner', 'een nieuwsgierige crawler', 'een verdwaalde hacker']);
-      if (guard) {
+      if (Math.random() > 0.005) return;
+      const r = this.risk();
+      const threat = pick(['een onbekende bot', 'malware in een bijlage', 'een virus via een download', 'een port-scanner',
+        'een phishingmail', 'een verdwaalde hacker']);
+      const onDuty = r && ['idle', 'reviewing', 'hardening', 'patrol'].includes(r.state);
+      const chance = !onDuty ? 0.25 : r.state === 'patrol' ? 1 : 0.6 + s.firewall / 250;
+      if (Math.random() < chance) {
         s.stats.intrudersBlocked++;
-        guard.stats.blocked++;
-        this.emit({ kind: 'security', agentId: guard.id, text: `${guard.name} hield ${intruder} tegen bij de POORT!` });
-        this.say(guard, 'Hier kom je niet langs!');
-        this.gainXp(guard, 8);
+        if (r) {
+          r.stats.blocked++;
+          this.emit({ kind: 'security', agentId: r.id, text: `${r.name} hield ${threat} tegen bij de POORT.` });
+          this.say(r, 'Hier kom je niet langs!');
+          this.gainXp(r, 6);
+        }
       } else {
-        const dmg = rand(5, 12);
+        const dmg = rand(6, 14);
         s.firewall = clamp(s.firewall - dmg, 0, 100);
         s.stats.breaches++;
-        this.emit({ kind: 'alarm', text: `ALARM! ${intruder} tikte tegen de poort. Firewall -${dmg}%. Er staat geen wacht!` });
+        this.emit({ kind: 'alarm', text: `ALARM! ${threat} glipte langs de poort. Firewall -${dmg}%.${onDuty ? '' : ' RISK THREAT was niet op zijn post.'}` });
       }
     }
   }
@@ -811,5 +907,5 @@ window.FC = window.FC || {};
   FC.TYPES = TYPES;
   FC.xpNeeded = xpNeeded;
   FC.stars = stars;
-  FC.RECRUIT_COST = RECRUIT_COST;
+  FC.MENU = MENU;
 })(window.FC);

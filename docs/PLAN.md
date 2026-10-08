@@ -14,6 +14,13 @@ het **prikbord** in het midden van het gebouw. De hoofden sturen hun agents
 aan. De output loopt dezelfde weg terug: agent → hoofd (controle) → Godfred
 (goedkeuren of revisie) → baas (project af). Dat is de **feedbackloop**.
 
+Naast de hoofden zit **RISK THREAT** in het MT: de risk & safety officer.
+Hij scant ontwikkelwerk op lekken vóór het bij Godfred komt, bewaakt poort en
+firewall en adviseert Godfred. Zie [ROLKAARTEN.md](ROLKAARTEN.md).
+
+Agents verdienen **XP** met goedgekeurd werk. XP telt voor hun level en
+betaalt het **buffet** in de lounge, waar ze energie bijtanken.
+
 Je volgt alles via een dashboard in retro-spelstijl: een kantoorgebouw van
 bovenaf waar je ziet wie werkt, wie taken ophaalt en wie output brengt.
 
@@ -27,7 +34,7 @@ bovenaf waar je ziet wie werkt, wie taken ophaalt en wie output brengt.
 ```
 
 1. **Breinen** (`js/brains.js`) kijken naar de staat en geven alleen
-   **commando's**. Godfred heeft één brein, elk afdelingshoofd een eigen.
+   **commando's**. Godfred, elk afdelingshoofd en RISK THREAT hebben een eigen brein.
 2. **Organisatie** (`js/org.js`) controleert of iemand een commando mag geven
    (een hoofd kan alleen zijn eigen team aansturen), voert het uit, laat
    iedereen lopen en publiceert **gebeurtenissen**.
@@ -48,15 +55,19 @@ bovenaf waar je ziet wie werkt, wie taken ophaalt en wie output brengt.
 | Hoofd | `assign {taskId, agentId}` | Taak aan een agent geven |
 | Hoofd | `review {taskId}` + `check {taskId, verdict, note}` | Werk controleren: `ok` of `beter` |
 | Hoofd | `deliver` | Gecontroleerde output naar Godfred brengen |
-| Hoofd | `rest`, `guard` | Agent naar pauze, agent op wacht |
+| Hoofd | `rest` | Agent naar het buffet |
+| Risk Threat | `review {taskId}` + `verdict {taskId, verdict, note}` | Security-scan: `veilig` of `lek` |
+| Risk Threat | `harden`, `patrol` | Firewall versterken, inspectieronde bij de poort |
+| Risk Threat | `advise {note}` | Advies aan Godfred (leidt tot crisisoverleg) |
 
 ### Levensloop van een taak
 
-`concept` → `bord` → `opgehaald` → `bezig` → `controle` → `gecontroleerd`
-→ `onderweg` → `ingeleverd` → `goedgekeurd`.
+`concept` → `bord` → `opgehaald` → `bezig` → `controle` → (`scan`) →
+`gecontroleerd` → `onderweg` → `ingeleverd` → `goedgekeurd`.
 
-Twee terugkoppelingen: het hoofd kan een taak terugzetten op zijn stapel
-(`beter`), Godfred kan hem terughangen op het prikbord (`revisie`).
+Drie terugkoppelingen: het hoofd kan een taak terugzetten op zijn stapel
+(`beter`), RISK THREAT stuurt hem terug bij een lek (`lek`), en Godfred kan
+hem terughangen op het prikbord (`revisie`).
 
 ### Gebeurtenissen
 
@@ -65,13 +76,14 @@ Twee terugkoppelingen: het hoofd kan een taak terugzetten op zijn stapel
 ```
 
 Soorten: `opdracht`, `project`, `plan`, `post`, `pickup`, `order`, `output`,
-`check`, `deliver`, `approve`, `feedback`, `meeting`, `rest`, `say`,
-`security`, `alarm`, `recruit`, `warn`, `info`, `levelup`.
+`check`, `scan`, `advies`, `deliver`, `approve`, `feedback`, `meeting`, `rest`,
+`snack`, `say`, `security`, `alarm`, `warn`, `info`, `levelup`.
 
 ## Fase 1: simulatie (klaar)
 
-- Kantoor met vijf afdelingen (elk een hoofd + 2 à 3 agents), directiekamer,
-  centraal prikbord, vergaderzaal, lounge en poortwacht.
+- Kantoor met vier afdelingen (elk een hoofd + 3 agents), directiekamer,
+  centraal prikbord, vergaderzaal, lounge met buffet en de poortwacht van
+  RISK THREAT.
 - Regelgebaseerde breinen voor Godfred en de hoofden, met de volledige
   keten en beide feedbackloops.
 - Kwaliteit per taak (sterren) hangt af van level en revisies.
@@ -91,8 +103,11 @@ Soorten: `opdracht`, `project`, `plan`, `post`, `pickup`, `order`, `output`,
    verschijnen als "indringer geblokt".
 5. **Eventbus.** Een kleine server stuurt de gebeurtenissen via een
    WebSocket naar het dashboard, in precies het formaat van nu.
-6. **Energie = budget.** Hoeveel tokens of kosten een agent nog mag
-   gebruiken. Op = naar de lounge.
+6. **Energie = budget, XP = verdiend budget.** Energie is hoeveel een agent
+   nog mag doen; XP verdient hij met goedgekeurd werk en zet hij in het
+   buffet om in nieuw budget. Goed werk levert dus letterlijk ruimte op.
+7. **RISK THREAT wordt echt:** hij leest code en configuratie op lekken en
+   beheert het netwerkbeleid van de container.
 
 ### Welk model waarvoor (advies)
 
@@ -100,6 +115,7 @@ Soorten: `opdracht`, `project`, `plan`, `post`, `pickup`, `order`, `output`,
 |---|---|---|
 | Godfred | Claude Opus 5.5 | Plant en beoordeelt alles. Kwaliteit telt het zwaarst. |
 | Afdelingshoofden | Claude Sonnet 5.5 | Verdelen en controleren binnen één afdeling. |
+| RISK THREAT | Claude Opus 5.5 | Security-review vraagt grondigheid; een gemist lek is duur. |
 | Agents (denkwerk: code, data) | Claude Sonnet 5.5 | Goed en een stuk goedkoper. Er draaien er veel tegelijk. |
 | Agents (simpel/veel: samenvatten, sorteren) | Claude Haiku 5.5 | Zeer goedkoop voor hoog volume. |
 | Uitzonderlijk zware klussen | Claude Fable 5.1 | Het krachtigst, maar ruim 2x de prijs van Opus. Alleen gericht inzetten. |
