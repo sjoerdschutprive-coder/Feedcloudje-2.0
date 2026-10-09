@@ -52,7 +52,7 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 - **Kantine**: één gemengde tafel per werkdagrun (4–6 agents, minstens 3 afdelingen, roulerend). Elke beurt gaat eerst door het deelfilter en daarna langs de **Privacy-Tet** (`risk-2`); tegengehouden beurten worden zonder inhoud vastgelegd, met een blameless les en strenger toezicht in de volgende pauzes.
 - **Overleg**: dagelijkse huddle per afdeling; per week voorbereiding → afdelingsoverleg (memo) → bilateraal → vooraf lezen → eigen oordeel → MT; retrospectief bij het eerste MT van de maand. Instellingen in `config/instellingen.yaml` (`overleg`, `kantine`).
 - **Afdelingsomvang**: norm 1 Hoofdtet + 3 Tets. Nieuwe agents staan op `inzet: gepland` tot de Raad ze activeert na een meting; `Organisatie.team()` en `tets()` geven alleen ingezette agents.
-- **Kantoor**: kantine en vergaderzaal onder het plein, een overleghoek op elk eiland, agents lopen erheen (veld `plek` in `activiteit`; collecties `kantine` en `overleggen`). Knop 'Terugkijken' speelt de laatste werkdag af. HR toont de cultuurmeting.
+- **Kantoor**: kantine en vergaderzaal onder het plein, een overleghoek op elk eiland, agents lopen erheen (veld `plek` in `activiteit`; collecties `kantine` en `overleggen`). Wie een vraag uit de vraagbaak beantwoordt, loopt naar het bureau van de vraagsteller (`beantwoord_ts`). Knop 'Terugkijken' speelt de laatste werkdag af. HR toont de cultuurmeting, Risk & Safety het toezicht met een testknop.
 
 ### Het live kantoor
 

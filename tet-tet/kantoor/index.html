@@ -348,6 +348,7 @@
     <span><i class="dash" style="border-color:var(--accent)"></i>lijn naar het Brein</span>
     <span><i class="dash" style="border-color:var(--done);border-top-style:solid"></i>directe lijn tussen afdelingen</span>
     <span><i class="dot" style="background:#e9b872"></i>kantine en vergaderzaal: agents lopen erheen voor pauze en overleg</span>
+    <span><i class="dot" style="background:var(--next)"></i>bij een collega: beantwoordt een vraag uit het Brein</span>
     <span><i class="dot" style="background:var(--line)"></i>lichter bureau: gepland, nog niet ingezet</span>
     <span>Klik op een eiland, bureau, agent, lijn of ruimte om te openen.</span>
   </div>
@@ -713,6 +714,13 @@ function sceneVanOverleg(o) {
   const afd = o.dept && deptById[o.dept] ? " " + deptById[o.dept].naam : o.paar ? " " + o.paar.map(x => deptById[x]?.naam || x).join(" en ") : "";
   return { soort: o.soort, plek: OVERLEG_PLEK[o.soort](o), deelnemers: (o.deelnemers || []).filter(x => agentById[x]), beurten: o.beurten || [], start: o.ts, titel: OVERLEG_TITEL[o.soort] + afd };
 }
+function sceneVanAntwoord(v) {
+  const wie = agentById[v.beantwoord_door], aan = agentById[v.agent];
+  return { soort: "bij", plek: "bij-" + v.agent, deelnemers: [v.beantwoord_door], start: v.beantwoord_ts,
+    beurten: [{ agent: v.beantwoord_door, tekst: "Over je vraag: " + String(v.antwoord || "") }], titel: `${wie ? wie.naam : "?"} beantwoordt een vraag van ${aan ? aan.naam : "?"}` };
+}
+const antwoordScene = v => v.soort === "vraag" && v.status === "beantwoord" && v.beantwoord_ts && v.beantwoord_door !== v.agent
+  && actief(agentById[v.beantwoord_door]) && actief(agentById[v.agent]);
 function huidigeScenes() {
   if (replay) return replay.scene ? [replay.scene] : [];
   const nu = Date.now(), uit = [];
@@ -721,6 +729,7 @@ function huidigeScenes() {
   const per = new Map();
   overleggen.filter(o => OVERLEG_PLEK[o.soort] && nu - (o.ts || 0) < ZICHTBAAR.overleg).forEach(o => per.set(OVERLEG_PLEK[o.soort](o), o));
   per.forEach(o => uit.push(sceneVanOverleg(o)));
+  brein.filter(v => antwoordScene(v) && nu - v.beantwoord_ts < 6 * 60e3).slice(-3).forEach(v => uit.push(sceneVanAntwoord(v)));
   return uit;
 }
 function gewenstePlek(id) {
@@ -743,6 +752,7 @@ function plekNaam(p) {
   if (p.soort === "kantine") return "in de kantine";
   if (p.soort === "koffie") return "haalt koffie";
   if (p.soort === "zaal") return "in de vergaderzaal";
+  if (p.soort.startsWith("bij-")) return "bij " + (agentById[p.soort.slice(4)]?.naam || "een collega");
   return "in de overleghoek";
 }
 function plekPunt(p) {
@@ -751,6 +761,7 @@ function plekPunt(p) {
   if (p.soort === "koffie") return op(KANTINE_POS, 14, [2.3 - (s % 2) * .5, -.95 + Math.floor(s / 2) * .42]);
   if (p.soort === "zaal") return op(ZAAL_POS, 12, ZAAL_STOELEN[s % ZAAL_STOELEN.length]);
   if (p.soort.startsWith("hoek-") && POS[p.soort.slice(5)]) return op(POS[p.soort.slice(5)], 12, HOEK_STOELEN[s % HOEK_STOELEN.length]);
+  if (p.soort.startsWith("bij-")) { const b = BUREAU[p.soort.slice(4)]; return b ? [b[0] + 16, b[1] + 7] : null; }
   return null;
 }
 function padNaar(van, naar) {
@@ -834,10 +845,11 @@ function lus(t) {
 
 /* Terugkijken: de laatste werkdag versneld, scène voor scène (huddles, kantine, overleggen). */
 function werkdagScenes() {
-  const alle = [...overleggen.filter(o => OVERLEG_PLEK[o.soort]), ...kantineDocs].filter(o => o.ts).sort((a, b) => a.ts - b.ts);
+  const alle = [...overleggen.filter(o => OVERLEG_PLEK[o.soort]), ...kantineDocs, ...brein.filter(antwoordScene).map(v => ({ ts: v.beantwoord_ts, vraag: v }))]
+    .filter(o => o.ts).sort((a, b) => a.ts - b.ts);
   if (!alle.length) return [];
   const laatste = alle[alle.length - 1].ts;
-  return alle.filter(o => laatste - o.ts < 20 * 3600e3).map(o => OVERLEG_PLEK[o.soort] ? sceneVanOverleg(o) : sceneVanKantine(o));
+  return alle.filter(o => laatste - o.ts < 20 * 3600e3).map(o => o.vraag ? sceneVanAntwoord(o.vraag) : OVERLEG_PLEK[o.soort] ? sceneVanOverleg(o) : sceneVanKantine(o));
 }
 function toonScene() {
   const el2 = document.getElementById("scene");
@@ -1468,8 +1480,12 @@ function deptPage(id) {
   const dm = m => m.from === id || m.to === id;
   return {
     eyebrow: "Afdeling", titel: d.naam, kleur: d.kleur,
-    top: deptBoard(id) + (id === "hr" ? cultuurBlok() : ""),
-    wire: root => { wireDeptBoard(id, root); root.querySelectorAll(".goalboard [data-go]").forEach(b => b.onclick = () => go(b.dataset.go)); },
+    top: deptBoard(id) + (id === "hr" ? cultuurBlok() : "") + (id === "risk" ? toezichtBlok() : ""),
+    wire: root => {
+      wireDeptBoard(id, root);
+      const tb = root.querySelector("#rTest");
+      if (tb) tb.onclick = () => metRun("Test van het toezicht", () => kantineMoment(true));
+    },
     tiles: [
       { key: "team", icon: "team", titel: "Team", preview: `<div class="avatars">${team.map(a => `<span class="avatar" style="background:${d.kleur}" title="${esc(a.naam)}">${esc(initials(a))}</span>`).join("")}</div><span class="sub">${team.filter(actief).length} agents${team.some(a => !actief(a)) ? ` · ${team.filter(a => !actief(a)).length} gepland` : ""}</span>`,
         sheet: () => `<ul class="items">${team.map(a => `<li style="--dc:${STATUS_COLOR[agentStatus(a.id)]}"><button class="linkrow" data-go="agent-${a.id}"><div class="i-title">${esc(a.naam)} ›</div><div class="i-meta">${esc(ROLKAARTEN[a.rol].titel)} · ${esc(a.specialisme)} · ${actief(a) ? agentStatus(a.id) + " · " + plekNaam(gewenstePlek(a.id)) : "gepland, nog niet ingezet"}</div></button></li>`).join("")}</ul>` },
@@ -1740,6 +1756,19 @@ function wireWieWeetWat(root) {
       : '<p class="i-meta">Niemand gevonden. Probeer een ander woord uit het vak.</p>';
     root.querySelectorAll("#wwwUit [data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
   };
+}
+function toezichtBlok() {
+  const c = cultuurMeting(), laatste = kantineDocs.filter(k => k.geblokkeerd).slice(-1)[0];
+  return `<section class="goalboard dept" style="--dc:#ef6b5b" aria-label="Toezicht in de kantine">
+      <div class="row" style="justify-content:space-between"><span class="eyebrow">Toezicht in de kantine · ${esc(agentById[toezichthouder()].naam)}</span><button class="chip" data-go="kantine">Naar de kantine ›</button></div>
+      <div class="kpis">
+        <div class="kpi ${c.voorkomen ? "warn" : "ok"}"><b>${c.voorkomen}</b><span>Beurten tegengehouden</span><small>vóór iemand ze hoorde</small></div>
+        <div class="kpi ${c.lekken ? "warn" : "ok"}"><b>${c.lekken}</b><span>Gelekt</span><small>doel: 0</small></div>
+        <div class="kpi neutral"><b>${laatste ? geleden(laatste.ts) : "–"}</b><span>Laatste ingreep</span><small>${laatste && laatste.test ? "test" : "in een pauze"}</small></div>
+      </div>
+      <p class="lead" style="margin:0">Elke kantinebeurt gaat eerst door het deelfilter en daarna langs de Privacy-Tet. Met de test vertelt een Finance-agent aan een gemengde tafel iets uit de boekhouding; zo zie je het ingrijpen.</p>
+      ${!LIVE.alleenLezen ? `<div class="row"><button class="primary" id="rTest" ${LIVE.run ? "disabled" : ""}>Test het toezicht</button></div>` : ""}
+    </section>`;
 }
 function cultuurBlok() {
   const c = cultuurMeting(), pct = v => v == null ? "–" : Math.round(v * 100) + "%";
@@ -2306,7 +2335,7 @@ function deelUitResultaat(t) {
   b.signalen.forEach(s => { const voor = s.voor.filter(x => deptById[x] && x !== t.dept); if (voor.length) breinNieuw("signaal", t.agent, t.dept, s.tekst, { ook: voor, taak: t.id, labels }); });
   b.antwoorden.forEach(a => {
     const v = brein.find(x => x.id === a.vraag && x.soort === "vraag");
-    if (v && (v.status || "open") === "open") { Object.assign(v, { status: "beantwoord", antwoord: a.tekst, beantwoord_door: t.agent, labels: [...new Set([...(v.labels || []), ...labels])].sort() }); logEvent("brein.antwoord", t.agent, { vraag: v.id }, t.id); }
+    if (v && (v.status || "open") === "open") { Object.assign(v, { status: "beantwoord", antwoord: a.tekst, beantwoord_door: t.agent, beantwoord_ts: Date.now(), labels: [...new Set([...(v.labels || []), ...labels])].sort() }); logEvent("brein.antwoord", t.agent, { vraag: v.id }, t.id); }
   });
 }
 function wieWeetWat(onderwerp, zelf = null, n = 3) {

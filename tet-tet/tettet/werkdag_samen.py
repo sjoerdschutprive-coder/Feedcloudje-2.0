@@ -590,6 +590,6 @@ class SamenwerkingStappen:
         for a in b["antwoorden"]:
             vraag = next((x for x in self.staat.brein if x.get("id") == a["vraag"] and x.get("soort") == "vraag"), None)
             if vraag and vraag.get("status", "open") == "open":
-                self.s.patch("brein", vraag["id"], {"status": "beantwoord", "antwoord": a["tekst"], "beantwoord_door": t["agent"],
+                self.s.patch("brein", vraag["id"], {"status": "beantwoord", "antwoord": a["tekst"], "beantwoord_door": t["agent"], "beantwoord_ts": nu_ms(),
                                                     "labels": sorted(set(vraag.get("labels") or []) | set(labels))})
                 self.s.event("brein.antwoord", t["agent"], {"vraag": vraag["id"]}, t["id"])
