@@ -79,6 +79,24 @@ class Organisatie:
     def tets(self, afdeling: str) -> list[dict]:
         return [a for a in self.team(afdeling) if a["rol"] == "tet"]
 
+    def assistent(self) -> dict | None:
+        """De ingezette assistent van de Oppertet (rol assistent_oppertet), of None. Zonder actieve assistent
+        werkt de lijn zoals daarvoor: Hoofdtets rapporteren rechtstreeks aan de Oppertet."""
+        return next((a for a in self.actieve_agents() if a["rol"] == "assistent_oppertet"), None)
+
+    def leidinggevende(self, agent_id: str) -> str:
+        """Aan wie deze agent nu rapporteert. Hoofdtets rapporteren aan de assistent zodra die actief is;
+        dat staat niet in hun kaarten, het volgt uit wie er is ingezet."""
+        a = self.agent(agent_id)
+        ass = self.assistent()
+        if ass and a["rol"] == "hoofdtet" and a["rapporteert_aan"] == ass["rapporteert_aan"]:
+            return ass["id"]
+        return a["rapporteert_aan"]
+
+    def niveau(self, agent_id: str) -> int:
+        """Rangorde in de lijn uit de rolkaart: 1 = hoogst onder de Raad."""
+        return 0 if agent_id == "raad" else int(self.rollen[self.agent(agent_id)["rolkaart"]].get("niveau", 9))
+
     def control_tets(self) -> list[dict]:
         return [a for a in self.actieve_agents() if a["rol"] == "controltet"]
 
@@ -170,7 +188,9 @@ class Organisatie:
         p = a["persoonlijkheid"]
         delen += [
             "## 4. Jouw profiel",
-            f"Je bent {a['naam']} (rol: {rol['naam']}, id: {a['id']}). Je rapporteert aan {self._naam(a['rapporteert_aan'])}.",
+            f"Je bent {a['naam']} (rol: {rol['naam']}, id: {a['id']}). Je rapporteert aan {self._naam(self.leidinggevende(agent_id))}."
+            + (f" Voor risico's, integriteit of onenigheid met {self._naam(self.leidinggevende(agent_id))} heb je een directe lijn naar "
+               f"{self._naam(a['rapporteert_aan'])}." if self.leidinggevende(agent_id) != a["rapporteert_aan"] else ""),
             f"Specialisme: {a['specialisme']}. Missie: {a['missie']}",
             "Verantwoordelijkheden:\n" + L(a["verantwoordelijkheden"]),
             "Expertise: " + ", ".join(a["expertise"]) + ".",

@@ -1,13 +1,14 @@
 # Rolkaart: wat een rol mag en hoe ver hij reikt. Eigenaar: Raad.
 id: rol-tet
 type: rolkaart
-versie: 1.1.0
+versie: 1.2.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
 eigenaar: raad
 naam: Tet
 bereik: eigen_taak
+niveau: 4
 max_autonomieniveau: 2
 mag:
   - taak.uitvoeren

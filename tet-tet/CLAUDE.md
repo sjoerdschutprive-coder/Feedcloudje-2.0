@@ -6,6 +6,7 @@ Tet Tet is een platform waarop AI-agents zelfstandig werken en samen één centr
 
 - **Raad**: de mens (Sjoerd). Stelt de doelstelling, mandaten en budgetten vast; keurt onomkeerbare acties goed.
 - **Oppertet**: centrale orchestrator. Vertaalt de doelstelling naar afdelingsdoelen en budget.
+- **Assistent-Oppertet**: chief of staff onder de Oppertet en boven de Hoofdtets (directie). Vertaalt besluiten door, bewaakt opvolging, coördineert; geen eigen strategische besluiten en geen filter.
 - **Hoofdtet**: hoofd van een afdeling. Verdeelt werk, accordeert output.
 - **Tet**: uitvoerende agent. Nooit "uitvoerder".
 - **Control Tet**: onafhankelijke controle-agent (valt onder Risk & Safety). Nooit "evaluator".
@@ -16,7 +17,7 @@ Tet Tet is een platform waarop AI-agents zelfstandig werken en samen één centr
 
 Bij tegenstrijdigheid wint de hogere bron.
 
-1. `kaarten/` (organisatiekaart v1.3.0): cultuur-, profiel-, rol- en toegangskaarten van alle 30 agents (22 ingezet, 8 `inzet: gepland`), het handboek (`kaarten/handboek/`) en de ijksets per rol (`kaarten/ijkset/`). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
+1. `kaarten/` (organisatiekaart v1.4.0): cultuur-, profiel-, rol- en toegangskaarten van alle 31 agents (alle 31 ingezet sinds 9 oktober 2026, ook de Assistent-Oppertet), het handboek (`kaarten/handboek/`) en de ijksets per rol (`kaarten/ijkset/`). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
 2. `WHITEPAPER.md`: architectuur, taakcontract, feedbackloops, governance, autonomieniveaus, KPI's en de bouwstappen. **De pilotcasus (hotelketen) en bijlagen A–C zijn verouderde voorbeelden**: gebruik de kaarten in `kaarten/` en bouw niets dat aan die casus vastzit.
 3. `kantoor/index.html`: het Tet Tet-kantoor, de referentie voor design en interactie van de interface (isometrisch kantoor, afdelingseilanden, doelstellingenbord, takenpaneel, kaarten per agent). De data in dat bestand is afgeleid van de kaarten.
 4. `ONDERZOEK.md`: onderbouwing van de `werkstijl`-velden en `edge_principes`.
@@ -44,7 +45,8 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 | `keten.py` | `Kantoor`: Raad → Oppertet → Hoofdtet → Tet → Control Tet; risk-werk gaat naar de Raad |
 | `__main__.py` | Opdrachtregel: `run`, `prompt`, `toegang`, `grootboek` |
 | `samenwerking.py` | Collectief Brein (toegangslabels, wie-weet-wat, wie-werkt-waaraan, vraagbaak, signalen), kantinetafel, deelfilter, overlegcyclus, cultuurmeting, protocollen |
-| `werkdag_samen.py` | Werkdagstappen voor huddle, kantine met toezicht en de overlegcyclus naar het MT |
+| `werkdag_samen.py` | Werkdagstappen voor huddle, kantine met toezicht en de overlegcyclus naar het MT, plus directiehuddle, doorvertalen en opvolging |
+| `directie.py` | Escalatieroute met directe lijn, meting vóór/na van de Assistent-Oppertet, protocollen van de directie |
 | `prestatie.py` | Prestatieprofiel per agent (kwaliteit, betrouwbaarheid met pass^k en kalibratie, veiligheid, efficiëntie, samenwerking, stijl), Wilson-intervallen, uitblinker/aandachtspunt, gaming-signalen, blind beoordelen |
 | `stijl.py` | Stijlcontrole tegen het handboek (schrijfstijl, woordenlijst): score en suggesties per zin, signalerend |
 | `kalender.py` | Rooster van de vaste momenten, de interface `Kalender` (Mock, Ics, Google-vorm), deterministische UID's, .ics-export |
@@ -59,9 +61,17 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 - **Afdelingsomvang**: norm 1 Hoofdtet + 3 Tets. Nieuwe agents staan op `inzet: gepland` tot de Raad ze activeert na een meting; `Organisatie.team()` en `tets()` geven alleen ingezette agents.
 - **Kantoor**: kantine en vergaderzaal onder het plein, een overleghoek op elk eiland, agents lopen erheen (veld `plek` in `activiteit`; collecties `kantine` en `overleggen`). Wie een vraag uit de vraagbaak beantwoordt, loopt naar het bureau van de vraagsteller (`beantwoord_ts`). Knop 'Terugkijken' speelt de laatste werkdag af. HR toont de cultuurmeting, Risk & Safety het toezicht met een testknop.
 
+### Directie (zie ONDERZOEK.md, 'Een extra laag versnelt, filtert niet')
+
+- **Lijn**: Raad → Oppertet → Assistent-Oppertet (`oppertet-a`, rol `assistent_oppertet`) → Hoofdtets → Tets. `niveau` en `voorbehouden` in de rolkaarten; de validator bewaakt rangorde, cirkels, één assistent en toegang binnen die van de Oppertet.
+- **Inzet**: sinds 9 oktober 2026 ingezet; `Organisatie.leidinggevende` laat Hoofdtets aan hem rapporteren. **Fallback**: zet hem op `inzet: gepland` en alles werkt zoals daarvoor (getest).
+- **Escalaties**: Hoofdtet → assistent → Oppertet → Raad (`Beleidsmotor.escaleer`, `directie.escalatieroute`, stap `escalatie_triage`). Soorten uit `directe_lijn` (beleid.yaml) gaan rechtstreeks naar de Oppertet met een kopie aan de assistent. Het origineel gaat altijd ongewijzigd mee; de samenvatting komt erbij.
+- **Besluiten**: MT-besluiten in het register (Brein `register`), doorvertaald als `opdracht` per afdeling, dagelijks opgevolgd. Meting vóór/na (`directie.meting`, ook op de Oppertet-pagina).
+- **Kantoor**: Oppertet en Hoofdtets zitten in afgesloten glazen kantoortjes binnen hun eigen ruimte; de assistent zit open in de directie bij de deur. Wie op bezoek gaat (`plek: kantoor-<id>`), loopt door de deur.
+
 ### HR (zie ONDERZOEK.md, 'Kenmerken van de HR-afdeling')
 
-- **Structuur**: Hoofdtet HR (businesspartner), Prestatie-Tet `hr-2` en Governance-Tet `hr-3` (expertisecentra, `inzet: gepland`; tot de Raad ze activeert doet de Hoofdtet HR hun werk), Personeels-Tet `hr-1` (shared services: onboarding, kaarten, vraagbaak). Wie welke HR-rol heeft, volgt uit het specialisme of de naam in de kaart (`kalender.beoordelaar_hr`).
+- **Structuur**: Hoofdtet HR (businesspartner), Prestatie-Tet `hr-2` en Governance-Tet `hr-3` (expertisecentra; status `concept`, de plekken zijn ingezet; staat een van hen op `inzet: gepland`, dan doet de Hoofdtet HR het werk), Personeels-Tet `hr-1` (shared services: onboarding, kaarten, vraagbaak). Wie welke HR-rol heeft, volgt uit het specialisme of de naam in de kaart (`kalender.beoordelaar_hr`).
 - **Meten**: een profiel per agent, nooit een totaalscore of ranglijst; onder `hr.meting.min_taken` "te weinig data". Grensnaleving is een poortcriterium. Tets geven in `## Zekerheid` een getal 0–1; de werkdag bewaart de eerste oplevering (`zekerheid_eerste`, `zelf_gemeld_eerste`) en het eerste oordeel (`eerste_oordeel`, `claims`). Control Tets beoordelen blind (geen naam, id of afdeling) en negeren lengte. Ijksets: events `ijkset.run` (`data: {ijktaak, geslaagd}`).
 - **Toegang**: alles over één agent (`prestaties`, `evaluaties`) draagt `hr-dossier:<agent-id>`: zichtbaar voor de agent zelf, zijn leidinggevende, HR en de Oppertet (`config/beleid.yaml`, `hr_dossier`), niet voor het toezicht, nooit in de kantine.
 - **Cyclus en agenda**: zie WERKDAG.md, punt 8, en README.md, 'Gedeelde agenda koppelen'. Instellingen onder `hr:` in `config/instellingen.yaml`. Geen enkel cijfer leidt vanzelf tot een besluit: voorstellen (`soort: "hr"`) gaan naar de Raad.

@@ -72,7 +72,7 @@ def valideer(map_kaarten=KAARTEN):
                     fouten.append(f"{k['id']}: inperking '{inp}' gaat over iets wat de afdeling niet heeft")
         for veld, waarde in k.get("samenwerking", {}).items():
             for ref in waarde if isinstance(waarde, list) else [waarde]:
-                if re.fullmatch(r"[a-z]+-(h|\d|c\d)", str(ref)) and ref not in agents:
+                if re.fullmatch(r"[a-z]+-(h|a|\d|c\d)", str(ref)) and ref not in agents:
                     fouten.append(f"{k['id']}: samenwerking.{veld} verwijst naar onbekende agent {ref}")
 
     for k in per_type("ijkset").values():
@@ -85,7 +85,59 @@ def valideer(map_kaarten=KAARTEN):
     if onderdelen and len(onderdelen) != len(set(onderdelen)):
         fouten.append("handboek: een onderdeel staat er meer dan eens in")
 
+    fouten += valideer_lijn(agents, rollen, toegang)
     return kaarten, fouten
+
+
+def _niveau(agents, rollen, agent_id):
+    if agent_id == "raad":
+        return 0
+    rol = rollen.get(agents[agent_id]["rolkaart"]) if agent_id in agents else None
+    return rol.get("niveau") if rol else None
+
+
+def valideer_lijn(agents, rollen, toegang):
+    """Hiërarchie: rangorde, geen cirkels, en de regels voor een assistent onder de top van de lijn.
+
+    - Wie aan iemand rapporteert, staat lager in de lijn (hoger niveaugetal) dan die ander.
+    - De rapportagelijn eindigt bij de Raad (geen cirkels).
+    - Handelingen die een rolkaart 'voorbehouden' noemt, mag geen rol lager in de lijn hebben.
+    - Hoogstens één assistent_oppertet; hij rapporteert aan een oppertet, en zijn toegang is een deelverzameling
+      van die van de oppertet (zelfde of smallere toegangskaart, rechten nooit ruimer).
+    """
+    fouten = []
+    for k in agents.values():
+        mijn, baas = _niveau(agents, rollen, k["id"]), _niveau(agents, rollen, k["rapporteert_aan"])
+        if mijn is not None and baas is not None and baas >= mijn:
+            fouten.append(f"{k['id']}: rapporteert aan {k['rapporteert_aan']}, die niet hoger in de lijn staat")
+        gezien, cur = set(), k["id"]
+        while cur != "raad" and cur in agents:
+            if cur in gezien:
+                fouten.append(f"{k['id']}: cirkel in de rapportagelijn")
+                break
+            gezien.add(cur)
+            cur = agents[cur]["rapporteert_aan"]
+    for r in rollen.values():
+        for ander in rollen.values():
+            if ander.get("niveau", 0) > r.get("niveau", 0):
+                for h in sorted(set(r.get("voorbehouden") or []) & set(ander["mag"])):
+                    fouten.append(f"{ander['id']}: mag '{h}', maar dat is voorbehouden aan {r['naam']}")
+    assistenten = [k for k in agents.values() if k["rol"] == "assistent_oppertet"]
+    if len(assistenten) > 1:
+        fouten.append("meer dan één assistent_oppertet: " + ", ".join(k["id"] for k in assistenten))
+    for k in assistenten:
+        baas = agents.get(k["rapporteert_aan"])
+        if not baas or baas["rol"] != "oppertet":
+            fouten.append(f"{k['id']}: een assistent_oppertet rapporteert aan de oppertet")
+            continue
+        eigen, top = toegang.get(k["mandaat"]["toegangskaart"]), toegang.get(baas["mandaat"]["toegangskaart"])
+        if eigen and top:
+            ruim = {**top.get("intern", {}), **top.get("connectors", {})}
+            for bron, recht in {**eigen.get("intern", {}), **eigen.get("connectors", {})}.items():
+                if bron not in ruim or (recht == "rw" and ruim[bron] != "rw"):
+                    fouten.append(f"{k['id']}: toegang tot {bron} ({recht}) gaat verder dan die van {baas['id']}")
+    return fouten
+
 
 
 def controleer_mappen(map_kaarten=KAARTEN, basis: pathlib.Path | None = None) -> list[str]:

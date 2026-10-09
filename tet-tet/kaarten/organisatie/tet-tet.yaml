@@ -5,7 +5,7 @@
 
 id: cultuur-tet-tet
 type: cultuurkaart_organisatie
-versie: 1.3.0
+versie: 1.4.0
 status: concept
 eigenaar: raad
 goedgekeurd_door: raad
@@ -135,7 +135,6 @@ edge_principes:
     bron: geheimen-multi-agent
     indicator: lekken_voorkomen_aandeel
     norm: 1.0
-
   - id: aandacht-boven-oordeel
     principe: Aandacht boven oordeel
     toepassing: >
@@ -167,6 +166,12 @@ edge_principes:
     toepassing: >
       Een werkwijze die niet in het handboek staat, geldt niet. Wie een nieuwe afspraak maakt, zet die eerst in het handboek.
     bron: handboek-eerst
+  - id: laag-versnelt-filtert-niet
+    principe: Een extra laag versnelt, filtert niet
+    toepassing: >
+      De Assistent-Oppertet coördineert en bewaakt de opvolging van besluiten. Iedereen houdt een directe lijn naar de Oppertet
+      voor risico's, integriteit en onenigheid, en unieke informatie ('alleen wij weten') gaat ongewijzigd door.
+    bron: [span-of-control, ceo-staf, hidden-profile]
 
 toon:
   taal: nl

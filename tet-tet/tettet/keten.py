@@ -1,4 +1,4 @@
-"""De keten: Raad -> Oppertet -> Hoofdtet -> Tet -> Control Tet, met taakloop en afdelingsloop.
+"""De keten: Raad -> Oppertet (-> Assistent-Oppertet, als die actief is) -> Hoofdtet -> Tet -> Control Tet, met taakloop en afdelingsloop.
 
 Het Kantoor bevat de hele organisatie in werking. Een doelstelling van de Raad wordt door de Oppertet
 vertaald naar afdelingsdoelen, door Hoofdtets naar taken, door Tets uitgevoerd en door Control Tets getoetst.
@@ -160,7 +160,18 @@ class Kantoor:
                                 for x in plan["afdelingsdoelen"] if x.get("afdeling") in toegestaan]
         for ad in self.afdelingsdoelen:
             self.gb.schrijf("afdelingsdoel.ingesteld", "oppertet", vars(ad))
+        self._doorzetten()
         return self.afdelingsdoelen
+
+    def _doorzetten(self):
+        """Met een actieve Assistent-Oppertet zet hij de afdelingsdoelen van de Oppertet door naar de Hoofdtets
+        (operationele sturing); de doelen zelf blijven van de Oppertet. Zonder assistent gebeurt dit niet."""
+        ass = self.org.assistent()
+        if not ass:
+            return
+        self.beleid.eis(ass["id"], "besluiten.doorvertalen", self.doelstelling.naam)
+        for ad in self.afdelingsdoelen:
+            self.gb.schrijf("afdelingsdoel.doorgezet", ass["id"], {"afdeling": ad.afdeling, "naar": self.org.hoofdtet(ad.afdeling)["id"]})
 
     # ---------- Hoofdtet ----------
     def plan_hoofdtet(self, ad: Afdelingsdoel) -> list[Taak]:

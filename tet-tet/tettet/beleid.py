@@ -58,6 +58,18 @@ class Beleidsmotor:
         if not ok:
             raise Geweigerd(f"{agent_id}: {besluit.reden}")
 
+    def escaleer(self, van: str, soort: str = "operationeel", taak: str | None = None, toelichting: str = "") -> dict:
+        """Escalatieroute van een Hoofdtet: via de Assistent-Oppertet als die actief is, rechtstreeks naar de Oppertet
+        voor soorten van de directe lijn (met een kopie aan de assistent). Elke escalatie komt met route in het grootboek;
+        de toelichting gaat ongewijzigd mee."""
+        from .directie import escalatieroute
+        route = escalatieroute(self.org, van, soort)
+        self.gb.schrijf("escalatie.route", van, {**route, "toelichting": toelichting}, taak=taak,
+                        kaartversies=self.org.kaartversies(van))
+        for k in route["kopie"]:
+            self.gb.schrijf("escalatie.kopie", k, {"van": van, "naar": route["naar"], "soort": route["soort"]}, taak=taak)
+        return route
+
     def eis(self, agent_id: str, handeling: str, context: str = "") -> None:
         besluit = self.toets_handeling(agent_id, handeling, context)
         if not besluit.toegestaan:

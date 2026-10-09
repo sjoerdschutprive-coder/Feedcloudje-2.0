@@ -10,8 +10,8 @@ tet-tet/
     schema/kaarten.schema.json   # JSON Schema voor alle kaarttypes
     organisatie/tet-tet.yaml     # cultuurkaart organisatie (laag 1)
     afdelingen/<afdeling>.yaml   # 7 cultuurkaarten afdeling (laag 2)
-    agents/<agent-id>.yaml       # 30 profielkaarten (laag 3); 8 met 'inzet: gepland'
-    rollen/<rol>.yaml            # 4 rolkaarten: wat een rol mag
+    agents/<agent-id>.yaml       # 31 profielkaarten (laag 3); allemaal ingezet, ook de Assistent-Oppertet
+    rollen/<rol>.yaml            # 5 rolkaarten: wat een rol mag en waar hij staat in de lijn (`niveau`)
     toegang/<afdeling>.yaml      # 8 toegangskaarten: tools en data per afdeling, plus centraal
     handboek/<onderdeel>.yaml    # het handboek: werkwijze, schrijfstijl, woordenlijst, huisstijl, mappenstructuur
     ijkset/<rol>.yaml            # vaste ijktaken per rol voor pass^k (betrouwbaarheid)
@@ -40,6 +40,20 @@ Bij elke taak stelt het platform de instructies van een agent samen in deze volg
 - **Waarden:** het hogere niveau wint. Een afdelingskaart mag een waarde aanscherpen, nooit afzwakken.
 - **Werkwijze:** het lagere niveau wint; de profielkaart is het meest specifiek.
 - **Toegang:** alleen wat in rolkaart, toegangskaart én profielmandaat is toegestaan. Het mandaat in een profielkaart kan alleen inperken.
+
+## De lijn
+
+```text
+Raad
+ └─ Oppertet (orchestrator)
+     └─ Assistent-Oppertet (directie; telt pas mee als hij is ingezet)
+         └─ 7 Hoofdtets
+             └─ Tets          (Control Tets onder Risk & Safety, buiten de lijn)
+```
+
+- `niveau` in de rolkaart legt de rangorde vast (1 = Oppertet). De validator controleert dat iedereen aan een hoger niveau rapporteert, dat er geen cirkels zijn, dat er hoogstens één Assistent-Oppertet is met toegang binnen die van de Oppertet, en dat geen rol lager in de lijn een handeling heeft die `voorbehouden` is aan een hogere rol.
+- De Hoofdtets houden `rapporteert_aan: oppertet` in hun kaart. Zodra de Assistent-Oppertet is ingezet, rapporteren ze aan hem (`Organisatie.leidinggevende`), met een **directe lijn** naar de Oppertet voor risico's, integriteit en onenigheid (`directe_lijn` in `config/beleid.yaml`).
+- De assistent is ingezet sinds 9 oktober 2026. Terug naar de oude lijn: zet `inzet: gepland` in `kaarten/agents/oppertet-a.yaml`, verhoog de versie, draai de validator en `scripts/bouw_kantoor.py`. De Oppertet-pagina vergelijkt vóór en na het inzetten.
 
 ## Kaarten toevoegen of wijzigen
 

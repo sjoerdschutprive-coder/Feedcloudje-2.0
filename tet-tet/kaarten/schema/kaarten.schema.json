@@ -201,6 +201,7 @@
         "rol": {
           "enum": [
             "oppertet",
+            "assistent_oppertet",
             "hoofdtet",
             "tet",
             "controltet"
@@ -316,6 +317,19 @@
         },
         "mag_niet": {
           "$ref": "#/$defs/tekstlijst"
+        },
+        "niveau": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9,
+          "description": "Rangorde in de lijn: 1 = hoogst (onder de Raad). Wie aan iemand rapporteert, heeft een hoger getal dan die ander."
+        },
+        "voorbehouden": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Handelingen die alleen deze rol (en de Raad) mag; geen rol met een hoger niveaugetal mag ze in 'mag' hebben."
         }
       },
       "required": [
@@ -324,7 +338,8 @@
         "bereik",
         "max_autonomieniveau",
         "mag",
-        "mag_niet"
+        "mag_niet",
+        "niveau"
       ]
     },
     {

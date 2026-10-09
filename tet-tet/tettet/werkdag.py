@@ -23,10 +23,11 @@ from .brein import als_regel, bevestig, hoort_bij, rangorde, zoek_dubbel
 from .kaarten import Organisatie
 from .kantoordb import KantoorStaat, Schrijver, in_batches, nu_ms
 from .runtime import laad_instellingen, lees_json
+from . import directie as dr
 from . import prestatie
 from . import samenwerking as sw
 from .werkdag_hr import HR_PARALLEL, HR_SAMEN, HRStappen
-from .werkdag_samen import PARALLEL, SAMEN, SamenwerkingStappen
+from .werkdag_samen import PARALLEL, SAMEN, SamenwerkingStappen, kantoor
 
 MAX_UITVOEREN = 8          # taken per werkdag
 MAX_ESCALATIES = 3
@@ -115,7 +116,8 @@ class Werkdag(SamenwerkingStappen, HRStappen):
         naam = self.org.agent(s["agent"])["naam"]
         return {"oppertet_plan": "Oppertet verdeelt de doelstelling", "hoofdtet_plan": f"{naam} maakt taken",
                 "uitvoeren": f"{naam} voert een taak uit", "escalatie": f"{naam} besluit over een escalatie",
-                "routine": f"{naam} doet de vaste ronde", "dagverslag": "Oppertet schrijft het dagverslag"}.get(s["soort"], s["soort"])
+                "routine": f"{naam} doet de vaste ronde", "dagverslag": "Oppertet schrijft het dagverslag",
+                "escalatie_triage": f"{naam} beoordeelt een escalatie"}.get(s["soort"], s["soort"])
 
     def _bepaal(self, aantal: int, lopend: list[dict]) -> list[dict]:
         st, d = self.staat, self.staat.doel
@@ -134,6 +136,12 @@ class Werkdag(SamenwerkingStappen, HRStappen):
                 if t.get("geescaleerd") and not t.get("approval") and not self._gedaan("escalatie", taak=t["id"]) \
                         and sum(1 for s in self.v["stappen"].values() if s["soort"] == "escalatie") < MAX_ESCALATIES:
                     return [self._nieuwe_stap("escalatie", self.org.hoofdtet(t["dept"])["id"], taak=t["id"])]
+            # 2b. Escalaties die via de directie lopen (alleen met een actieve Assistent-Oppertet)
+            for t in st.taken.values():
+                bij = t.get("escalatie_bij")
+                if bij in self.org.agents and not t.get("approval") and not self._gedaan("escalatie_triage", taak=t["id"], agent=bij) \
+                        and sum(1 for s in self.v["stappen"].values() if s["soort"] == "escalatie_triage") < 2 * MAX_ESCALATIES:
+                    return [self._nieuwe_stap("escalatie_triage", bij, taak=t["id"])]
         # 3. Hoofdtets maken taken voor open hoofdlijnen
         if not lopend:
             for a in self.org.afdelingen:
@@ -212,6 +220,15 @@ class Werkdag(SamenwerkingStappen, HRStappen):
         self.s.event("model.aanroep", agent, {"doel": stap["soort"], "versie": kaart["versie"]}, taak)
         plek = self._plek(stap) if stap["soort"] in SAMEN else self._plek_hr(stap) if stap["soort"] in HR_SAMEN else None
         self.s.activiteit(agent, "bezig", label, taak, plek)
+        if stap["soort"] == "escalatie" and taak in self.staat.taken and self.staat.taken[taak].get("agent") in self.org.agents:
+            # de Tet loopt het kantoortje van zijn Hoofdtet binnen
+            self.s.activiteit(self.staat.taken[taak]["agent"], "bezig", "bij " + kaart["naam"] + " over een escalatie", taak, kantoor(agent))
+        if stap["soort"] == "escalatie_triage":
+            van = (self.staat.taken[taak].get("escalatie") or {}).get("van")
+            if van in self.org.agents:   # de Hoofdtet gaat langs bij wie de escalatie nu ligt
+                self.s.activiteit(van, "bezig", "bij " + kaart["naam"] + " over een escalatie", taak, kantoor(agent) if kaart["rol"] == "oppertet" else None)
+            if kaart["rol"] != "oppertet" and van in self.org.agents:
+                self.s.activiteit(agent, "bezig", label, taak, kantoor(van))
         if stap["soort"] in SAMEN:
             self._samen_bij_prompt(stap, agent, label)
         elif stap["soort"] in HR_SAMEN and plek:
@@ -263,7 +280,21 @@ class Werkdag(SamenwerkingStappen, HRStappen):
             return "\n\n".join([self._contract(t), "# Laatste resultaat\n" + (t.get("resultaat") or "-"),
                                 "# Bevindingen van de Control Tet\n" + "\n".join(f"- {x}" for x in t.get("bevindingen") or ["-"]),
                                 "# Jouw Tets\n" + "\n".join(f"- {x['id']} ({x['naam']}): {x['specialisme']}" for x in org.tets(t["dept"])),
-                                "# Opdracht\n" + keten.PROTOCOL_ESCALATIE]), "besluit over een geëscaleerde taak"
+                                "# Opdracht\n" + keten.PROTOCOL_ESCALATIE + ("\n" + dr.PROTOCOL_ESCALATIE_SOORT if self.org.assistent() else "")]), "besluit over een geëscaleerde taak"
+        if soort == "escalatie_triage":
+            t = st.taken[stap["taak"]]
+            e = t.get("escalatie") or {}
+            oppertet = self.org.agent(stap["agent"])["rol"] == "oppertet"
+            delen = [self._contract(t), "# Laatste resultaat\n" + (t.get("resultaat") or "-"),
+                     "# Bevindingen van de Control Tet\n" + "\n".join(f"- {x}" for x in t.get("bevindingen") or ["-"]),
+                     f"# Origineel van {self._naam(e.get('van'))} (ongewijzigd, soort: {e.get('soort', 'operationeel')})\n" + (e.get("toelichting") or "-")]
+            if oppertet and e.get("samenvatting_assistent"):
+                delen.append(f"# Samenvatting en voorstel van {self._naam(e.get('assistent'))}\n{e['samenvatting_assistent']}"
+                             + (f"\nVoorstel: {e['voorstel']}" if e.get("voorstel") else ""))
+            if e.get("direct"):
+                delen.append("Deze escalatie kwam via de directe lijn rechtstreeks bij jou; de Assistent-Oppertet kreeg een kopie.")
+            delen.append("# Opdracht\n" + (dr.PROTOCOL_TRIAGE_OPPERTET if oppertet else dr.PROTOCOL_TRIAGE_ASSISTENT))
+            return "\n\n".join(delen), "beoordeelt een escalatie"
         if soort == "routine":
             return self._routine_bericht(stap["routine"]), {"voorstellen": "bekijkt hoe Tet Tet beter kan", "performance": "bekijkt hoe de agents presteren",
                                                             "risico": "doet de risicoronde"}[stap["routine"]]
@@ -519,8 +550,18 @@ class Werkdag(SamenwerkingStappen, HRStappen):
                                             "herkansingen": t.get("herkansingen", 0) + 1, "toelichting_hoofdtet": str(o.get("toelichting", ""))})
             uit = "herformuleerd"
         else:
-            self.s.patch("taken", t["id"], {"approval": True, "raadsvraag": str(o.get("toelichting", ""))})
-            uit = "naar de Raad"
+            toelichting = str(o.get("toelichting", ""))
+            route = dr.escalatieroute(self.org, stap["agent"], str(o.get("soort") or "operationeel"))
+            self.s.event("escalatie.route", stap["agent"], {**route, "toelichting": toelichting}, t["id"])
+            for k in route["kopie"]:
+                self.s.event("escalatie.kopie", k, {"van": stap["agent"], "naar": route["naar"], "soort": route["soort"]}, t["id"])
+            if route["naar"] == "raad":
+                self.s.patch("taken", t["id"], {"approval": True, "raadsvraag": toelichting})
+                uit = "naar de Raad"
+            else:   # via de directie: eerst de assistent, of via de directe lijn de Oppertet; het origineel gaat ongewijzigd mee
+                self.s.patch("taken", t["id"], {"escalatie_bij": route["naar"], "escalatie": {"van": stap["agent"], "soort": route["soort"], "toelichting": toelichting,
+                                                                                            "route": route["route"], "direct": route["direct"], "ts": nu_ms()}})
+                uit = f"naar {self.org.agent(route['naar'])['naam']}" + (" (directe lijn)" if route["direct"] else "")
         self.s.event("escalatie.besluit", stap["agent"], {"besluit": uit}, t["id"])
         # De Hoofdtet heeft de afkeuring nu gezien en erover besloten: de afkeurlessen van deze taak zijn bevestigd.
         for b in self.staat.brein:
@@ -529,6 +570,47 @@ class Werkdag(SamenwerkingStappen, HRStappen):
         self.s.activiteit(stap["agent"], "klaar", f"escalatie {uit}: " + kort(t.get("title")), t["id"])
         stap["status"] = "klaar"
         self.log(f"{self.org.agent(stap['agent'])['naam']} besloot over '{kort(t.get('title'), 50)}': {uit}.")
+        return {"uitkomst": uit, "klaar": True}
+
+    def _verwerk_escalatie_triage(self, stap, tekst):
+        o = lees_json(tekst)
+        t = self.staat.taken[stap["taak"]]
+        e = dict(t.get("escalatie") or {})
+        rol = self.org.agent(stap["agent"])["rol"]
+        besluit = str(o.get("besluit") or "")
+        herkansing = {"status": "volgende", "afkeuringen": 0, "geescaleerd": False, "approval": False, "bevindingen": [],
+                      "herkansingen": t.get("herkansingen", 0) + 1, "escalatie_bij": None}
+        if rol != "oppertet" and besluit == "afhandelen":
+            afspraak = str(o.get("afspraak") or o.get("samenvatting") or "")[:300]
+            self.s.patch("taken", t["id"], {**herkansing, "toelichting_assistent": afspraak, "escalatie": {**e, "afgehandeld_door": stap["agent"]}})
+            eig = o.get("eigenaar") if o.get("eigenaar") in self.org.agents else self.org.hoofdtet(t["dept"])["id"]
+            self._brein_nieuw("besluit", eig, t["dept"], f"Escalatie '{kort(t.get('title'), 60)}': {afspraak} (eigenaar {self._naam(eig)})", taak=t["id"], labels=t.get("labels") or [])
+            self.s.event("escalatie.afgehandeld", stap["agent"], {"door": stap["agent"], "besluit": "afgehandeld"}, t["id"])
+            uit = "afgehandeld door de assistent"
+        elif rol != "oppertet":   # naar de Oppertet, ook bij twijfel; de samenvatting komt erbij, het origineel blijft staan
+            top = self.org.agent(stap["agent"])["rapporteert_aan"]
+            e.update({"samenvatting_assistent": str(o.get("samenvatting") or "")[:600], "voorstel": str(o.get("voorstel") or "")[:300] or None,
+                      "assistent": stap["agent"]})
+            self.s.patch("taken", t["id"], {"escalatie_bij": top, "escalatie": e})
+            self.s.event("escalatie.doorgezet", stap["agent"], {"naar": top}, t["id"])
+            uit = "doorgezet naar de Oppertet"
+        elif besluit == "besluit":
+            velden = {**herkansing, "toelichting_oppertet": str(o.get("toelichting") or "")[:300], "escalatie": {**e, "afgehandeld_door": stap["agent"]}}
+            if o.get("opdracht") and str(o["opdracht"]).lower() not in ("null", "none"):
+                velden["title"] = str(o["opdracht"])
+            self.s.patch("taken", t["id"], velden)
+            self.s.event("escalatie.afgehandeld", stap["agent"], {"door": stap["agent"], "besluit": "oppertet"}, t["id"])
+            uit = "besloten door de Oppertet"
+        else:   # naar de Raad: het origineel van de Hoofdtet voorop, ongewijzigd
+            vraag = "\n\n".join(x for x in [e.get("toelichting") or "",
+                                              f"Samenvatting Assistent-Oppertet: {e['samenvatting_assistent']}" if e.get("samenvatting_assistent") else "",
+                                              f"Oppertet: {o.get('toelichting')}" if o.get("toelichting") else ""] if x)
+            self.s.patch("taken", t["id"], {"approval": True, "raadsvraag": vraag, "escalatie_bij": None})
+            self.s.event("escalatie.bij_raad", stap["agent"], {}, t["id"])
+            uit = "naar de Raad"
+        self.s.activiteit(stap["agent"], "klaar", f"escalatie {uit}: " + kort(t.get("title")), t["id"])
+        stap["status"] = "klaar"
+        self.log(f"{self.org.agent(stap['agent'])['naam']} over '{kort(t.get('title'), 50)}': {uit}.")
         return {"uitkomst": uit, "klaar": True}
 
     def _verwerk_routine(self, stap, tekst):

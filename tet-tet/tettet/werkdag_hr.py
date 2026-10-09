@@ -172,8 +172,7 @@ class HRStappen:
             if isinstance(e.get("ts"), (int, float)) and nu_ms() - e["ts"] > INHAAL_DAGEN * 864e5:
                 continue   # oude overtredingen zijn al (of niet meer) geëvalueerd
             d = self.vandaag()
-            deelnemers = [dader, self.org.hoofdtet(self.org.agent(dader)["afdeling"])["id"] if self.org.agent(dader)["rol"] != "hoofdtet" else "oppertet",
-                          self.org.hoofdtet("hr")["id"], self.org.hoofdtet("risk")["id"]]
+            deelnemers = [dader, kal.evaluator(self.org, dader), self.org.hoofdtet("hr")["id"], self.org.hoofdtet("risk")["id"]]
             ev = kal.maak_event("incident", f"{dader}-{sleutel.replace(':', '-')}", d, deelnemers, self.kal,
                                 extra={"bron_event": sleutel, "agent": dader, "type_overtreding": e.get("type"),
                                        "uiterlijk": kal.werkdagen_verschuif(d, self.hr_incident, self.kal["werkdagen"]).isoformat()})
@@ -266,7 +265,7 @@ class HRStappen:
         periode = (nu - self.hr_venster * 864e5, nu + 1)
         profielen = self._profielen(periode)
         medianen = {}
-        for d in self.org.afdelingen:
+        for d in {p["afdeling"] for p in profielen.values()}:     # ook 'centraal' (bijv. de Assistent-Oppertet)
             groep = [p for p in profielen.values() if p["afdeling"] == d]
             medianen[d] = {c: prestatie.afdelingsmediaan(groep, c) for c in prestatie.KWALITEIT}
         door = self._hr_agent("prestatie")

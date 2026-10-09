@@ -10,19 +10,26 @@ from __future__ import annotations
 
 import datetime as dt
 
+from . import directie as dr
 from . import samenwerking as sw
 from .brein import als_regel, rangorde
 from .kantoordb import nu_ms
 from .runtime import lees_json
 
-PARALLEL = {"uitvoeren", "huddle", "voorbereiding", "afdelingsoverleg", "vooraf_lezen", "mt_oordeel"}
-SAMEN = {"huddle", "kantine", "voorbereiding", "afdelingsoverleg", "bilateraal", "vooraf_lezen", "mt_oordeel", "mt", "retro"}
+PARALLEL = {"uitvoeren", "huddle", "directiehuddle", "voorbereiding", "afdelingsoverleg", "vooraf_lezen", "mt_oordeel"}
+SAMEN = {"huddle", "kantine", "voorbereiding", "afdelingsoverleg", "bilateraal", "vooraf_lezen", "mt_oordeel", "mt", "retro",
+         "directiehuddle", "doorvertalen", "opvolging"}
 ZAAL = "vergaderzaal"
 kort = lambda s, n=70: (s := str(s or "")) if len(s) <= n else s[: n - 1] + "…"
 
 
 def hoek(afdeling: str) -> str:
     return f"overleghoek-{afdeling}"
+
+
+def kantoor(agent: str) -> str:
+    """Het afgesloten kantoortje van de Oppertet of een Hoofdtet; wie er naartoe gaat, is daar op bezoek."""
+    return f"kantoor-{agent}"
 
 
 class SamenwerkingStappen:
@@ -55,6 +62,14 @@ class SamenwerkingStappen:
                 return kandidaat
         return "risk-h"
 
+    def _ass(self) -> str | None:
+        """Id van de ingezette Assistent-Oppertet, of None (dan werkt alles zoals vóór de assistent)."""
+        a = self.org.assistent()
+        return a["id"] if a else None
+
+    def _register(self, open_: bool = True) -> list[dict]:
+        return [b for b in self.staat.brein if b.get("soort") == "register" and (not open_ or b.get("status", "open") != "afgerond")]
+
     def _overleg(self, body: dict) -> dict:
         body = {"id": f"{self.s.bron}-o{len(self.staat.overleggen) + 1:03d}-{body['soort']}", "ts": nu_ms(), "bron": self.s.bron, **body}
         self.staat.overleggen.append(body)
@@ -80,6 +95,10 @@ class SamenwerkingStappen:
             return hoek(stap["afdeling"])
         if soort in ("bilateraal", "mt", "retro"):
             return ZAAL
+        if soort == "directiehuddle":
+            return kantoor("oppertet")
+        if soort in ("doorvertalen", "opvolging") and stap.get("bezoek"):
+            return kantoor(stap["bezoek"])
         return None
 
     def _deelnemers(self, stap: dict) -> list[str]:
@@ -89,9 +108,12 @@ class SamenwerkingStappen:
         if soort in ("huddle", "afdelingsoverleg"):
             return [a["id"] for a in self.org.team(stap["afdeling"])]
         if soort == "bilateraal":
-            return [self.org.hoofdtet(d)["id"] for d in stap["paar"]]
+            hoofden = [self.org.hoofdtet(d)["id"] for d in stap["paar"]]
+            return hoofden + ([stap["agent"]] if stap["agent"] not in hoofden else [])
         if soort in ("mt", "retro"):
-            return ["oppertet", *[self.org.hoofdtet(d)["id"] for d in self.org.afdelingen]]
+            return ["oppertet", *([self._ass()] if self._ass() else []), *[self.org.hoofdtet(d)["id"] for d in self.org.afdelingen]]
+        if soort == "directiehuddle":
+            return ["oppertet", stap["agent"]]
         return [stap["agent"]]
 
     def _samen_bij_prompt(self, stap: dict, agent: str, label: str):
@@ -111,9 +133,12 @@ class SamenwerkingStappen:
     def _bepaal_samen(self, aantal: int, lopend: list[dict]) -> list[dict]:
         soorten = {s["soort"] for s in lopend}
         # Huddles: dagelijks per afdeling met werk, parallel, vlak vóór de pauze.
-        if self.o_aan and self.o_huddle and soorten <= {"huddle"}:
+        if self.o_aan and self.o_huddle and soorten <= {"huddle", "directiehuddle"}:
             open_ = [d for d in self._huddle_afdelingen() if not self._gedaan("huddle", afdeling=d) and not self._huddle_vandaag(d)]
             nieuw = [self._nieuwe_stap("huddle", self._voorzitter(d), afdeling=d) for d in open_[:max(0, aantal - len(lopend))]]
+            ass = self._ass()
+            if ass and open_ and len(nieuw) < max(0, aantal - len(lopend)) and not self._gedaan("directiehuddle") and not self._directie_vandaag("directiehuddle"):
+                nieuw.append(self._nieuwe_stap("directiehuddle", ass))
             if nieuw or lopend:
                 return nieuw
         if lopend:
@@ -125,8 +150,26 @@ class SamenwerkingStappen:
                              min_afdelingen=self.k_min_afd, bezet=bezet | {self._toezichthouder()})
             if len(tafel) >= 3:
                 return [self._nieuwe_stap("kantine", tafel[0], deelnemers=tafel, fase="gesprek")]
-        if self.o_aan:
-            return self._bepaal_overleg(aantal, lopend)
+        uit = self._bepaal_overleg(aantal, lopend) if self.o_aan else []
+        if uit or lopend:
+            return uit
+        return self._bepaal_directie()
+
+    def _directie_vandaag(self, soort: str) -> bool:
+        return any(o.get("soort") == soort and o.get("datum") == self.vandaag().isoformat() for o in self.staat.overleggen)
+
+    def _bepaal_directie(self) -> list[dict]:
+        """Werk van de Assistent-Oppertet: MT-besluiten doorvertalen en het register opvolgen (één keer per dag)."""
+        ass = self._ass()
+        if not ass:
+            return []
+        nieuw = [b for b in self._register() if not b.get("doorvertaald_ts")]
+        if nieuw and not self._gedaan("doorvertalen"):
+            return [self._nieuwe_stap("doorvertalen", ass, register=[b["id"] for b in nieuw[:8]], bezoek=nieuw[0].get("eigenaar"))]
+        open_ = [b for b in self._register() if b.get("doorvertaald_ts")]
+        if open_ and not self._gedaan("opvolging") and not self._directie_vandaag("opvolging"):
+            achter = sorted(open_, key=lambda b: (b.get("status") != "achter", b.get("ts", 0)))
+            return [self._nieuwe_stap("opvolging", ass, register=[b["id"] for b in open_[:10]], bezoek=achter[0].get("eigenaar"))]
         return []
 
     def _huddle_afdelingen(self) -> list[str]:
@@ -161,9 +204,20 @@ class SamenwerkingStappen:
             return [{"key": d, "agent": org.hoofdtet(d)["id"], "extra": {"afdeling": d}} for d in afd]
         if fase == "bilateraal":
             paren = sw.bilaterale_paren(org, list(memos), list(self.staat.taken.values()))
-            return [{"key": f"{a}+{b}", "agent": org.hoofdtet(a)["id"], "extra": {"paar": [a, b]}} for a, b in paren]
+            uit = [{"key": f"{a}+{b}", "agent": org.hoofdtet(a)["id"], "extra": {"paar": [a, b]}} for a, b in paren]
+            ass = self._ass()
+            if ass:   # meer dan twee afdelingen aan één afhankelijkheid: de assistent leidt die afstemming
+                tel: dict[str, int] = {}
+                for a, b in paren:
+                    tel[a], tel[b] = tel.get(a, 0) + 1, tel.get(b, 0) + 1
+                knoop = {d for d, n in tel.items() if n >= 2}
+                groep = sorted({x for p in paren if set(p) & knoop for x in p})
+                if len(groep) > 2:
+                    uit.append({"key": "directie", "agent": ass, "extra": {"paar": groep}})
+            return uit
         if fase == "vooraf_lezen":
             return [{"key": d, "agent": org.hoofdtet(d)["id"], "extra": {"afdeling": d}} for d in memos] + \
+                   ([{"key": "assistent", "agent": self._ass(), "extra": {}}] if memos and self._ass() else []) + \
                    ([{"key": "oppertet", "agent": "oppertet", "extra": {}}] if memos else [])
         if fase == "mt_oordeel":
             return [{"key": d, "agent": org.hoofdtet(d)["id"], "extra": {"afdeling": d}} for d in memos] if self._agenda(cyclus) else []
@@ -209,7 +263,8 @@ class SamenwerkingStappen:
                 "voorbereiding": f"{naam} bereidt het MT voor", "afdelingsoverleg": f"afdelingsoverleg {self._afd_naam(s.get('afdeling'))}",
                 "bilateraal": "bilaterale afstemming " + " en ".join(self._afd_naam(x) for x in s.get("paar", [])),
                 "vooraf_lezen": f"{naam} leest de memo's", "mt_oordeel": f"{naam} vormt een eigen oordeel", "mt": "MT-overleg",
-                "retro": "retrospectief"}.get(s["soort"])
+                "retro": "retrospectief", "directiehuddle": "directiehuddle", "doorvertalen": f"{naam} vertaalt MT-besluiten door",
+                "opvolging": f"{naam} volgt het besluitenregister op"}.get(s["soort"])
 
     def _brein_context(self, agent: str, onderwerp: str) -> list[str]:
         """Wat een agent uit het collectieve Brein meekrijgt: wie weet wat, wie werkt waaraan, open vragen, signalen."""
@@ -254,11 +309,13 @@ class SamenwerkingStappen:
         d = stap["afdeling"]
         ad = self.staat.afdelingsdoelen.get(d, {})
         vragen = [b for b in self.staat.brein if b.get("soort") == "vraag" and b.get("status", "open") == "open" and b.get("aan") == d]
+        opdrachten = [b for b in self.staat.brein if b.get("soort") == "opdracht" and b.get("dept") == d and b.get("status", "open") == "open"][-4:]
         return "\n\n".join([
             f"# Huddle {self._afd_naam(d)} – {self.vandaag().strftime('%d-%m')}",
             f"Afdelingsdoel: {ad.get('doel') or '-'}",
             "# Het bord (wie heeft wat open)\n" + "\n".join(self._team_bord(d)),
             "# Open vragen aan de afdeling\n" + ("\n".join(f"- [{v['id']}] {v['tekst']}" for v in vragen) or "- geen"),
+            *(["# Opdrachten uit het MT (via de Assistent-Oppertet)\n" + "\n".join(f"- {o['tekst']}" for o in opdrachten)] if opdrachten else []),
             f"Jij bent vandaag voorzitter ({self._naam(stap['agent'])}); de voorzitter rouleert.",
             "# Opdracht\n" + sw.PROTOCOL_HUDDLE]), f"zit de huddle van {self._afd_naam(d)} voor"
 
@@ -340,8 +397,10 @@ class SamenwerkingStappen:
         memos = self._memos(stap["cyclus"])
         return "\n\n".join([f"# Bilaterale afstemming {' en '.join(self._afd_naam(x) for x in stap['paar'])}",
                             *[self._memo_tekst(memos[x]) for x in stap["paar"] if x in memos],
-                            f"Je spreekt met {self._naam(self.org.hoofdtet(stap['paar'][1])['id'])}.",
-                            "# Opdracht\n" + sw.PROTOCOL_BILATERAAL]), "stemt bilateraal af"
+                            (f"Je spreekt met {self._naam(self.org.hoofdtet(stap['paar'][1])['id'])}." if len(stap["paar"]) == 2 else
+                             "Je leidt als Assistent-Oppertet de afstemming met de Hoofdtets van " + ", ".join(self._afd_naam(x) for x in stap["paar"])
+                             + ", binnen de prioriteiten die de Oppertet zette. Je neemt geen besluiten die bij het MT liggen: die gaan als conflict naar het MT."),
+                            "# Opdracht\n" + sw.PROTOCOL_BILATERAAL]), "stemt bilateraal af" if len(stap["paar"]) == 2 else "leidt de afstemming tussen afdelingen"
 
     def _bilaterale_tekst(self, cyclus: str) -> list[str]:
         return [f"- {' + '.join(self._afd_naam(x) for x in o['paar'])}: " + "; ".join(a.get("wat", "") for a in o.get("afspraken") or []) +
@@ -350,9 +409,13 @@ class SamenwerkingStappen:
 
     def _bericht_vooraf_lezen(self, stap):
         c = stap["cyclus"]
+        assistent = stap["agent"] == self._ass()
         return "\n\n".join([f"# Memo's voor het MT ({c})", *[self._memo_tekst(m) for m in self._memos(c).values()],
                             "# Bilaterale afspraken\n" + ("\n".join(self._bilaterale_tekst(c)) or "- geen"),
-                            "# Opdracht\n" + sw.PROTOCOL_VOORAF_LEZEN]), "leest de memo's voor het MT"
+                            *(["# Agenda (besluitvragen uit de memo's)\n" + "\n".join(f"{x['nr']}. ({self._afd_naam(x['dept'])}) {x['vraag']}" for x in self._agenda(c))]
+                              if assistent else []),
+                            "# Opdracht\n" + (dr.PROTOCOL_VOORAF_LEZEN_ASSISTENT if assistent else sw.PROTOCOL_VOORAF_LEZEN)]), \
+            "bereidt het MT voor (agenda en memo's)" if assistent else "leest de memo's voor het MT"
 
     def _bericht_mt_oordeel(self, stap):
         c = stap["cyclus"]
@@ -371,6 +434,14 @@ class SamenwerkingStappen:
                 for oo in o.get("oordelen") or []:
                     if oo.get("nr") == x["nr"]:
                         regels.append(f"   - {self._naam(o['agent'])}: {oo.get('oordeel')} ({oo.get('zekerheid', '?')}) – {oo.get('onderbouwing', '')}")
+        ass = self._ass()
+        if ass:
+            voor = next((o for o in self.staat.overleggen if o.get("soort") == "vooraf_lezen" and o.get("cyclus") == c and o.get("agent") == ass), None)
+            regels += ["", f"# Voorbereiding door {self._naam(ass)} (concept; jij stelt de agenda vast)",
+                       "Voorgestelde volgorde: " + (", ".join(str(n) for n in (voor or {}).get("volgorde") or []) or "zoals hierboven"),
+                       "Memo's zonder blok 'alleen wij weten': " + (", ".join(self._afd_naam(d) for d in (voor or {}).get("zonder_alleen_wij_weten") or []) or "geen"),
+                       "", f"# Opvolging eerdere besluiten ({self._naam(ass)} heeft spreektijd, geen stem)",
+                       *([f"- {b['tekst']} · status: {b.get('status', 'open')}" + (f" ({b['toelichting']})" if b.get("toelichting") else "") for b in self._register()[-8:]] or ["- geen open besluiten"])]
         regels += ["", "# Vragen op de memo's", *([f"- {self._afd_naam(v.get('memo'))}: {v.get('vraag')}" for v in vragen] or ["- geen"]),
                    "", "# Bilaterale afspraken", *(self._bilaterale_tekst(c) or ["- geen"]),
                    "", *[self._memo_tekst(m) for m in self._memos(c).values()], "", "# Opdracht", sw.PROTOCOL_MT]
@@ -498,7 +569,7 @@ class SamenwerkingStappen:
 
     def _verwerk_bilateraal(self, stap, tekst):
         o = lees_json(tekst)
-        hoofden = {self.org.hoofdtet(x)["id"] for x in stap["paar"]}
+        hoofden = {self.org.hoofdtet(x)["id"] for x in stap["paar"]} | {stap["agent"]}
         afspraken = [{"wat": str(a.get("wat", ""))[:200], "eigenaar": a.get("eigenaar") if a.get("eigenaar") in hoofden else stap["agent"]} for a in (o.get("afspraken") or [])[:4] if a.get("wat")]
         self._overleg({"soort": "bilateraal", "cyclus": stap["cyclus"], "eenheid": stap["eenheid"], "paar": stap["paar"], "deelnemers": sorted(hoofden),
                        "afspraken": afspraken, "conflicten": [str(c)[:200] for c in (o.get("conflicten") or [])[:3]]})
@@ -515,7 +586,12 @@ class SamenwerkingStappen:
             if v.get("memo") in memos and per.get(v["memo"], 0) < 2 and v.get("vraag"):
                 per[v["memo"]] = per.get(v["memo"], 0) + 1
                 vragen.append({"memo": v["memo"], "vraag": str(v["vraag"])[:300], "door": stap["agent"]})
-        self._overleg({"soort": "vooraf_lezen", "cyclus": stap["cyclus"], "eenheid": stap["eenheid"], "agent": stap["agent"], "vragen": vragen})
+        extra = {}
+        if stap["agent"] == self._ass():
+            nrs = {x["nr"] for x in self._agenda(stap["cyclus"])}
+            extra = {"volgorde": [int(n) for n in o.get("volgorde") or [] if str(n).isdigit() and int(n) in nrs],
+                     "zonder_alleen_wij_weten": [d for d in o.get("zonder_alleen_wij_weten") or [] if d in memos]}
+        self._overleg({"soort": "vooraf_lezen", "cyclus": stap["cyclus"], "eenheid": stap["eenheid"], "agent": stap["agent"], "vragen": vragen, **extra})
         stap["status"] = "klaar"
         self.s.activiteit(stap["agent"], "klaar", f"memo's gelezen, {len(vragen)} vragen")
         return {"uitkomst": "klaar", "klaar": True}
@@ -546,12 +622,20 @@ class SamenwerkingStappen:
         oordelen = [o2 for o2 in self.staat.overleggen if o2.get("soort") == "mt_oordeel" and o2.get("cyclus") == c]
         beurten = [{"agent": x["agent"], "tekst": "; ".join(f"{oo['nr']}: {oo['oordeel']}" for oo in x.get("oordelen") or [])} for x in oordelen]
         vragen_raad = [str(v)[:300] for v in (o.get("vragen_aan_raad") or [])[:3]]
+        ass = self._ass()
+        if ass:
+            reg = self._register()
+            beurten.append({"agent": ass, "tekst": f"opvolging: {sum(1 for b in reg if b.get('status') == 'op_schema')} op schema, "
+                                                   f"{sum(1 for b in reg if b.get('status') == 'achter')} achter, {len(reg)} open"})
         self._overleg({"soort": "mt", "cyclus": c, "eenheid": "mt", "deelnemers": deelnemers, "agenda": agenda, "beurten": beurten,
                        "samenvatting": str(o.get("samenvatting", ""))[:1200], "besluiten": besluiten, "vragen_aan_raad": vragen_raad})
         for b in besluiten:
             self._brein_nieuw("besluit", b["eigenaar"], self.org.agent(b["eigenaar"])["afdeling"] if b["eigenaar"] in self.org.agents else "centraal",
                               f"MT {c}: {b['besluit']} (eigenaar {self._naam(b['eigenaar'])}; reden: {b['reden']})")
             self.s.event("mt.besluit", "oppertet", {"besluit": b["besluit"], "eigenaar": b["eigenaar"]})
+            if ass:   # besluitenregister: de assistent notuleert en volgt op
+                self._brein_nieuw("register", ass, "centraal", f"MT {c}, besluit {b.get('nr') or '-'}: {b['besluit']}", status="open", cyclus=c,
+                                  nr=b.get("nr"), eigenaar=b["eigenaar"], reden=b["reden"], deadline=b["deadline"])
         stap["status"] = "klaar"
         self._samen_klaar(stap, "MT-overleg klaar")
         self.log(f"MT-overleg: {len(besluiten)} besluiten" + (f"; vragen aan de Raad: {' | '.join(vragen_raad)}" if vragen_raad else "") + ".")
@@ -576,6 +660,118 @@ class SamenwerkingStappen:
         stap["status"] = "klaar"
         self._samen_klaar(stap, "retrospectief klaar")
         self.log(f"Retrospectief: {len(bevindingen)} bevindingen" + (", één voorstel aan de Raad." if v.get("titel") else "."))
+        return {"uitkomst": "klaar", "klaar": True}
+
+    # ---------- directie: de Assistent-Oppertet ----------
+    def _directie_stand(self, agent: str) -> list[str]:
+        """Stand per afdeling zoals de directie hem ziet: aantallen en voortgang; titels alleen als ze binnen de eigen toegang vallen."""
+        t = self._toegang(agent)
+        regels = []
+        for d in self.org.afdelingen:
+            ad = self.staat.afdelingsdoelen.get(d, {})
+            if not ad.get("doel"):
+                continue
+            taken = [x for x in self.staat.taken.values() if x.get("dept") == d]
+            vast = [x for x in taken if x.get("geescaleerd") or x.get("approval")]
+            regels.append(f"- {self._afd_naam(d)}: {ad['doel']} · {sum(1 for x in taken if x.get('status') == 'klaar')}/{len(taken)} taken klaar"
+                          + (f" · vast: " + "; ".join(kort(x.get("title"), 60) if sw.zichtbaar(x, t) else "(werk buiten jouw toegang)" for x in vast[:2]) if vast else ""))
+        return regels or ["- nog geen afdelingsdoelen"]
+
+    def _bericht_directiehuddle(self, stap):
+        ass = stap["agent"]
+        esc = [x for x in self.staat.taken.values() if x.get("escalatie_bij") in ("oppertet", ass)]
+        return "\n\n".join([
+            f"# Directiehuddle – {self.vandaag().strftime('%d-%m')}", f"Aanwezig: oppertet (Oppertet) en {ass} ({self._naam(ass)}).",
+            "# Stand per afdeling\n" + "\n".join(self._directie_stand(ass)),
+            "# Besluitenregister (open)\n" + ("\n".join(f"- [{b['id']}] {b['tekst']} · eigenaar {self._naam(b.get('eigenaar'))} · {b.get('status', 'open')}"
+                                                     for b in self._register()[-8:]) or "- leeg"),
+            "# Escalaties bij de directie\n" + ("\n".join(f"- {kort(x.get('title'), 70)} (bij {self._naam(x['escalatie_bij'])})" for x in esc) or "- geen"),
+            "# Opdracht\n" + dr.PROTOCOL_DIRECTIEHUDDLE]), "directiehuddle met de Oppertet"
+
+    def _verwerk_directiehuddle(self, stap, tekst):
+        o = lees_json(tekst)
+        wie = {"oppertet", stap["agent"]}
+        beurten = [{"agent": b["agent"], "tekst": "; ".join(x for x in [f"prioriteit: {b.get('prioriteit')}" if b.get("prioriteit") else "",
+                                                                         f"knelpunt: {b['knelpunt']}" if b.get("knelpunt") else "",
+                                                                         f"nodig van: {self._naam(b['nodig_van'])}" if b.get("nodig_van") else ""] if x)}
+                   for b in o.get("beurten") or [] if b.get("agent") in wie]
+        besluiten = [{"wat": str(b.get("wat", ""))[:200], "eigenaar": b.get("eigenaar") if b.get("eigenaar") in self.org.agents else "oppertet"}
+                     for b in (o.get("besluiten") or [])[:3] if b.get("wat")]
+        self._overleg({"soort": "directiehuddle", "dept": "centraal", "datum": self.vandaag().isoformat(), "voorzitter": "oppertet",
+                       "deelnemers": sorted(wie), "beurten": beurten, "besluiten": besluiten})
+        for b in besluiten:
+            self._brein_nieuw("besluit", b["eigenaar"], "centraal", f"Directiehuddle: {b['wat']} (eigenaar {self._naam(b['eigenaar'])})")
+        stap["status"] = "klaar"
+        self._samen_klaar(stap, "directiehuddle klaar")
+        self.log(f"Directiehuddle: {len(beurten)} beurten, {len(besluiten)} besluiten.")
+        return {"uitkomst": "klaar", "klaar": True}
+
+    def _bericht_doorvertalen(self, stap):
+        reg = [b for b in self.staat.brein if b.get("id") in stap["register"]]
+        return "\n\n".join([
+            "# MT-besluiten om door te vertalen",
+            *[f"- [{b['id']}] {b['tekst']} · eigenaar {b.get('eigenaar')} ({self._naam(b.get('eigenaar'))}) · reden: {b.get('reden') or '-'} · deadline: {b.get('deadline') or 'geen'}"
+              for b in reg],
+            "# Hoofdtets\n" + "\n".join(f"- {d}: {self.org.hoofdtet(d)['id']} ({self._naam(self.org.hoofdtet(d)['id'])})" for d in self.org.afdelingen),
+            "# Opdracht\n" + dr.PROTOCOL_DOORVERTALEN]), "vertaalt MT-besluiten door naar de afdelingen"
+
+    def _verwerk_doorvertalen(self, stap, tekst):
+        o = lees_json(tekst)
+        reg = {b["id"]: b for b in self.staat.brein if b.get("id") in stap["register"]}
+        n, eerste = 0, {}
+        for x in (o.get("opdrachten") or [])[:12]:
+            r, d = reg.get(x.get("register")), x.get("afdeling")
+            if not r or d not in self.org.afdelingen or not x.get("opdracht"):
+                continue
+            eig = self.org.hoofdtet(d)["id"]   # één eigenaar per opdracht: de Hoofdtet van de afdeling
+            self._brein_nieuw("opdracht", stap["agent"], d, f"{x['opdracht']} (uit {r['tekst'][:80]}; eigenaar {self._naam(eig)}; deadline {x.get('deadline') or r.get('deadline') or 'geen'})",
+                              register=r["id"], eigenaar=eig, aan=d, reden=str(x.get("reden") or r.get("reden") or "")[:200],
+                              deadline=x.get("deadline") or r.get("deadline"), status="open")
+            eerste.setdefault(r["id"], nu_ms())
+            n += 1
+        for rid, ts in eerste.items():
+            if not reg[rid].get("doorvertaald_ts"):
+                self.s.patch("brein", rid, {"doorvertaald_ts": ts})
+                self.s.event("directie.doorvertaald", stap["agent"], {"register": rid, "uren": round((ts - reg[rid].get("ts", ts)) / 3.6e6, 2)})
+        if o.get("vraag_aan_oppertet") and str(o["vraag_aan_oppertet"]).lower() not in ("null", "none"):
+            self._brein_nieuw("vraag", stap["agent"], "centraal", str(o["vraag_aan_oppertet"]), aan="oppertet", status="open")
+        stap["status"] = "klaar"
+        self.s.activiteit(stap["agent"], "klaar", f"vertaalde {len(eerste)} besluit(en) door in {n} opdracht(en)")
+        self.log(f"{self._naam(stap['agent'])} vertaalde {len(eerste)} MT-besluit(en) door in {n} opdracht(en).")
+        return {"uitkomst": "klaar", "opdrachten": n, "klaar": True}
+
+    def _bericht_opvolging(self, stap):
+        ass = stap["agent"]
+        reg = [b for b in self.staat.brein if b.get("id") in stap["register"]]
+        regels = ["# Besluitenregister"]
+        for b in reg:
+            regels.append(f"- [{b['id']}] {b['tekst']} · eigenaar {self._naam(b.get('eigenaar'))} · deadline {b.get('deadline') or 'geen'} · nu: {b.get('status', 'open')}")
+            regels += [f"  - opdracht {self._afd_naam(x['dept'])}: {kort(x['tekst'], 110)}" for x in self.staat.brein
+                       if x.get("soort") == "opdracht" and x.get("register") == b["id"]]
+        return "\n\n".join(["\n".join(regels), "# Stand per afdeling\n" + "\n".join(self._directie_stand(ass)),
+                            "# Opdracht\n" + dr.PROTOCOL_OPVOLGING]), "volgt de MT-besluiten op"
+
+    def _verwerk_opvolging(self, stap, tekst):
+        o = lees_json(tekst)
+        reg = {b["id"]: b for b in self.staat.brein if b.get("id") in stap["register"]}
+        tel = {"op_schema": 0, "achter": 0, "afgerond": 0}
+        for x in o.get("status") or []:
+            r, st = reg.get(x.get("register")), x.get("status")
+            if not r or st not in tel:
+                continue
+            tel[st] += 1
+            velden = {"status": st, "toelichting": str(x.get("toelichting") or "")[:200], "gevolgd_ts": nu_ms()}
+            if st == "afgerond" and r.get("status") != "afgerond":
+                velden["afgerond_op"] = self.vandaag().isoformat()
+            self.s.patch("brein", r["id"], velden)
+        for a in (o.get("aanspreken") or [])[:4]:
+            if a.get("eigenaar") in self.org.agents and a.get("vraag"):
+                self._brein_nieuw("vraag", stap["agent"], self.org.agent(a["eigenaar"])["afdeling"], str(a["vraag"]), aan=a["eigenaar"], status="open")
+        self._overleg({"soort": "opvolging", "datum": self.vandaag().isoformat(), "agent": stap["agent"], "deelnemers": [stap["agent"]], **tel})
+        self.s.event("directie.opvolging", stap["agent"], tel)
+        stap["status"] = "klaar"
+        self.s.activiteit(stap["agent"], "klaar", f"opvolging: {tel['op_schema']} op schema, {tel['achter']} achter, {tel['afgerond']} afgerond")
+        self.log(f"{self._naam(stap['agent'])} volgde het register op: {tel['op_schema']} op schema, {tel['achter']} achter, {tel['afgerond']} afgerond.")
         return {"uitkomst": "klaar", "klaar": True}
 
     # ---------- Brein bij het uitvoeren van taken ----------
