@@ -23,7 +23,9 @@ from .brein import als_regel, bevestig, hoort_bij, rangorde, zoek_dubbel
 from .kaarten import Organisatie
 from .kantoordb import KantoorStaat, Schrijver, in_batches, nu_ms
 from .runtime import laad_instellingen, lees_json
+from . import prestatie
 from . import samenwerking as sw
+from .werkdag_hr import HR_PARALLEL, HR_SAMEN, HRStappen
 from .werkdag_samen import PARALLEL, SAMEN, SamenwerkingStappen
 
 MAX_UITVOEREN = 8          # taken per werkdag
@@ -33,7 +35,7 @@ ROUTINES = [("voorstellen", "rnd-h"), ("performance", "hr-h"), ("risico", "risk-
 kort = lambda s, n=70: (s := str(s or "")) if len(s) <= n else s[: n - 1] + "…"
 
 
-class Werkdag(SamenwerkingStappen):
+class Werkdag(SamenwerkingStappen, HRStappen):
     def __init__(self, werk: pathlib.Path, org: Organisatie | None = None):
         self.werk = werk
         self.org = org or Organisatie()
@@ -41,6 +43,7 @@ class Werkdag(SamenwerkingStappen):
         self.max_afkeuringen = inst["taken"]["max_afkeuringen"]
         self.drempel = float(inst.get("brein", {}).get("overlap_drempel", 0.6))
         self._samen_instellingen(inst)
+        self._hr_instellingen(inst)
         self.staat = KantoorStaat.uit_json(json.loads((werk / "staat.json").read_text(encoding="utf-8")))
         self.v = json.loads((werk / "voortgang.json").read_text(encoding="utf-8"))
         self.s = Schrijver(werk, self.staat)
@@ -107,6 +110,8 @@ class Werkdag(SamenwerkingStappen):
     def _omschrijf(self, s: dict) -> str:
         if s["soort"] in SAMEN:
             return self._omschrijf_samen(s)
+        if s["soort"] in HR_SAMEN:
+            return self._omschrijf_hr(s)
         naam = self.org.agent(s["agent"])["naam"]
         return {"oppertet_plan": "Oppertet verdeelt de doelstelling", "hoofdtet_plan": f"{naam} maakt taken",
                 "uitvoeren": f"{naam} voert een taak uit", "escalatie": f"{naam} besluit over een escalatie",
@@ -114,8 +119,8 @@ class Werkdag(SamenwerkingStappen):
 
     def _bepaal(self, aantal: int, lopend: list[dict]) -> list[dict]:
         st, d = self.staat, self.staat.doel
-        if any(s["soort"] not in PARALLEL for s in lopend):
-            return []  # planstappen, kantine en MT eerst afmaken
+        if any(s["soort"] not in PARALLEL | HR_PARALLEL for s in lopend):
+            return []  # planstappen, kantine, MT en HR-overleggen eerst afmaken
         soorten_lopend = {s["soort"] for s in lopend}
         lopende_taken = {s.get("taak") for s in lopend}
         # 1. Oppertet verdeelt de doelstelling over afdelingen zonder doel
@@ -136,7 +141,7 @@ class Werkdag(SamenwerkingStappen):
                     return [self._nieuwe_stap("hoofdtet_plan", self.org.hoofdtet(a)["id"], afdeling=a)]
         # 4. Tets voeren taken uit (parallel)
         if not soorten_lopend <= {"uitvoeren"}:
-            return self._bepaal_samen(aantal, lopend)
+            return self._bepaal_samen(aantal, lopend) or self._bepaal_hr(aantal, lopend)
         gedaan_uit = sum(1 for s in self.v["stappen"].values() if s["soort"] == "uitvoeren")
         ruimte = min(aantal - len(lopend), MAX_UITVOEREN - gedaan_uit)
         kandidaten = sorted((t for t in st.taken.values() if t.get("status") == "volgende" and t.get("agent") in self.org.agents
@@ -157,6 +162,10 @@ class Werkdag(SamenwerkingStappen):
         samen = self._bepaal_samen(aantal, lopend)
         if samen:
             return samen
+        # 5b. HR: agenda, snapshot, check-ins, zelfreflectie, evaluaties, kalibratie, incidenten, curatie, cultuurbrief
+        hr_ = self._bepaal_hr(aantal, lopend)
+        if hr_:
+            return hr_
         # 6. Vaste rondes
         for naam, agent in ROUTINES:
             if not self._routine_recent(naam) and not self._gedaan("routine", routine=naam):
@@ -201,17 +210,23 @@ class Werkdag(SamenwerkingStappen):
             self.s.patch("taken", taak, {"status": "bezig", "approval": False})
             self.s.event("taak.gestart", agent, {"poging": stap["poging"]}, taak)
         self.s.event("model.aanroep", agent, {"doel": stap["soort"], "versie": kaart["versie"]}, taak)
-        self.s.activiteit(agent, "bezig", label, taak, self._plek(stap) if stap["soort"] in SAMEN else None)
+        plek = self._plek(stap) if stap["soort"] in SAMEN else self._plek_hr(stap) if stap["soort"] in HR_SAMEN else None
+        self.s.activiteit(agent, "bezig", label, taak, plek)
         if stap["soort"] in SAMEN:
             self._samen_bij_prompt(stap, agent, label)
+        elif stap["soort"] in HR_SAMEN and plek:
+            for d in self._deelnemers_hr(stap):   # wie meedoet loopt naar de overleghoek of de vergaderzaal
+                if d != agent:
+                    self.s.activiteit(d, "bezig", "in overleg: " + label, None, plek)
         return self.klaar_met({"stap": stap_id, "agent": agent, "naam": kaart["naam"], "prompt": str(pad), "antwoord": str(antwoord), "web": web})
 
-    def _contract(self, t: dict) -> str:
+    def _contract(self, t: dict, blind: bool = False) -> str:
+        """Het taakcontract. `blind`: zonder afdelingsdoel, voor de Control Tet (beoordelen zonder te weten van wie het werk is)."""
         ad = self.staat.afdelingsdoelen.get(t["dept"], {})
         return "\n".join([f"# Taakcontract {t['id']}", f"Opdracht: {t.get('title', '')}", "Acceptatiecriteria:",
                           *[f"- {c}" for c in t.get("criteria") or ["Beantwoordt de opdracht volledig"]],
                           f"Budget: {float(t.get('budget') or 2):.2f} euro", f"Deadline: {ad.get('deadline') or self.staat.doel.get('deadline') or 'geen'}",
-                          f"Doelstelling: {self.staat.doel.get('naam') or '-'}", f"Afdelingsdoel: {ad.get('doel') or '-'}"])
+                          f"Doelstelling: {self.staat.doel.get('naam') or '-'}", *([] if blind else [f"Afdelingsdoel: {ad.get('doel') or '-'}"])])
 
     def _bericht(self, stap: dict) -> tuple[str, str]:
         st, org, d = self.staat, self.org, self.staat.doel
@@ -241,7 +256,8 @@ class Werkdag(SamenwerkingStappen):
                     delen.append("# Bevindingen van de vorige beoordeling\n" + "\n".join(f"- {x}" for x in t["bevindingen"]))
                 delen.append("# Werkwijze\n" + keten.PROTOCOL_TET)
                 return "\n\n".join(delen), "werkt aan: " + kort(t.get("title"))
-            return "\n\n".join([self._contract(t), "# Resultaat van de Tet\n" + (t.get("resultaat") or ""), "# Werkwijze\n" + keten.PROTOCOL_CONTROLTET]), "toetst: " + kort(t.get("title"))
+            return "\n\n".join([self._contract(t, blind=True), "# Resultaat van de Tet\n" + prestatie.blind(t.get("resultaat") or "", self.org),
+                                  "# Werkwijze\n" + keten.PROTOCOL_CONTROLTET]), "toetst: " + kort(t.get("title"))
         if soort == "escalatie":
             t = st.taken[stap["taak"]]
             return "\n\n".join([self._contract(t), "# Laatste resultaat\n" + (t.get("resultaat") or "-"),
@@ -253,6 +269,8 @@ class Werkdag(SamenwerkingStappen):
                                                             "risico": "doet de risicoronde"}[stap["routine"]]
         if soort in SAMEN:
             return self._bericht_samen(stap)
+        if soort in HR_SAMEN:
+            return self._bericht_hr(stap)
         if soort == "dagverslag":
             return "\n".join(["# Deze werkdag", *[f"- {r}" for r in self.v["log"]], "", "# Stand", *self._stand_regels(), "", "# Opdracht", keten.PROTOCOL_DAGVERSLAG]), "schrijft het dagverslag voor de Raad"
         raise ValueError(soort)
@@ -272,15 +290,19 @@ class Werkdag(SamenwerkingStappen):
         st, org = self.staat, self.org
         regels = ["# Stand", *self._stand_regels(), ""]
         if routine == "performance":
-            regels.append("# Per agent")
-            for a in org.agents.values():
-                mijn = [t for t in st.taken.values() if t.get("agent") == a["id"]]
-                if not mijn:
+            regels.append("# Per agent (profiel, geen totaalscore; 'te weinig data' = geen conclusie)")
+            taken = list(st.taken.values())
+            for a in org.actieve_agents():
+                if not any(t.get("agent") == a["id"] for t in taken):
                     continue
-                scores = [t["score"] for t in mijn if isinstance(t.get("score"), (int, float))]
-                regels.append(f"- {a['naam']}: {len(mijn)} taken, {sum(1 for t in mijn if t.get('status') == 'klaar')} klaar, "
-                              f"{sum(t.get('afkeuringen', 0) for t in mijn)} afkeuringen, gem. score {sum(scores) / len(scores):.1f}" if scores else
-                              f"- {a['naam']}: {len(mijn)} taken, {sum(1 for t in mijn if t.get('status') == 'klaar')} klaar, {sum(t.get('afkeuringen', 0) for t in mijn)} afkeuringen")
+                p = prestatie.profiel(a["id"], org, taken, st.grootboek, st.brein, self.inst, alle_taken=taken)
+                d = p["dimensies"]
+                delen = []
+                for c in ("eerste_keer_goed", "kwaliteitsoordeel", "kalibratie"):
+                    b = d[c]
+                    delen.append(f"{c.replace('_', ' ')}: " + (f"{b['waarde']} ({b['onder']}–{b['boven']}, n={b['n']})" if b["status"] == "ok" and b.get("onder") is not None
+                                                             else f"{b['waarde']} (n={b['n']})" if b["status"] == "ok" else f"te weinig data (n={b['n']})"))
+                regels.append(f"- {a['naam']}: " + "; ".join(delen) + f"; grensovertredingen: {p['poort']['grensnaleving']['overtredingen']}")
         elif routine == "risico":
             regels.append("# Signalen")
             for t in st.taken.values():
@@ -318,6 +340,9 @@ class Werkdag(SamenwerkingStappen):
         stap["status"] = "mislukt"
         if stap["soort"] in SAMEN:
             self._samen_klaar(stap, "overleg afgebroken")
+        if stap["soort"] in HR_SAMEN:
+            for d in self._deelnemers_hr(stap):
+                self.s.activiteit(d, "klaar", "overleg afgebroken", None, None)
         if stap.get("taak") and stap["soort"] == "uitvoeren":
             self.s.patch("taken", stap["taak"], {"status": "volgende"})
         self.s.activiteit(agent, "gestopt", reden, stap.get("taak"))
@@ -392,7 +417,10 @@ class Werkdag(SamenwerkingStappen):
     def _verwerk_uitvoeren(self, stap, tekst):
         t = self.staat.taken[stap["taak"]]
         if stap["fase"] == "tet":
-            self.s.patch("taken", t["id"], {"resultaat": tekst, "status": "bezig", "labels": sw.labels_uit(tekst, self.org.effectieve_toegang(t["agent"]))})
+            velden = {"resultaat": tekst, "status": "bezig", "labels": sw.labels_uit(tekst, self.org.effectieve_toegang(t["agent"]))}
+            if "zekerheid_eerste" not in t:   # voor kalibratie, meldcultuur en escalatiekwaliteit: de eerste oplevering telt
+                velden.update({"zekerheid_eerste": prestatie.zekerheid_uit(tekst), "zelf_gemeld_eerste": prestatie.zelf_gemeld(tekst)})
+            self.s.patch("taken", t["id"], velden)
             self.s.event("taak.opgeleverd", t["agent"], {"tekens": len(tekst)}, t["id"])
             self.s.activiteit(t["agent"], "klaar", "leverde op: " + kort(t.get("title")), t["id"])
             if t.get("control") == "raad":
@@ -410,6 +438,16 @@ class Werkdag(SamenwerkingStappen):
         bevindingen = [str(b) for b in o.get("bevindingen") or []]
         ct = t["control"]
         self.s.event("taak.beoordeeld", ct, {"goedgekeurd": goed, "score": score, "bevindingen": bevindingen}, t["id"])
+        extra = {}
+        if not t.get("eerste_oordeel"):
+            extra["eerste_oordeel"] = "goedgekeurd" if goed else "afgekeurd"
+        c = o.get("claims") if isinstance(o.get("claims"), dict) else {}
+        if str(c.get("gecontroleerd", "")).isdigit() and int(c["gecontroleerd"]) > 0:
+            oud = t.get("claims") or {}
+            extra["claims"] = {"gecontroleerd": int(oud.get("gecontroleerd", 0)) + int(c["gecontroleerd"]),
+                               "bevestigd": int(oud.get("bevestigd", 0)) + min(int(c.get("bevestigd") or 0), int(c["gecontroleerd"]))}
+        if extra:
+            self.s.patch("taken", t["id"], extra)
         self.s.activiteit(ct, "klaar", ("keurde goed: " if goed else "keurde af: ") + kort(t.get("title")), t["id"])
         if not goed:
             self._leer_van_afkeuring(t, ct, bevindingen, o.get("faalwijze"), escalatie=t.get("afkeuringen", 0) + 1 >= self.max_afkeuringen)

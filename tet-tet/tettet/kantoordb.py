@@ -17,7 +17,7 @@ import random
 import time
 
 COLLECTIES = ["staat", "afdelingsdoelen", "taken", "berichten", "brein", "voorstellen", "grootboek", "activiteit", "patches", "verslagen",
-              "overleggen", "kantine"]
+              "overleggen", "kantine", "prestaties", "evaluaties", "kalender"]
 
 
 def nu_ms() -> int:
@@ -54,6 +54,9 @@ class KantoorStaat:
         self.patches: list[dict] = []
         self.overleggen: list[dict] = []   # alleen-toevoegen: huddles, voorbereidingen, memo's, MT-verslagen, fasen
         self.kantine: list[dict] = []      # alleen-toevoegen: kantinegesprekken (geblokkeerde beurten zonder inhoud)
+        self.prestaties: list[dict] = []   # alleen-toevoegen: snapshots van prestatieprofielen (label hr-dossier)
+        self.evaluaties: list[dict] = []   # alleen-toevoegen: check-ins, zelfreflecties, evaluaties, incidenten (label hr-dossier)
+        self.kalender: list[dict] = []     # lokale spiegel van de gedeelde agenda (de Raad mag verplaatsen of annuleren)
 
     # ---------- laden ----------
     @classmethod
@@ -71,6 +74,9 @@ class KantoorStaat:
         st.verslagen = sorted(lees("verslagen").values(), key=lambda v: v.get("ts", 0))
         st.overleggen = sorted(({**v, "id": v.get("id", k)} for k, v in lees("overleggen").items()), key=lambda o: o.get("ts", 0))
         st.kantine = sorted(({**v, "id": v.get("id", k)} for k, v in lees("kantine").items()), key=lambda o: o.get("ts", 0))
+        for c in ("prestaties", "evaluaties"):
+            setattr(st, c, sorted(({**v, "id": v.get("id", k)} for k, v in lees(c).items()), key=lambda o: o.get("ts", 0)))
+        st.kalender = sorted(({**v, "id": v.get("id", k)} for k, v in lees("kalender").items()), key=lambda e: (e.get("datum", ""), e.get("uid", "")))
         st.activiteit = sorted(({**v, "id": v.get("id", k)} for k, v in lees("activiteit").items()), key=lambda a: a.get("ts", 0))
         events = {}
         for blok in lees("grootboek").values():
@@ -95,6 +101,8 @@ class KantoorStaat:
             doel = next((b for b in self.brein if b.get("id") == doc), None)
         elif c == "staat" and doc == "doel":
             doel = self.doel
+        elif c == "kalender":
+            doel = next((e for e in self.kalender if e.get("id") == doc), None)
         if doel is not None and p.get("bijgewerkt", 0) >= doel.get("bijgewerkt", 0):
             doel.update(velden)
             doel["bijgewerkt"] = p.get("bijgewerkt", 0)
@@ -151,7 +159,8 @@ class Schrijver:
         doel = {"taken": st.taken.get(doc), "voorstellen": st.voorstellen.get(doc),
                 "afdelingsdoelen": st.afdelingsdoelen.setdefault(doc, {"id": doc, "doel": "", "deadline": "", "hoofdlijnen": []}) if collectie == "afdelingsdoelen" else None,
                 "staat": st.doel if doc == "doel" else None,
-                "brein": next((b for b in st.brein if b.get("id") == doc), None) if collectie == "brein" else None}.get(collectie)
+                "brein": next((b for b in st.brein if b.get("id") == doc), None) if collectie == "brein" else None,
+                "kalender": next((e for e in st.kalender if e.get("id") == doc), None) if collectie == "kalender" else None}.get(collectie)
         if doel is not None:
             doel.update(velden)
             doel["bijgewerkt"] = t

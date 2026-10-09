@@ -43,3 +43,41 @@ kantine:
   min_afdelingen: 3
   min_beurten: 4
   max_beurten: 8
+
+# HR-afdeling (zie ONDERZOEK.md, 'Kenmerken van de HR-afdeling'). Alle ritmes in werkdagen.
+hr:
+  aan: true
+  meting:
+    min_taken: 20              # onder dit aantal: "te weinig data", geen conclusie
+    pass_k:
+      k: 4
+      drempel: 0.6             # minimaal pass^k voor een uitblinker
+      daling: 0.15             # een daling groter dan dit is een aandachtspunt
+    beoordelaar_model: ""      # leeg = onbekend; gelijk aan model.naam = 'zelfde model' in het profiel
+    steekproef_raad: 0.05      # aandeel beoordelingen dat de Raad nakijkt
+    overeenstemming_min: 0.8   # daaronder: melding aan de Raad, profielen gemarkeerd
+  ritme:
+    checkin: true              # wekelijks, de werkdag na het MT (nooit op een MT- of voorbereidingsdag)
+    snapshot_voor_retro: 3     # snapshot en zelfreflectie: 3 werkdagen vóór het retrospectief
+    evaluatie_voor_retro: 2    # evaluatiegesprek: 2 werkdagen vóór het retrospectief
+    kalibratie_elke_maanden: 3 # kalibratie na het laatste retrospectief van elke periode; 1 = versneld
+    curatie_dag: 1             # wekelijkse curatieronde van het Brein (1 = maandag)
+    max_hr_stappen_per_run: 40
+    venster_dagen: 90          # snapshot: prestaties over de laatste zoveel dagen
+  proefperiode:
+    werkdagen: 20
+  incident:
+    binnen_werkdagen: 1
+  kalender:
+    bron: mock                 # mock | ics | google
+    kalender_id: ""            # vult de Raad in na het aanmaken van de gedeelde agenda
+    tijdzone: ""               # bijv. Europe/Amsterdam
+    werkdagen: [ma, di, wo, do, vr]
+    startdatum: ""             # koppelt werkdag 1 aan een datum
+    prefix: "[Tet Tet]"
+    soorten_in_agenda: [checkin, evaluatie, kalibratie, raadsreview, mt, retrospectief, proefperiode, incident]
+    kleuren: {evaluatie: 9, kalibratie: 3, raadsreview: 11, mt: 7, retrospectief: 5}
+    vooruit_werkdagen: 15      # zoveel werkdagen vooruit zet het rooster events in de agenda
+    begintijd: "10:00"         # tijdstip voor de agenda; de werkdag zelf kijkt alleen naar de datum
+    duur_minuten: {checkin: 10, evaluatie: 20, kalibratie: 60, raadsreview: 30, mt: 45, retrospectief: 45, proefperiode: 20, incident: 30}
+

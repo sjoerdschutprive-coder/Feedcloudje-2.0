@@ -333,7 +333,8 @@ class SamenwerkingStappen:
         return "\n".join([f"## Memo {self._afd_naam(m['dept'])}", memo.get("samenvatting", ""),
                           "Besluitvragen: " + ("; ".join(memo.get("besluitvragen") or []) or "-"),
                           "Alleen wij weten: " + ("; ".join(memo.get("alleen_wij_weten") or []) or "-"),
-                          "Risico's: " + ("; ".join(memo.get("risicos") or []) or "-"), *[f"KPI: {k}" for k in m.get("kpis", [])]])
+                          "Risico's: " + ("; ".join(memo.get("risicos") or []) or "-"), *[f"KPI: {k}" for k in m.get("kpis", [])],
+                          *([self._hr_memo_regel(m["dept"])] if hasattr(self, "_hr_memo_regel") else [])])
 
     def _bericht_bilateraal(self, stap):
         memos = self._memos(stap["cyclus"])
@@ -380,6 +381,7 @@ class SamenwerkingStappen:
         incidenten = [b for b in self.staat.brein if b.get("soort") == "incident" or b.get("bron") in ("afkeuring", "kantine")][-8:]
         return "\n\n".join(["# Retrospectief", "# Cultuur en samenwerking\n" + "\n".join(f"- {k}: {v if v is not None else '–'}" for k, v in c.items()),
                             "# Incidenten en bijna-fouten\n" + ("\n".join(f"- {b['tekst']}" for b in incidenten) or "- geen"),
+                            *(["\n".join(self._hr_retro_regels())] if hasattr(self, "_hr_retro_regels") else []),
                             "# Opdracht\n" + sw.PROTOCOL_RETRO]), "leidt het retrospectief"
 
     # ---------- verwerken ----------
