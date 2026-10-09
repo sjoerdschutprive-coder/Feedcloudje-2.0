@@ -173,6 +173,13 @@
         },
         "kwaliteitsnorm": {
           "type": "string"
+        },
+        "connectors": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/recht"
+          },
+          "description": "Connectors waarmee deze afdeling werkt (id uit het connectorregister -> r of rw). Alle agents van de afdeling erven ze."
         }
       },
       "required": [
@@ -256,6 +263,34 @@
               "items": {
                 "type": "string"
               }
+            },
+            "extra_connectors": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "connector",
+                  "recht",
+                  "reden",
+                  "goedgekeurd_door"
+                ],
+                "properties": {
+                  "connector": {
+                    "type": "string"
+                  },
+                  "recht": {
+                    "$ref": "#/$defs/recht"
+                  },
+                  "reden": {
+                    "type": "string",
+                    "minLength": 3
+                  },
+                  "goedgekeurd_door": {
+                    "const": "raad"
+                  }
+                }
+              },
+              "description": "Uitzondering voor deze agent: een connector die alleen andere afdelingen hebben. Alleen met akkoord van de Raad; nooit ruimer dan die afdelingen."
             }
           }
         },
@@ -363,24 +398,76 @@
             }
           ]
         },
-        "connectors": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/$defs/recht"
-          }
-        },
         "intern": {
           "type": "object",
           "additionalProperties": {
             "$ref": "#/$defs/recht"
-          }
+          },
+          "description": "Interne systemen en ingebouwde tools. Connectors staan op de cultuurkaart van de afdeling."
         }
       },
       "required": [
         "type",
         "afdeling",
-        "connectors",
         "intern"
+      ]
+    },
+    {
+      "title": "Connectorregister",
+      "allOf": [
+        {
+          "$ref": "#/$defs/basis"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "connectorregister"
+        },
+        "connectors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "naam",
+              "verbonden"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z_]+$"
+              },
+              "naam": {
+                "type": "string"
+              },
+              "soort": {
+                "type": "string"
+              },
+              "verbonden": {
+                "type": "boolean"
+              },
+              "tools": {
+                "type": "string"
+              },
+              "spelregel": {
+                "type": "string"
+              },
+              "gevoelig": {
+                "type": "boolean"
+              },
+              "mono": {
+                "type": "string"
+              },
+              "kleur": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "type",
+        "connectors"
       ]
     },
     {

@@ -36,6 +36,17 @@ def valideer(map_kaarten=KAARTEN):
     agents = per_type("profielkaart")
     rollen = per_type("rolkaart")
     toegang = per_type("toegangskaart_afdeling")
+    registers = per_type("connectorregister")
+    if len(registers) != 1:
+        fouten.append(f"precies één connectorregister verwacht, gevonden: {len(registers)}")
+    register = {c["id"]: c for r in registers.values() for c in r.get("connectors", [])}
+    for t in toegang.values():
+        if "connectors" in t:
+            fouten.append(f"{t['id']}: connectors horen op de cultuurkaart van de afdeling, niet op de toegangskaart")
+    for k in afd.values():
+        for c in k.get("connectors") or {}:
+            if c not in register:
+                fouten.append(f"{k['id']}: connector {c} staat niet in het connectorregister")
     waarde_ids = {w["id"] for o in org.values() for w in o["kernwaarden"]}
 
     for k in afd.values():
@@ -65,11 +76,25 @@ def valideer(map_kaarten=KAARTEN):
             fouten.append(f"{k['id']}: toegangskaart {tk} hoort bij een andere afdeling")
         else:
             # Inperkingen in de vorm 'bron: ...' mogen alleen rechten raken die de afdeling heeft.
-            beschikbaar = set(toegang[tk]["connectors"]) | set(toegang[tk]["intern"])
+            cultuur = afd.get(f"cultuur-{k['afdeling']}", {})
+            beschikbaar = set(cultuur.get("connectors") or {}) | set(toegang[tk]["intern"])
             for inp in k["mandaat"]["inperkingen"]:
                 m = re.match(r"^([a-z_]+):", inp)
                 if m and m.group(1) not in beschikbaar:
                     fouten.append(f"{k['id']}: inperking '{inp}' gaat over iets wat de afdeling niet heeft")
+        eigen = (afd.get(f"cultuur-{k['afdeling']}", {}).get("connectors") or {})
+        for x in k["mandaat"].get("extra_connectors") or []:
+            c = x.get("connector")
+            elders = {d["afdeling"]: (d.get("connectors") or {}).get(c) for d in afd.values() if (d.get("connectors") or {}).get(c)}
+            elders.pop(k["afdeling"], None)
+            if c not in register:
+                fouten.append(f"{k['id']}: extra connector {c} staat niet in het connectorregister")
+            elif c in eigen:
+                fouten.append(f"{k['id']}: extra connector {c} heeft de afdeling al; pas de cultuurkaart aan of laat hem weg")
+            elif not elders:
+                fouten.append(f"{k['id']}: extra connector {c} hoort bij geen andere afdeling; eerst toewijzen op een cultuurkaart")
+            elif x.get("recht") == "rw" and "rw" not in elders.values():
+                fouten.append(f"{k['id']}: extra connector {c} met schrijfrecht, terwijl geen afdeling meer dan lezen heeft")
         for veld, waarde in k.get("samenwerking", {}).items():
             for ref in waarde if isinstance(waarde, list) else [waarde]:
                 if re.fullmatch(r"[a-z]+-(h|a|\d|c\d)", str(ref)) and ref not in agents:
@@ -132,8 +157,10 @@ def valideer_lijn(agents, rollen, toegang):
             continue
         eigen, top = toegang.get(k["mandaat"]["toegangskaart"]), toegang.get(baas["mandaat"]["toegangskaart"])
         if eigen and top:
-            ruim = {**top.get("intern", {}), **top.get("connectors", {})}
-            for bron, recht in {**eigen.get("intern", {}), **eigen.get("connectors", {})}.items():
+            ruim = {**top.get("intern", {})}
+            if k["mandaat"].get("extra_connectors"):
+                fouten.append(f"{k['id']}: een assistent_oppertet krijgt geen extra connectors")
+            for bron, recht in {**eigen.get("intern", {})}.items():
                 if bron not in ruim or (recht == "rw" and ruim[bron] != "rw"):
                     fouten.append(f"{k['id']}: toegang tot {bron} ({recht}) gaat verder dan die van {baas['id']}")
     return fouten

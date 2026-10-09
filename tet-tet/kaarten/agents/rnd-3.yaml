@@ -3,7 +3,7 @@
 # inzet: actief – geactiveerd door de Raad op 2026-10-09.
 id: rnd-3
 type: profielkaart
-versie: 1.1.0
+versie: 1.2.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -55,6 +55,9 @@ autonomieniveau: 1
 mandaat:
   toegangskaart: toegang-rnd
   inperkingen: []
+  # Connectors van een andere afdeling voor alleen deze agent; alleen met akkoord van de Raad.
+  # Vorm: - {connector: gmail, recht: r, reden: '...', goedgekeurd_door: raad}
+  extra_connectors: []
 budget:
   per_taak_eur: 2
 kpis:

@@ -3,7 +3,7 @@
 # inzet: actief – de Raad zette deze plek op 2026-10-09 in (toen nog als Rol-Tet of Cultuur-Tet); de nieuwe rol is status concept.
 id: hr-3
 type: profielkaart
-versie: 2.0.0
+versie: 2.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -57,6 +57,9 @@ mandaat:
   - Stelt normen voor; de Raad stelt ze vast.
   - Wijzigt nooit toegangslabels en verwijdert nooit iets; markeert alleen (herzien_op, vervangen_door).
   - Cureert alleen items binnen de eigen toegang; andere items worden alleen geteld.
+  # Connectors van een andere afdeling voor alleen deze agent; alleen met akkoord van de Raad.
+  # Vorm: - {connector: gmail, recht: r, reden: '...', goedgekeurd_door: raad}
+  extra_connectors: []
 budget:
   per_taak_eur: 2
 kpis:
@@ -76,7 +79,7 @@ meetwaarden:
   stabiliteitsscore: null
   kwaliteitsscore: null
 wijzigingslog:
-- versie: 2.0.0
+- versie: 2.1.0
   datum: '2026-10-09'
   wijziging: Vervangt de Cultuur-Tet uit de samenwerkingsopdracht. Kantinerooster, cultuurmeting en welzijn blijven
     hier; erbij komen het handboek en de curatie van het Brein (HR-opdracht).

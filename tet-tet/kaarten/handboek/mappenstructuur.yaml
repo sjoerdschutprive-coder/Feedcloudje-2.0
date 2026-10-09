@@ -3,7 +3,7 @@
 id: handboek-mappenstructuur
 type: handboek
 onderdeel: mappenstructuur
-versie: 1.0.0
+versie: 1.0.1
 status: concept
 eigenaar: hr-3
 goedgekeurd_door: raad
@@ -29,6 +29,9 @@ mappen:
   - pad: kaarten/schema
     waarom: JSON-schema van alle kaarten.
     patronen: ['*.json']
+  - pad: kaarten/connectors
+    waarom: Connectorregister; welke connectors er zijn en of ze verbonden zijn.
+    patronen: ['*.yaml']
   - pad: kaarten/handboek
     waarom: Het handboek, de enige bron van waarheid voor werkwijze, stijl en structuur.
     patronen: ['*.yaml']

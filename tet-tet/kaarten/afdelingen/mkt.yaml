@@ -4,7 +4,7 @@ type: cultuurkaart_afdeling
 afdeling: mkt
 naam: Marketing
 erft_van: cultuur-tet-tet
-versie: 1.1.0
+versie: 1.2.0
 status: concept
 eigenaar: mkt-h
 goedgekeurd_door: raad
@@ -37,4 +37,9 @@ edge_principes:
 
 kwaliteitsnorm: Elke marktclaim heeft een bron of is als aanname gemarkeerd; analyses dekken alle relevante segmenten en markten.
 kpis: [doelgroepen uitgewerkt, reviews geanalyseerd, gemiddelde reviewscore, claims met bron]
+# Connectors waarmee deze afdeling werkt (zie kaarten/connectors/register.yaml). Alle agents van de afdeling erven ze;
+# een profielkaart kan ze inperken of, met akkoord van de Raad, een connector van een andere afdeling toevoegen.
+connectors:
+  gdrive: rw
+  firecrawl: r
 kenmerken: {}

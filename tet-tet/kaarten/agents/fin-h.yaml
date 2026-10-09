@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: fin-h
 type: profielkaart
-versie: 1.1.0
+versie: 1.2.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -57,6 +57,9 @@ autonomieniveau: 3
 mandaat:
   toegangskaart: toegang-fin
   inperkingen: []
+  # Connectors van een andere afdeling voor alleen deze agent; alleen met akkoord van de Raad.
+  # Vorm: - {connector: gmail, recht: r, reden: '...', goedgekeurd_door: raad}
+  extra_connectors: []
 budget:
   per_cyclus_eur: 25
 kpis:

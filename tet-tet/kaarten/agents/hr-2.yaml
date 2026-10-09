@@ -3,7 +3,7 @@
 # inzet: actief – de Raad zette deze plek op 2026-10-09 in (toen nog als Rol-Tet of Cultuur-Tet); de nieuwe rol is status concept.
 id: hr-2
 type: profielkaart
-versie: 2.0.0
+versie: 2.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -57,6 +57,9 @@ mandaat:
   - Schrijft alleen naar prestaties, evaluaties en kalender-events met de eigen prefix.
   - Beoordeelt zelf geen inhoudelijke kwaliteit; dat doen de Control Tets.
   - Evalueert zichzelf nooit.
+  # Connectors van een andere afdeling voor alleen deze agent; alleen met akkoord van de Raad.
+  # Vorm: - {connector: gmail, recht: r, reden: '...', goedgekeurd_door: raad}
+  extra_connectors: []
 budget:
   per_taak_eur: 2
 kpis:
@@ -77,7 +80,7 @@ meetwaarden:
   stabiliteitsscore: null
   kwaliteitsscore: null
 wijzigingslog:
-- versie: 2.0.0
+- versie: 2.1.0
   datum: '2026-10-09'
   wijziging: Vervangt de Rol-Tet uit de samenwerkingsopdracht. Profielkaarten, mandaten en autonomieniveaus gaan naar
     de Personeels-Tet (hr-1); hr-2 wordt het expertisecentrum prestatie & ontwikkeling (Ulrich, HR-opdracht).

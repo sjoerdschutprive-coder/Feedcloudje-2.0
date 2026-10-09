@@ -1,27 +1,20 @@
-# Toegangskaart afdeling: tools en data die de afdeling mag gebruiken.
+# Toegangskaart afdeling: interne systemen en ingebouwde tools die de afdeling mag gebruiken.
+# Connectors staan op de cultuurkaart van de afdeling (kaarten/afdelingen/), zie kaarten/connectors/register.yaml.
 # rw = lezen en schrijven, r = alleen lezen, niet genoemd = geen toegang.
 id: toegang-prod
 type: toegangskaart_afdeling
 afdeling: prod
-versie: 1.1.0
+versie: 1.2.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
 eigenaar: risk-h
-connectors:
-  notion: rw
-  gdrive: rw
-  canva: rw
-  slack: rw
-  reviews: r
-  klantsysteem: r
-  web: r
 intern:
+  web: r
   brein: rw
   reviewdata: r
   ontwerpbord: rw
   takensysteem: rw
 geen_toegang: []
-spelregels:
-  - 'klantsysteem: Systeem van de opdrachtgever (bv. CRM, ERP of reserveringssysteem); bevat persoonsgegevens (AVG)'
+spelregels: []
 kenmerken: {}
