@@ -20,7 +20,7 @@ import pathlib
 import re
 import time
 
-SOORTEN = {"les", "besluit", "notitie", "incident", "vraag", "signaal"}
+SOORTEN = {"les", "besluit", "notitie", "incident", "vraag", "signaal", "patroon"}
 LES_SOORTEN = ("les", "incident")
 DREMPEL = 0.6          # standaard; de waarde in config/instellingen.yaml (brein.overlap_drempel) gaat voor
 MAX_VARIANTEN = 10

@@ -62,7 +62,7 @@ PROTOCOL_TET = """Voer de taak uit binnen je toegang. Antwoord in vier delen:
 ## Zelfcheck
 <per acceptatiecriterium: voldaan of niet, en waarom>
 ## Zekerheid
-<hoog, middel of laag, met de reden als het niet hoog is>
+<eerste regel: een getal tussen 0 en 1 voor het geheel; daarna per kernconclusie een regel '- <conclusie>: <0-1>', met de reden als het onder 0,8 is>
 ## Les
 <één concrete les voor de volgende keer>
 Werk vanuit het Brein: gebruik de lessen, de wie-weet-wat-gids en de open vragen hierboven. Voeg zo nodig deze blokken toe (weglaten mag):
@@ -78,7 +78,9 @@ Werk vanuit het Brein: gebruik de lessen, de wie-weet-wat-gids en de open vragen
 PROTOCOL_CONTROLTET = """Beoordeel het resultaat zelfstandig, op twee niveaus: de details (criteria, bronnen, berekeningen) en het doel (beantwoordt het de opdracht?). Toets ook op de waarden uit de cultuurkaarten.
 Keur af met concrete bevindingen: wat, waarom, en wat er moet veranderen.
 Noem bij een afkeuring de faalwijze uit de MAST-indeling als die duidelijk van toepassing is, anders null.
-Antwoord uitsluitend met JSON: {"oordeel": "goedgekeurd|afgekeurd", "score": <0-10>, "bevindingen": ["<bevinding>"], "faalwijze": "<MAST-faalwijze of null>"}"""
+Beoordeel blind: wie het werk maakte, doet er niet toe. Lengte telt niet mee; een kort, juist antwoord is beter dan een lang.
+Tel de feitelijke claims die je hebt gecontroleerd en hoeveel daarvan kloppen.
+Antwoord uitsluitend met JSON: {"oordeel": "goedgekeurd|afgekeurd", "score": <0-10>, "bevindingen": ["<bevinding>"], "faalwijze": "<MAST-faalwijze of null>", "claims": {"gecontroleerd": <aantal>, "bevestigd": <aantal>}}"""
 
 
 def afkeurles(titel: str, control_naam: str, bevindingen: list[str], faalwijze: str | None, escalatie: bool) -> str:
@@ -232,7 +234,9 @@ class Kantoor:
         ct = taak.control_tet
         self.beleid.eis(ct, "output.toetsen", taak.id)
         self.beleid.gebruik_bron(ct, "alle_afdelingsoutput", "r", taak.id)
-        bericht = "\n\n".join([taak.contract(), "# Resultaat van de Tet\n" + (taak.resultaat or ""), "# Werkwijze\n" + PROTOCOL_CONTROLTET])
+        # Blind beoordelen: geen naam, id of afdeling van de maker in wat de Control Tet leest.
+        from .prestatie import blind
+        bericht = "\n\n".join([taak.contract(), "# Resultaat van de Tet\n" + blind(taak.resultaat or "", self.org), "# Werkwijze\n" + PROTOCOL_CONTROLTET])
         try:
             oordeel = lees_json(self.agent(ct).vraag(bericht, taak=taak.id, doel="toetsen"))
         except ValueError:
@@ -243,10 +247,11 @@ class Kantoor:
 
     def _leer(self, taak: Taak):
         m = re.search(r"## Les\s*\n(.+?)(?:\n##|\Z)", taak.resultaat or "", re.S)
-        zeker = re.search(r"## Zekerheid\s*\n\s*(\w+)", taak.resultaat or "")
+        from .prestatie import zekerheid_uit
+        z = zekerheid_uit(taak.resultaat or "")
         if m:
             self.brein.schrijf("les", taak.toegewezen, taak.eigenaar, m.group(1).strip(), taak=taak.id,
-                               zekerheid=zeker.group(1).lower() if zeker else None)
+                               zekerheid=None if z is None else ("hoog" if z >= 0.8 else "middel" if z >= 0.5 else "laag"))
         h = self.org.hoofdtet(taak.eigenaar)["id"]
         self.gb.schrijf("output.geaccordeerd", h, {"door_control_tet": taak.control_tet}, taak=taak.id)
 
