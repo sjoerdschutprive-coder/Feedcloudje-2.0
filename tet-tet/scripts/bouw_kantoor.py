@@ -85,9 +85,9 @@ def blok(org: Organisatie) -> str:
     connectors = [{"id": c["id"], "naam": c["naam"], "mono": c.get("mono", c["id"][:2].upper()), "kleur": c.get("kleur", "#9fb3c8"),
                    "soort": c.get("soort", ""), **({"gevoelig": c["spelregel"]} if c.get("gevoelig") else {}), "spelregel": c.get("spelregel", "")}
                   for c in org.connectors.values() if c.get("verbonden")]
-    conn_toegang = {d: org.afdelingsconnectors(d) for d in org.afdelingen}
+    conn_toegang = {**{d: org.afdelingsconnectors(d) for d in org.afdelingen}, "centraal": org.afdelingsconnectors("centraal")}
     conn_extra = {i: org.agents[i]["mandaat"].get("extra_connectors") for i in ids if org.agents[i]["mandaat"].get("extra_connectors")}
-    conn_versie = org.kaarten[org.register_id]["versie"] + "+" + "+".join(f"{d}{org.afdelingen[d]['versie']}" for d in sorted(org.afdelingen))
+    conn_versie = org.kaarten[org.register_id]["versie"] + "+org" + org.organisatie["versie"] + "+" + "+".join(f"{d}{org.afdelingen[d]['versie']}" for d in sorted(org.afdelingen))
     directie = {"directe_lijn": sorted(dr.directe_lijn(org)),
                 "rol": {k: org.rollen[k]["naam"] for k in org.rollen},
                 "assistent_mag": org.rollen["rol-assistent-oppertet"]["mag"] if "rol-assistent-oppertet" in org.rollen else [],

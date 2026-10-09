@@ -4,7 +4,7 @@ type: cultuurkaart_afdeling
 afdeling: ops
 naam: Operations
 erft_van: cultuur-tet-tet
-versie: 1.2.0
+versie: 1.3.0
 status: concept
 eigenaar: ops-h
 goedgekeurd_door: raad
@@ -42,6 +42,7 @@ kpis: [uptime agents, open onderhoudstickets, doorlooptijd orders, incidenten me
 # een profielkaart kan ze inperken of, met akkoord van de Raad, een connector van een andere afdeling toevoegen.
 connectors:
   gdrive: rw
-  gcal: r
+  gcal: rw
+  gmail: rw
   firecrawl: r
 kenmerken: {}

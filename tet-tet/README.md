@@ -41,7 +41,7 @@ Bij elke taak stelt het platform de instructies van een agent samen in deze volg
 - **Waarden:** het hogere niveau wint. Een afdelingskaart mag een waarde aanscherpen, nooit afzwakken.
 - **Werkwijze:** het lagere niveau wint; de profielkaart is het meest specifiek.
 - **Toegang:** alleen wat in rolkaart, toegangskaart én profielmandaat is toegestaan. Het mandaat in een profielkaart kan alleen inperken, met één uitzondering hieronder.
-- **Connectors:** hangen aan de **cultuurkaart van de afdeling** (veld `connectors`, bijv. `gdrive: rw`). Alle agents van die afdeling erven ze. Alleen connectors die in `kaarten/connectors/register.yaml` op `verbonden: true` staan, tellen mee; de rest wordt genegeerd.
+- **Connectors:** hangen aan de **cultuurkaart van de afdeling** (veld `connectors`, bijv. `gdrive: rw`); die van de directie staan op de organisatiekaart. Alle agents van die afdeling erven ze. Alleen connectors die in `kaarten/connectors/register.yaml` op `verbonden: true` staan, tellen mee; de rest wordt genegeerd.
 - **Uitzondering per agent:** de Raad kan één agent een connector van een *andere* afdeling geven via `mandaat.extra_connectors` op de profielkaart: `- {connector: gmail, recht: r, reden: '...', goedgekeurd_door: raad}`. De validator weigert een connector die de eigen afdeling al heeft, die geen andere afdeling heeft, die ruimer is dan bij die afdeling, of zonder akkoord van de Raad.
 - **Nieuwe connector:** eerst verbinden in de cloudomgeving en laten scannen door Risk & Safety, dan opnemen in het register (met `tools`-prefix en spelregel), dan toewijzen op een cultuurkaart. Wijzigen vanuit het kantoor kan: een tik in het connectoroverzicht wordt een verbetervoorstel aan de Raad.
 

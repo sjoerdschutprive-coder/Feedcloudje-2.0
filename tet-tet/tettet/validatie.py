@@ -43,7 +43,7 @@ def valideer(map_kaarten=KAARTEN):
     for t in toegang.values():
         if "connectors" in t:
             fouten.append(f"{t['id']}: connectors horen op de cultuurkaart van de afdeling, niet op de toegangskaart")
-    for k in afd.values():
+    for k in [*afd.values(), *org.values()]:
         for c in k.get("connectors") or {}:
             if c not in register:
                 fouten.append(f"{k['id']}: connector {c} staat niet in het connectorregister")

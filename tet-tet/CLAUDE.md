@@ -17,7 +17,7 @@ Tet Tet is een platform waarop AI-agents zelfstandig werken en samen één centr
 
 Bij tegenstrijdigheid wint de hogere bron.
 
-1. `kaarten/` (organisatiekaart v1.4.0): cultuur-, profiel-, rol- en toegangskaarten van alle 31 agents (alle 31 ingezet sinds 9 oktober 2026, ook de Assistent-Oppertet), het handboek (`kaarten/handboek/`) en de ijksets per rol (`kaarten/ijkset/`). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
+1. `kaarten/` (organisatiekaart v1.5.0): cultuur-, profiel-, rol- en toegangskaarten van alle 31 agents (alle 31 ingezet sinds 9 oktober 2026, ook de Assistent-Oppertet), het handboek (`kaarten/handboek/`) en de ijksets per rol (`kaarten/ijkset/`). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
 2. `WHITEPAPER.md`: architectuur, taakcontract, feedbackloops, governance, autonomieniveaus, KPI's en de bouwstappen. **De pilotcasus (hotelketen) en bijlagen A–C zijn verouderde voorbeelden**: gebruik de kaarten in `kaarten/` en bouw niets dat aan die casus vastzit.
 3. `kantoor/index.html`: het Tet Tet-kantoor, de referentie voor design en interactie van de interface (isometrisch kantoor, afdelingseilanden, doelstellingenbord, takenpaneel, kaarten per agent). De data in dat bestand is afgeleid van de kaarten.
 4. `ONDERZOEK.md`: onderbouwing van de `werkstijl`-velden en `edge_principes`.
@@ -72,7 +72,7 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 ### Connectors
 
 - **Register**: `kaarten/connectors/register.yaml` (type `connectorregister`): elke connector met `verbonden`, `tools`-prefix, spelregel en weergave. Stand 9 oktober 2026: Google Drive, Google Agenda, Gmail en Firecrawl verbonden; Omniroute moet opnieuw verbonden worden. Webzoeken via WebSearch/WebFetch is een ingebouwde tool (`web` in de toegangskaart), geen connector.
-- **Toewijzing**: op de cultuurkaart van de afdeling (`connectors`); de toegangskaart heeft alleen nog interne systemen. Uitzonderingen per agent: `mandaat.extra_connectors` op de profielkaart, alleen met `goedgekeurd_door: raad` (validator).
+- **Toewijzing**: op de cultuurkaart van de afdeling (`connectors`); voor de directie (afdeling centraal) op de organisatiekaart. Sinds 9 oktober 2026 hebben alle afdelingen en de directie alle vier verbonden connectors (Drive, Agenda en Gmail schrijven, Firecrawl lezen; Control Tets alleen lezen). De toegangskaart heeft alleen nog interne systemen. Uitzonderingen per agent: `mandaat.extra_connectors` op de profielkaart, alleen met `goedgekeurd_door: raad` (validator).
 - **Gebruik**: `Organisatie.effectieve_toegang` rekent het samen; de werkdagprompt noemt per agent welke connector-tools (mcp-prefix) hij mag gebruiken en in welke modus, en verbiedt de rest.
 
 ### HR (zie ONDERZOEK.md, 'Kenmerken van de HR-afdeling')

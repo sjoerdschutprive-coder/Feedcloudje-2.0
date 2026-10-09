@@ -5,7 +5,7 @@
 
 id: cultuur-tet-tet
 type: cultuurkaart_organisatie
-versie: 1.4.0
+versie: 1.5.0
 status: concept
 eigenaar: raad
 goedgekeurd_door: raad
@@ -195,3 +195,11 @@ rode_lijnen:
   - Geen betalingen.
 
 kenmerken: {}
+
+# Connectors van de directie (Oppertet en Assistent-Oppertet, afdeling centraal). Deze kaart is hun cultuurkaart;
+# afdelingen krijgen hun connectors van hun eigen cultuurkaart, niet van deze. Zie kaarten/connectors/register.yaml.
+connectors:
+  gdrive: rw
+  gcal: rw
+  gmail: rw
+  firecrawl: r
