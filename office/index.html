@@ -188,7 +188,48 @@
   .route.direct { color: var(--done); } .route.oppertet { color: var(--accent); }
   .label { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--panel-2); color: var(--muted); margin-left: 4px; white-space: nowrap; }
 
+  /* Connectors */
+  .conn-btn {
+    position: absolute; right: 16px; top: 14px; height: 40px; padding: 0 14px; border-radius: 12px;
+    border: 1px solid var(--line); background: rgba(34,29,25,.92); display: flex; align-items: center; gap: 8px; font-weight: 600;
+  }
+  .conn-btn:hover { border-color: var(--accent); }
+  .conn-btn svg { width: 18px; height: 18px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .conn-bar { cursor: pointer; }
+  .conn-bar:hover rect.bar-bg { stroke-width: 2; }
+  .mono { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; font: 800 10.5px var(--font-display); flex: none; border: 2px solid var(--c); }
+  .mono.rw { background: var(--c); color: #1a120b; }
+  .mono.r { background: transparent; color: var(--c); }
+  .mono.off { border-color: var(--line); color: var(--muted); opacity: .6; }
+  .monos { display: flex; flex-wrap: wrap; gap: 5px; }
+  .monos .mono { width: 24px; height: 24px; font-size: 9px; }
+  .conn-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .conn-row:last-of-type { border-bottom: 0; }
+  .conn-row b { display: block; font-weight: 600; }
+  .conn-row small { color: var(--muted); font-size: 12px; }
+  .conn-row .warnnote { color: var(--warn); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { border: 0; background: var(--bg-2); color: var(--muted); padding: 7px 10px; font-size: 12.5px; min-width: 44px; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"].off { background: var(--panel-2); color: var(--text); }
+  .seg button[aria-pressed="true"].r { background: color-mix(in srgb, var(--next) 25%, transparent); color: var(--next); }
+  .seg button[aria-pressed="true"].rw { background: color-mix(in srgb, var(--done) 25%, transparent); color: var(--done); }
+  .matrix-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+  table.matrix { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13px; }
+  .matrix th, .matrix td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: center; }
+  .matrix thead th { font: 700 12.5px var(--font-display); position: sticky; top: 0; background: var(--panel); }
+  .matrix th.cn { text-align: left; padding-left: 12px; white-space: nowrap; }
+  .matrix th.cn span.nm { display: inline-flex; align-items: center; gap: 8px; }
+  .matrix tbody tr:last-child td, .matrix tbody tr:last-child th { border-bottom: 0; }
+  .cell { border: 1px solid var(--line); background: var(--bg-2); border-radius: 8px; padding: 5px 0; width: 74px; font-size: 12px; color: var(--muted); }
+  .cell.r { color: var(--next); border-color: color-mix(in srgb, var(--next) 45%, var(--line)); }
+  .cell.rw { color: var(--done); border-color: color-mix(in srgb, var(--done) 45%, var(--line)); background: color-mix(in srgb, var(--done) 12%, var(--bg-2)); }
+  .cell:hover { border-color: var(--accent); }
+  .tag-warn { font-size: 11px; color: var(--warn); margin-left: 6px; }
+
   @media (max-width: 600px) {
+    .conn-btn span { display: none; }
+    .conn-btn { padding: 0 11px; }
     .sheet-wrap { align-items: flex-end; padding: 0; }
     .sheet { width: 100%; max-height: 90%; border-radius: 18px 18px 0 0; padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
     .tiles { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -209,6 +250,9 @@
     <h1>Tet Tet<span>-kantoor</span></h1>
     <p id="pilot"></p>
   </div>
+  <button class="conn-btn" id="connBtn" aria-label="Connectors per afdeling">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0V7zM12 16v5"/></svg><span>Connectors</span>
+  </button>
   <div class="zoom">
     <button id="zIn" aria-label="Inzoomen">+</button>
     <button id="zOut" aria-label="Uitzoomen">−</button>
@@ -309,6 +353,33 @@ const KANALEN = [
   { a: "rnd", b: "ops",  doel: "Implementatie van hoteltechnologie", voorbeelden: ["Pilot self-check-in snelweghotel", "Impact van nieuwe tooling op processen"] }
 ];
 const CONTROLELIJN = "risk";
+
+/* Connectors en extensions die agents kunnen gebruiken. `gevoelig`: extra spelregel bij schrijfrecht.
+   Toegang per afdeling: "rw" = lezen + schrijven, "r" = alleen lezen, niet genoemd = uit.
+   Elke agent in een afdeling krijgt deze toegang, tenzij zijn profielkaart het inperkt. */
+const CONNECTORS = [
+  { id: "gmail",   naam: "Gmail",            mono: "GM", kleur: "#e7766a", soort: "E-mail", gevoelig: "Versturen namens de Raad alleen na goedkeuring" },
+  { id: "gcal",    naam: "Google Agenda",    mono: "GA", kleur: "#6fa8f0", soort: "Agenda" },
+  { id: "gdrive",  naam: "Google Drive",     mono: "GD", kleur: "#f2c14e", soort: "Bestanden" },
+  { id: "slack",   naam: "Slack",            mono: "SL", kleur: "#c084fc", soort: "Chat" },
+  { id: "notion",  naam: "Notion",           mono: "NO", kleur: "#d6cfc6", soort: "Kennisbank" },
+  { id: "hubspot", naam: "HubSpot",          mono: "HS", kleur: "#ff8a5b", soort: "CRM" },
+  { id: "exact",   naam: "Exact Online",     mono: "EX", kleur: "#5fbf8f", soort: "Boekhouding", gevoelig: "Geen betalingen; boekingen alleen als concept" },
+  { id: "pms",     naam: "Hotel-PMS",        mono: "PM", kleur: "#4fbfd0", soort: "Reserveringen en bezetting", gevoelig: "Bevat gastgegevens (AVG)" },
+  { id: "reviews", naam: "Reviewplatforms",  mono: "RV", kleur: "#e86a8a", soort: "Online reviews" },
+  { id: "web",     naam: "Webzoeken",        mono: "WZ", kleur: "#9fb3c8", soort: "Onderzoek" },
+  { id: "canva",   naam: "Canva",            mono: "CA", kleur: "#7fd1c7", soort: "Ontwerp" },
+  { id: "github",  naam: "GitHub",           mono: "GH", kleur: "#b7a6f5", soort: "Code van de agents" }
+];
+const CONNECTOR_TOEGANG = {
+  ops:  { gdrive: "rw", slack: "rw", notion: "rw", github: "rw", pms: "r", gcal: "r", web: "r" },
+  fin:  { exact: "rw", gdrive: "rw", slack: "rw", pms: "r", hubspot: "r", web: "r" },
+  mkt:  { hubspot: "rw", canva: "rw", gdrive: "rw", slack: "rw", reviews: "r", web: "r" },
+  rnd:  { web: "r", gdrive: "rw", notion: "rw", slack: "rw", github: "r" },
+  hr:   { gcal: "rw", gdrive: "rw", slack: "rw", notion: "rw", gmail: "r" },
+  risk: { gmail: "r", gdrive: "r", slack: "r", notion: "r", hubspot: "r", exact: "r", pms: "r", reviews: "r", web: "r", github: "r" },
+  prod: { notion: "rw", gdrive: "rw", canva: "rw", slack: "rw", reviews: "r", pms: "r", web: "r" }
+};
 const SPELREGELS = [
   "Alleen informatie, afstemming en kleine verzoeken; een verzoek levert hooguit één taak op.",
   "De Hoofdtet van de ontvanger accepteert het verzoek of escaleert het.",
@@ -375,19 +446,21 @@ const HISTORY = {
 /* =====================================================================
    STATE (taken en berichten worden lokaal in de browser bewaard)
    ===================================================================== */
-const KEYS = { tasks: "tettet-office-v1", msgs: "tettet-messages-v1" };
+const KEYS = { tasks: "tettet-office-v1", msgs: "tettet-messages-v1", conn: "tettet-connectors-v1" };
 const deptById = Object.fromEntries(DEPTS.map(d => [d.id, d]));
 const agentById = Object.fromEntries(AGENTS.map(a => [a.id, a]));
 const now = Date.now();
 let tasks = load(KEYS.tasks, () => SEED_TASKS.map((t, i) => ({ id: "t" + (i + 1), approval: false, ...t, created: now - (SEED_TASKS.length - i) * 3600e3 })));
 let messages = load(KEYS.msgs, () => SEED_MESSAGES.map((m, i) => ({ id: "m" + (i + 1), ...m, created: now - (3 - i) * 1800e3 })));
+let connAccess = load(KEYS.conn, () => JSON.parse(JSON.stringify(CONNECTOR_TOEGANG)));
+DEPTS.forEach(d => { connAccess[d.id] = connAccess[d.id] || {}; });
 
 function load(key, seed) {
   try { const raw = localStorage.getItem(key); if (raw) return JSON.parse(raw); } catch (e) {}
   return seed();
 }
 function save() {
-  try { localStorage.setItem(KEYS.tasks, JSON.stringify(tasks)); localStorage.setItem(KEYS.msgs, JSON.stringify(messages)); } catch (e) {}
+  try { localStorage.setItem(KEYS.tasks, JSON.stringify(tasks)); localStorage.setItem(KEYS.msgs, JSON.stringify(messages)); localStorage.setItem(KEYS.conn, JSON.stringify(connAccess)); } catch (e) {}
 }
 
 function agentStatus(id) {
@@ -542,9 +615,9 @@ function renderOffice() {
 
   // doelstellingenbord op palen achter het Brein
   const s = projectStand();
-  const bw = 330, bh = 158, bx = CENTER[0] - bw / 2, by = CENTER[1] - 274;
+  const bw = 330, bh = 140, bx = CENTER[0] - bw / 2, by = CENTER[1] - 220;
   const board = el("g", { class: "board", tabindex: 0, role: "link", "aria-label": `Doelstellingenbord: ${s.voortgang}% voortgang` }, layerCards);
-  [bx + 60, bx + bw - 60].forEach(px => el("rect", { x: px - 3, y: by + bh, width: 6, height: 40, fill: "#5a4a3d" }, board));
+  [bx + 60, bx + bw - 60].forEach(px => el("rect", { x: px - 3, y: by + bh, width: 6, height: 14, fill: "#5a4a3d" }, board));
   el("rect", { x: bx, y: by, width: bw, height: bh, rx: 12, class: "card-bg", stroke: "#f0a04b" }, board);
   svgText(board, bx + 16, by + 22, "DOELSTELLING PILOT", "svg-sub", "start", "#f0a04b").setAttribute("letter-spacing", "1.2");
   svgText(board, bx + bw - 16, by + 22, `nog ${s.dagenTotDeadline} dagen`, "svg-sub", "end");
@@ -555,10 +628,10 @@ function renderOffice() {
   BORD_KPIS.map(id => kpiById[id]).forEach((k, i) => {
     const cx = bx + 16 + i * ((bw - 32) / 3);
     const color = { ok: "#7ccf8a", warn: "#ef5d5d", neutral: "#f2e9df" }[k.stand(s)];
-    svgText(board, cx, by + 104, k.waarde(s), "board-kpi", "start", color);
-    svgText(board, cx, by + 122, k.kort || k.label, "svg-sub", "start");
+    svgText(board, cx, by + 98, k.waarde(s), "board-kpi", "start", color);
+    svgText(board, cx, by + 114, k.kort || k.label, "svg-sub", "start");
   });
-  svgText(board, bx + 16, by + 146, "Klik voor alle KPI's · voorlopige set", "svg-sub", "start").setAttribute("font-size", "9.5");
+  svgText(board, bx + 16, by + 131, "Klik voor alle KPI's · voorlopige set", "svg-sub", "start").setAttribute("font-size", "9.5");
   onActivate(board, () => go("oppertet"));
 
   // afdelingseilanden met compacte statuskaart
@@ -593,6 +666,23 @@ function renderOffice() {
     if (pend) { el("circle", { cx: 152, cy: 4, r: 10, fill: "var(--warn)" }, k); svgText(k, 152, 8, String(pend), "svg-num", "middle", "#fff"); }
     el("line", { x1: 78, y1: 62, x2: 78, y2: 76, stroke: d.kleur, "stroke-dasharray": "2 3" }, k);
     onActivate(k, () => go(d.id));
+
+    // connectorbalk onder het eiland
+    const aan = CONNECTORS.filter(c => connAccess[d.id][c.id]);
+    const step = 17, barW = Math.max(96, aan.length * step + 14), barY = y + iso(2.3, 1.9)[1] + 8;
+    const cb = el("g", { class: "conn-bar", transform: `translate(${x - barW / 2},${barY})`, tabindex: 0, role: "button", "aria-label": `Connectors ${d.naam}: ${aan.length} aan` }, layerCards);
+    el("rect", { class: "bar-bg card-bg", width: barW, height: 22, rx: 11, stroke: d.kleur, "stroke-opacity": .7 }, cb);
+    if (!aan.length) svgText(cb, barW / 2, 15, "geen connectors", "svg-sub", "middle");
+    aan.forEach((c, i) => {
+      const lvl = connAccess[d.id][c.id], cx = 14 + i * step;
+      el("circle", { cx, cy: 11, r: 7, fill: lvl === "rw" ? c.kleur : "rgba(20,17,15,.9)", stroke: c.kleur, "stroke-width": 1.5 }, cb);
+      const t = svgText(cb, cx, 13.5, c.mono, "svg-num", "middle", lvl === "rw" ? "#1a120b" : c.kleur);
+      t.setAttribute("style", "font-size:6.5px;font-weight:800");
+    });
+    const ct = el("title", {}, cb);
+    ct.textContent = aan.length ? `${d.naam}: ` + aan.map(c => `${c.naam} (${connAccess[d.id][c.id] === "rw" ? "schrijven" : "lezen"})`).join(", ") : `${d.naam}: geen connectors`;
+    currentTiles["conn-" + d.id] = connTile(d.id);
+    onActivate(cb, () => openSheet("conn-" + d.id));
   });
 }
 
@@ -685,6 +775,7 @@ svg.addEventListener("click", e => { if (dragDist > 6) { e.stopPropagation(); e.
 document.getElementById("zIn").onclick = () => zoomCenter(1 / 1.5);
 document.getElementById("zOut").onclick = () => zoomCenter(1.5);
 document.getElementById("zFit").onclick = () => animateTo({ ...HOME });
+document.getElementById("connBtn").onclick = () => go("connectors");
 const legendBtn = document.getElementById("legendBtn"), legend = document.getElementById("legend");
 legendBtn.onclick = () => { legend.hidden = !legend.hidden; legendBtn.setAttribute("aria-expanded", String(!legend.hidden)); };
 const hintToast = document.getElementById("hintToast");
@@ -728,6 +819,7 @@ function route() {
   else if (h === "oppertet" || h === "agent-oppertet") page = oppertetPage();
   else if (h.startsWith("agent-") && agentById[h.slice(6)]) page = agentPage(h.slice(6));
   else if (h.startsWith("lijn-") && kanaalByKey[h.slice(5)]) page = lijnPage(h.slice(5));
+  else if (h === "connectors") page = connectorsPage();
   if (!page) { go("kantoor"); return; }
   viewOffice.hidden = true; viewPage.hidden = false;
   renderPage(page);
@@ -751,6 +843,8 @@ function renderPage(p) {
   viewPage.scrollTop = scroll;
   document.getElementById("backBtn").onclick = () => go(p.back ? p.back.hash : "kantoor");
   viewPage.querySelectorAll("[data-tile]").forEach(b => b.onclick = () => openSheet(b.dataset.tile));
+  viewPage.querySelectorAll(".page-body [data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+  if (p.wire) p.wire(viewPage);
 }
 /* Na een wijziging: pagina en open kaart opnieuw tekenen. */
 function refresh() {
@@ -794,7 +888,10 @@ function cultuurSheet(d) {
 }
 function toegangSheet(d, inperking) {
   if (!d) return `<div class="perm"><span>Brein</span><span class="rw">lezen + schrijven</span><span>Takensysteem (alle afdelingen)</span><span class="rw">lezen + schrijven</span><span>Afdelingstools</span><span class="r">via Hoofdtets</span></div>`;
-  return `<div class="perm">${d.toegang.map(([tool, p]) => `<span>${esc(tool)}</span><span class="${PERM[p][1]}">${PERM[p][0]}</span>`).join("")}</div>
+  const aan = CONNECTORS.filter(c => connAccess[d.id][c.id]);
+  return `<h4 style="margin-top:0">Interne systemen</h4><div class="perm">${d.toegang.map(([tool, p]) => `<span>${esc(tool)}</span><span class="${PERM[p][1]}">${PERM[p][0]}</span>`).join("")}</div>
+    <h4>Connectors</h4>${aan.length ? `<div class="perm">${aan.map(c => `<span>${esc(c.naam)}</span><span class="${connAccess[d.id][c.id]}">${PERM[connAccess[d.id][c.id]][0]}</span>`).join("")}</div>` : `<span class="i-meta">Geen connectors.</span>`}
+    <div class="row" style="margin-top:10px"><button class="chip" data-go="connectors">Connectors wijzigen ›</button></div>
     ${inperking ? `<h4>Ingeperkt door profielkaart</h4>${list(inperking)}` : ""}
     <p class="i-meta" style="margin-top:12px">Een agent mag alleen wat in álle lagen is toegestaan. Een profielkaart kan rechten inperken, nooit uitbreiden.</p>`;
 }
@@ -804,6 +901,50 @@ function rolSheet(rolId) {
 }
 const permSummary = d => `${d.toegang.filter(t => t[1] === "rw").length} schrijven · ${d.toegang.filter(t => t[1] === "r").length} lezen`;
 const statusChips = dt => `<div class="chips">${[["bezig", "var(--busy)"], ["volgende", "var(--next)"], ["klaar", "var(--done)"]].map(([s, c]) => `<span class="chip"><i class="dot" style="background:${c}"></i>${dt.filter(t => t.status === s).length} ${s}</span>`).join("")}</div>`;
+
+/* ---------- Connectors ---------- */
+const LVL = [["off", "Uit"], ["r", "Lezen"], ["rw", "Schrijven"]];
+const connMonos = id => {
+  const aan = CONNECTORS.filter(c => connAccess[id][c.id]);
+  return aan.length ? `<div class="monos">${aan.map(c => `<span class="mono ${connAccess[id][c.id]}" style="--c:${c.kleur}" title="${esc(c.naam)}">${c.mono}</span>`).join("")}</div>` : `<span class="sub">Geen connectors</span>`;
+};
+function setConn(dept, conn, lvl) {
+  if (lvl === "off") delete connAccess[dept][conn]; else connAccess[dept][conn] = lvl;
+  save(); refresh();
+}
+/* Tegel + kaart om per connector toegang te geven of in te trekken voor één afdeling. */
+function connTile(id) {
+  const d = deptById[id];
+  return {
+    key: "conn-" + id, icon: "toegang", titel: `Connectors ${d.naam}`, kleur: d.kleur,
+    preview: connMonos(id),
+    sheet: () => `<p class="lead" style="margin-top:0">Alle agents van ${esc(d.naam)} krijgen deze toegang, tenzij hun profielkaart het inperkt.</p>
+      ${CONNECTORS.map(c => {
+        const cur = connAccess[id][c.id] || "off";
+        return `<div class="conn-row"><span class="mono ${cur}" style="--c:${c.kleur}">${c.mono}</span>
+          <div><b>${esc(c.naam)}</b><small>${esc(c.soort)}${c.gevoelig ? `<br><span class="warnnote">${esc(c.gevoelig)}</span>` : ""}</small></div>
+          <div class="seg" role="group" aria-label="Toegang ${esc(c.naam)}">${LVL.map(([v, l]) => `<button class="${v}" data-conn="${c.id}" data-lvl="${v}" aria-pressed="${cur === v}">${l}</button>`).join("")}</div></div>`;
+      }).join("")}
+      <div class="row" style="margin-top:12px"><button class="chip" data-go="connectors">Overzicht alle afdelingen ›</button></div>`,
+    wire: root => root.querySelectorAll("[data-conn]").forEach(b => b.onclick = () => setConn(id, b.dataset.conn, b.dataset.lvl))
+  };
+}
+function connectorsPage() {
+  const next = { off: "r", r: "rw", rw: "off" };
+  const label = { off: "—", r: "lezen", rw: "schrijven" };
+  return {
+    eyebrow: "Toegang per afdeling", titel: "Connectors", kleur: "var(--accent)",
+    top: `<p class="lead">Tik op een cel om de toegang te wijzigen: uit → lezen → schrijven. Wijzigingen zie je direct in de balk onder het eiland in het kantoor.</p>
+      <div class="matrix-wrap"><table class="matrix">
+        <thead><tr><th class="cn">Connector</th>${DEPTS.map(d => `<th><button class="linkrow" data-go="${d.id}" style="color:${d.kleur}">${esc(d.naam)}</button></th>`).join("")}</tr></thead>
+        <tbody>${CONNECTORS.map(c => `<tr><th class="cn"><span class="nm"><span class="mono rw" style="--c:${c.kleur};width:24px;height:24px;font-size:9px">${c.mono}</span>${esc(c.naam)}</span>${c.gevoelig ? `<span class="tag-warn" title="${esc(c.gevoelig)}">⚠</span>` : ""}</th>
+          ${DEPTS.map(d => { const v = connAccess[d.id][c.id] || "off"; return `<td><button class="cell ${v}" data-cell="${d.id}|${c.id}" data-next="${next[v]}" aria-label="${esc(c.naam)} voor ${esc(d.naam)}: ${label[v] === "—" ? "uit" : label[v]}">${label[v]}</button></td>`; }).join("")}</tr>`).join("")}
+        </tbody></table></div>
+      <p class="i-meta" style="margin:0">⚠ = gevoelige connector; de spelregel staat in de kaart per afdeling. Nieuwe connectors laat je eerst scannen door Risk & Safety. Een profielkaart kan de toegang van een agent alleen verder inperken.</p>`,
+    tiles: DEPTS.map(d => connTile(d.id)),
+    wire: root => root.querySelectorAll("[data-cell]").forEach(b => b.onclick = () => { const [dd, cc] = b.dataset.cell.split("|"); setConn(dd, cc, b.dataset.next); })
+  };
+}
 
 /* Takenlijst met acties en formulier */
 function tasksSheet(filterFn, opts = {}) {
@@ -913,6 +1054,7 @@ function deptPage(id) {
         sheet: () => `<ul class="items">${team.map(a => `<li style="--dc:${STATUS_COLOR[agentStatus(a.id)]}"><button class="linkrow" data-go="agent-${a.id}"><div class="i-title">${esc(a.naam)} ›</div><div class="i-meta">${esc(ROLKAARTEN[a.rol].titel)} · ${esc(a.specialisme)} · ${agentStatus(a.id)}</div></button></li>`).join("")}</ul>` },
       { key: "cultuur", icon: "cultuur", titel: "Cultuurkaart", preview: `<span class="sub">${esc(d.cultuur.waarden[0])}</span>`, sheet: () => cultuurSheet(d) },
       { key: "toegang", icon: "toegang", titel: "Toegangskaart", preview: `<span class="sub">${permSummary(d)}</span>`, sheet: () => toegangSheet(d) },
+      { ...connTile(id), key: "connectors" },
       { key: "lijnen", icon: "lijnen", titel: "Directe lijnen", preview: id === CONTROLELIJN ? `<span class="sub">Controlelijn naar alle afdelingen</span>` : `<span class="big">${ch.length}</span>`,
         sheet: () => id === CONTROLELIJN ? `<p style="margin:0">Risk & Safety leest mee op alle lijnen, mag elke afdeling direct een toetsvraag stellen en taken blokkeren. Elke afdeling kan Risk & Safety direct om een toets vragen.</p>`
           : `<h4>Direct</h4><div class="chips">${ch.map(o => `<button class="chip" data-go="lijn-${chKey(id, o)}"><i class="dot" style="background:${deptById[o].kleur}"></i>${esc(deptById[o].naam)} ›</button>`).join("")}</div>

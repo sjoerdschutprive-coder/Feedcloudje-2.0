@@ -10,9 +10,10 @@ Open `index.html` in een browser; er is geen build of server nodig.
 - **Klik op een eiland** en je gaat naar de pagina van die afdeling, met tegels voor Team, Cultuurkaart, Toegangskaart, Directe lijnen, Taken, Berichten, Rollen en Geschiedenis. Een tegel toont alleen de kern. Tik erop voor de volledige kaart.
 - **Klik op een bureau** (of kies iemand onder Team) voor de pagina van een agent, met Profielkaart, Cultuurkaarten, Rolkaart, Toegangskaart, Taken en Geschiedenis.
 - **Klik op het midden** voor Oppertet & Brein, met het volledige doelstellingenbord, alle taken, berichten die op de Oppertet wachten en wat op de Raad wacht.
+- **Connectors:** onder elk eiland staat een balk met de connectors en extensions die de agents van die afdeling mogen gebruiken. Een gevuld rondje betekent schrijven, een open rondje alleen lezen. Tik op de balk om per connector te kiezen tussen uit, lezen en schrijven. Via de knop **Connectors** rechtsboven (`#connectors`) zie je alle afdelingen naast elkaar en wijzig je toegang met één tik per cel.
 - **Klik op een directe lijn** voor de kanaalkaart: het doel, de spelregels en de berichten. De onderbouwing staat in [ANALYSE-afdelingscommunicatie.md](ANALYSE-afdelingscommunicatie.md).
 
-Taken en berichten worden lokaal in de browser bewaard.
+Taken, berichten en connectortoegang worden lokaal in de browser bewaard.
 
 Elke pagina heeft een eigen adres (`#fin`, `#agent-fin-1`, `#oppertet`, `#lijn-fin-prod`), zodat je er direct naartoe kunt linken.
 
@@ -29,6 +30,8 @@ Alle data staat bovenin het script, in het blok `DATA`:
 | `AGENTS` | Profielkaart per agent (laag 3; `inperking` kan rechten alleen beperken) |
 | `ROLKAARTEN` | Rolkaarten: Oppertet, Hoofdtet, Tet, Control Tet |
 | `DEPTS[].toegang` | Toegangskaart per afdeling (`rw`, `r`, `no`) |
+| `CONNECTORS` | Catalogus van connectors en extensions; `gevoelig` voegt een spelregel toe |
+| `CONNECTOR_TOEGANG` | Standaardtoegang per afdeling (`rw` of `r`; niet genoemd = uit) |
 | `KANALEN`, `SPELREGELS` | Directe lijnen tussen afdelingen en de spelregels |
 
 De inhoud is fictief en bedoeld om later te vervangen door de echte kaarten uit de whitepaper.
