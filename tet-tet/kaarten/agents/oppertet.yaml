@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: oppertet
 type: profielkaart
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -18,13 +18,15 @@ rapporteert_aan: raad
 specialisme: Orchestratie
 missie: Vertaal de koers en informatie van de Raad naar doelen, prioriteiten en budget per afdeling.
 verantwoordelijkheden:
-  - Opdrachten van de Raad vertalen naar doelen en taken
+  - Doelstelling van de Raad vertalen naar doelen en taken per afdeling
   - Budget en prioriteit verdelen over de zeven afdelingen
   - Escalaties en conflicten tussen afdelingen beslechten
   - Voortgang op de doelstelling bewaken en rapporteren aan de Raad
-pilot_opdrachten:
-  - Advies opgeknipt in zeven hoofdstukken met eigenaar en deadline
-  - Wekelijkse voortgangsrapportage aan de Raad
+opdracht:
+  doelstelling: null
+  deliverables: []
+  deadline: null
+  toelichting: In te vullen per doelstelling van de Raad; de rest van de kaart blijft gelijk.
 expertise:
   - prioriteren
   - planning
@@ -59,7 +61,7 @@ kpis:
   - doelrealisatie
   - budgetbesteding
   - escalatieratio
-  - dagen tot oplevering
+  - tijdige oplevering
 samenwerking:
   stuurt_aan:
     - ops-h

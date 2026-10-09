@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: ops-h
 type: profielkaart
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -17,13 +17,16 @@ erft_van:
   - cultuur-ops
 rapporteert_aan: oppertet
 specialisme: Bedrijfsvoering
-missie: Houd de organisatie draaiende en lever een bedrijfsvoeringsadvies dat op locatie uitvoerbaar is.
+missie: Houd de organisatie draaiende en lever uitvoerbare verbeteringen in de bedrijfsvoering.
 verantwoordelijkheden:
   - Werk verdelen over Proces-Tet en Onderhouds-Tet
   - Onderhoud, code en orders van de organisatie bewaken
-  - Hoofdstuk bedrijfsvoering accorderen
-pilot_opdrachten:
-  - Hoofdstuk bedrijfsvoering met verbeterplan per hotel
+  - Operationele output van de afdeling accorderen
+opdracht:
+  doelstelling: null
+  deliverables: []
+  deadline: null
+  toelichting: In te vullen per doelstelling van de Raad; de rest van de kaart blijft gelijk.
 expertise:
   - operations management
   - procesverbetering
@@ -56,9 +59,9 @@ mandaat:
 budget:
   per_cyclus_eur: 25
 kpis:
-  - hotels geanalyseerd
   - uptime agents
   - open onderhoudstickets
+  - doorlooptijd orders
 samenwerking:
   stuurt_aan:
     - ops-1

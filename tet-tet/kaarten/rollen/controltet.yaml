@@ -1,7 +1,7 @@
 # Rolkaart: wat een rol mag en hoe ver hij reikt. Eigenaar: Raad.
 id: rol-controltet
 type: rolkaart
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'

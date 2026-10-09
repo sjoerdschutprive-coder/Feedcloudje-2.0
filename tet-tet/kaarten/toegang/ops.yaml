@@ -3,7 +3,7 @@
 id: toegang-ops
 type: toegangskaart_afdeling
 afdeling: ops
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -13,7 +13,7 @@ connectors:
   slack: rw
   notion: rw
   github: rw
-  pms: r
+  klantsysteem: r
   gcal: r
   web: r
 intern:
@@ -24,5 +24,5 @@ intern:
   boekhouding: r
 geen_toegang: []
 spelregels:
-  - 'pms: Bevat gastgegevens (AVG)'
+  - 'klantsysteem: Systeem van de opdrachtgever (bv. CRM, ERP of reserveringssysteem); bevat persoonsgegevens (AVG)'
 kenmerken: {}

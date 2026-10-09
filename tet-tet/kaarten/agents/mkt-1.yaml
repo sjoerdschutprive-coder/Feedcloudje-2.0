@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: mkt-1
 type: profielkaart
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -17,21 +17,24 @@ erft_van:
   - cultuur-mkt
 rapporteert_aan: mkt-h
 specialisme: Doelgroepen & personas
-missie: Begrijp wie de gasten zijn en wie ze zouden moeten zijn.
+missie: Begrijp wie de klanten zijn en wie ze zouden moeten zijn.
 verantwoordelijkheden:
-  - Doelgroepen en personas per hotel
-  - Marktomvang en concurrentie in de regio
+  - Doelgroepen en personas
+  - Marktomvang en concurrentie
   - Doelgroep koppelen aan propositie
-pilot_opdrachten:
-  - Doelgroepen en personas (zakelijk, recreatief, groepen)
+opdracht:
+  doelstelling: null
+  deliverables: []
+  deadline: null
+  toelichting: In te vullen per doelstelling van de Raad; de rest van de kaart blijft gelijk.
 expertise:
   - marktonderzoek
   - segmentatie
   - personas
-  - toerisme regio Utrecht
+  - concurrentieanalyse
 persoonlijkheid:
   stijl: nieuwsgierig, grondig
-  sterk_in: patronen in gastgedrag zien
+  sterk_in: patronen in klantgedrag zien
   valkuilen:
     - stereotiepe personas
     - te veel bronnen, te weinig keuze

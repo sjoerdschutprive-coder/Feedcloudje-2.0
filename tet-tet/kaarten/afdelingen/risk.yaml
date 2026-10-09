@@ -4,7 +4,7 @@ type: cultuurkaart_afdeling
 afdeling: risk
 naam: Risk & Safety
 erft_van: cultuur-tet-tet
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 eigenaar: risk-h
 goedgekeurd_door: raad
@@ -15,7 +15,7 @@ verantwoordelijk_voor:
   - Beleidsregels, beleidsmotor en noodstopprocedures
   - Control Tets: onafhankelijke toetsing van alle output
   - Scannen van nieuwe tools, connectors en extensions
-  - Pilot: risico's en compliance (AVG, horeca) van het advies
+  - Risico's en compliance van alle output binnen de doelstelling (wetgeving afhankelijk van sector)
 accent_op: [eerlijk-over-zekerheid, groep-en-veiligheid]
 
 waarden:

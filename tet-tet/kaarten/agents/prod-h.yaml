@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: prod-h
 type: profielkaart
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -17,14 +17,16 @@ erft_van:
   - cultuur-prod
 rapporteert_aan: oppertet
 specialisme: Propositie
-missie: Lever proposities en eindproducten die kloppen voor de gast en samenhangen als één advies.
+missie: Lever proposities en eindproducten die kloppen voor de klant en samenhangen als één geheel.
 verantwoordelijkheden:
-  - Werk verdelen aan Gastreis-Tet
+  - Werk verdelen aan Klantreis-Tet
   - Proposities bepalen met Marketing en Finance
-  - Eindredactie en samenhang van het advies
-pilot_opdrachten:
-  - Drie proposities met gastreis
-  - Samengevoegd eindadvies klaar voor de Raad
+  - Eindredactie en samenhang van eindproducten
+opdracht:
+  doelstelling: null
+  deliverables: []
+  deadline: null
+  toelichting: In te vullen per doelstelling van de Raad; de rest van de kaart blijft gelijk.
 expertise:
   - productmanagement
   - propositieontwikkeling
@@ -58,7 +60,7 @@ budget:
 kpis:
   - concepten uitgewerkt
   - getoetst door Finance
-  - hoofdstukken samengevoegd
+  - eindproducten opgeleverd
 samenwerking:
   stuurt_aan:
     - prod-1

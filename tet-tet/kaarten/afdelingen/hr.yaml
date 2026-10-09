@@ -4,7 +4,7 @@ type: cultuurkaart_afdeling
 afdeling: hr
 naam: HR
 erft_van: cultuur-tet-tet
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 eigenaar: hr-h
 goedgekeurd_door: raad
@@ -14,7 +14,7 @@ missie: De juiste agent op de juiste plek, met de juiste kaart.
 verantwoordelijk_voor:
   - Agentregister, profielkaarten, rollen en autonomieniveaus
   - Performance van agents volgen als input voor inzet en verbetering
-  - Pilot: personeelsadvies (bezetting en werving) voor de drie hotels
+  - Advies over mensen en organisatie binnen de doelstelling (nader te bepalen)
 accent_op: [feedback-als-motor, groep-en-veiligheid]
 
 waarden:

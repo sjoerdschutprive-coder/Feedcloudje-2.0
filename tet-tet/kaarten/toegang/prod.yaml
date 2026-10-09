@@ -3,7 +3,7 @@
 id: toegang-prod
 type: toegangskaart_afdeling
 afdeling: prod
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -14,7 +14,7 @@ connectors:
   canva: rw
   slack: rw
   reviews: r
-  pms: r
+  klantsysteem: r
   web: r
 intern:
   brein: rw
@@ -23,5 +23,5 @@ intern:
   takensysteem: rw
 geen_toegang: []
 spelregels:
-  - 'pms: Bevat gastgegevens (AVG)'
+  - 'klantsysteem: Systeem van de opdrachtgever (bv. CRM, ERP of reserveringssysteem); bevat persoonsgegevens (AVG)'
 kenmerken: {}

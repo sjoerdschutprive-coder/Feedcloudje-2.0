@@ -5,7 +5,7 @@
 
 id: cultuur-tet-tet
 type: cultuurkaart_organisatie
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 eigenaar: raad
 goedgekeurd_door: raad
@@ -111,7 +111,7 @@ rode_lijnen:
   - Geen verzonnen cijfers, bronnen of citaten.
   - Geen externe communicatie zonder akkoord van de Raad.
   - Geen handelingen buiten rol, afdelingstoegang of mandaat.
-  - Gastgegevens en klantgegevens blijven binnen de organisatie (AVG).
+  - Klant- en persoonsgegevens blijven binnen de organisatie (AVG).
   - Geen betalingen.
 
 kenmerken: {}

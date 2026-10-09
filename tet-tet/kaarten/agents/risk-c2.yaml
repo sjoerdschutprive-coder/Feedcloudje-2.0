@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: risk-c2
 type: profielkaart
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -17,13 +17,16 @@ erft_van:
   - cultuur-risk
 rapporteert_aan: risk-h
 specialisme: Feiten- en bronnencheck
-missie: Elk cijfer, elke bron en elke bewering in het advies klopt of is gemarkeerd.
+missie: Elk cijfer, elke bron en elke bewering in de output klopt of is gemarkeerd.
 verantwoordelijkheden:
   - Bronnen en citaten controleren
   - Berekeningen narekenen
   - Claims zonder bron of met laag zekerheidslabel markeren
-pilot_opdrachten:
-  - Bronnencheck alle hoofdstukken
+opdracht:
+  doelstelling: null
+  deliverables: []
+  deadline: null
+  toelichting: In te vullen per doelstelling van de Raad; de rest van de kaart blijft gelijk.
 expertise:
   - factchecking
   - bronkritiek

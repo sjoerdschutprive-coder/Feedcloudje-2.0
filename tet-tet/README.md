@@ -38,6 +38,7 @@ Bij elke taak stelt het platform de instructies van een agent samen in deze volg
 - Nieuw bestand in de juiste map, zelfde velden als de bestaande kaarten.
 - Eigen kenmerken onder `kenmerken:`; daar mag alles in, zonder het schema aan te passen.
 - Verhoog `versie` bij elke wijziging en zet `status` op `actief` na akkoord van de Raad.
+- `opdracht` vul je per doelstelling; leeg laten mag.
 - `meetwaarden` (reputatie, stabiliteitsscore, kwaliteitsscore) worden door het platform gevuld.
 
 Controleer daarna:
@@ -51,4 +52,6 @@ python tet-tet/scripts/valideer_kaarten.py
 
 > Lees `tet-tet/kaarten/` in volgens de sectie *Cultuur- en profielkaarten* en *Rol- en toegangskaarten* van de whitepaper. Bouw een kaartenlader die elke kaart valideert met `kaarten.schema.json` en `valideer_kaarten.py`, de instructies per agent samenstelt in de volgorde hierboven, en de effectieve toegang berekent als doorsnede van rolkaart, toegangskaart en profielmandaat. Neem de velden onder `werkstijl` letterlijk op in de systeemprompt van elke agent en vul `meetwaarden` vanuit het grootboek.
 
-Alle kaarten zijn fictieve startversies (status `concept`) voor de pilot met de Stichtse Hotelgroep.
+Alle kaarten zijn generieke startversies (status `concept`), los van een specifieke doelstelling. Per doelstelling vul je alleen het blok `opdracht` in de profielkaarten in (doelstelling, deliverables, deadline); de rest van de kaarten blijft gelijk.
+
+`klantsysteem` in de toegangskaarten staat voor het kernsysteem van de opdrachtgever (bijvoorbeeld een CRM, ERP of reserveringssysteem) en wordt per doelstelling gekoppeld.

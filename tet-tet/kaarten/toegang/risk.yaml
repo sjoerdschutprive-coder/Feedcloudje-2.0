@@ -3,7 +3,7 @@
 id: toegang-risk
 type: toegangskaart_afdeling
 afdeling: risk
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -15,7 +15,7 @@ connectors:
   notion: r
   hubspot: r
   exact: r
-  pms: r
+  klantsysteem: r
   reviews: r
   web: r
   github: r
@@ -28,5 +28,5 @@ geen_toegang: []
 spelregels:
   - 'gmail: Versturen namens de Raad alleen na goedkeuring'
   - 'exact: Geen betalingen; boekingen alleen als concept'
-  - 'pms: Bevat gastgegevens (AVG)'
+  - 'klantsysteem: Systeem van de opdrachtgever (bv. CRM, ERP of reserveringssysteem); bevat persoonsgegevens (AVG)'
 kenmerken: {}

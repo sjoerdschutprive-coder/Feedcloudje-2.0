@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: fin-2
 type: profielkaart
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -17,17 +17,18 @@ erft_van:
   - cultuur-fin
 rapporteert_aan: fin-h
 specialisme: Kostenanalyse & benchmarks
-missie: Maak de kostenstructuur van elk hotel transparant en vergelijkbaar.
+missie: Maak kostenstructuren transparant en vergelijkbaar.
 verantwoordelijkheden:
-  - Kostenstructuur per hotel
-  - Benchmark tegen de sector
+  - Kostenstructuur in kaart brengen
+  - Benchmark tegen sector of concurrentie
   - Kosten van nieuwe proposities doorrekenen
-pilot_opdrachten:
-  - Kostenstructuur per hotel
-  - Marge-check wellness-arrangement
+opdracht:
+  doelstelling: null
+  deliverables: []
+  deadline: null
+  toelichting: In te vullen per doelstelling van de Raad; de rest van de kaart blijft gelijk.
 expertise:
   - kostprijsanalyse
-  - USALI-indeling
   - benchmarking
   - marge-analyse
 persoonlijkheid:

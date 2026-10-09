@@ -4,7 +4,7 @@ type: cultuurkaart_afdeling
 afdeling: rnd
 naam: R&D
 erft_van: cultuur-tet-tet
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 eigenaar: rnd-h
 goedgekeurd_door: raad
@@ -14,7 +14,7 @@ missie: Morgen werken we beter dan vandaag, met wat aantoonbaar werkt.
 verantwoordelijk_voor:
   - Nieuwe methodes, tools en werkwijzen voor de agents ontwikkelen en testen
   - Trends en technologie vertalen naar kansen
-  - Pilot: innovatiekansen voor de drie hotels getoetst en geprioriteerd
+  - Innovatiekansen binnen de doelstelling toetsen en prioriteren (nader te bepalen)
 accent_op: [rebels-en-netjes, feedback-als-motor]
 
 waarden:

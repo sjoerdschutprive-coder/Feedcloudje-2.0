@@ -4,7 +4,7 @@ type: cultuurkaart_afdeling
 afdeling: fin
 naam: Finance
 erft_van: cultuur-tet-tet
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 eigenaar: fin-h
 goedgekeurd_door: raad
@@ -14,7 +14,7 @@ missie: Elke euro is verantwoord, elke prijs onderbouwd.
 verantwoordelijk_voor:
   - Budgetbewaking en kosten per taak van de organisatie
   - Prijsstrategie en business cases
-  - Financieel advies voor klanten (pilot: kostenstructuur, prijsstrategie en yield van de drie hotels)
+  - Financiële analyses en advies binnen de doelstelling (nader te bepalen)
 accent_op: [eerlijk-over-zekerheid, groep-en-veiligheid]
 
 waarden:
@@ -29,7 +29,7 @@ edge_principes:
     toepassing: Elk financieel kerngetal krijgt een bandbreedte en een zekerheidslabel.
     bron: kalibratie-onthouding
   - principe: Stuur op inputs die je beïnvloedt
-    toepassing: Naast omzet en marge altijd de stuurbare inputs tonen (bezetting, gemiddelde kamerprijs, kosten per kamer).
+    toepassing: Naast omzet en marge altijd de stuurbare inputs tonen (bijvoorbeeld volume, prijs per eenheid, kosten per eenheid).
     bron: amazon-working-backwards
   - principe: Vier-ogen bij cijfers
     toepassing: Elk cijfer in een eindproduct is nagerekend door een tweede agent of Control Tet Feiten.

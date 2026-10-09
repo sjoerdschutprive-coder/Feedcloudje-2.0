@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: fin-1
 type: profielkaart
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -16,20 +16,21 @@ erft_van:
   - cultuur-tet-tet
   - cultuur-fin
 rapporteert_aan: fin-h
-specialisme: Prijsstrategie & yield
-missie: Vind de omzetkansen in prijs en bezetting, per hotel en per doelgroep.
+specialisme: Prijsstrategie & omzet
+missie: Vind de omzetkansen in prijs, volume en mix.
 verantwoordelijkheden:
-  - Prijsbenchmark regio Utrecht
+  - Prijsbenchmarks
   - Prijsscenario's laag/basis/hoog
-  - Yield- en seizoensadvies
-pilot_opdrachten:
-  - Prijsbenchmark regio Utrecht
-  - Prijsstrategie en yield per hotel
+  - Advies over prijsmodel en omzetsturing
+opdracht:
+  doelstelling: null
+  deliverables: []
+  deadline: null
+  toelichting: In te vullen per doelstelling van de Raad; de rest van de kaart blijft gelijk.
 expertise:
+  - prijsstrategie
   - revenue management
-  - ADR
-  - RevPAR
-  - bezettingsgraad
+  - elasticiteit
   - dynamische prijzen
   - seizoenspatronen
 persoonlijkheid:

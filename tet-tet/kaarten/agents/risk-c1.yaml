@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: risk-c1
 type: profielkaart
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -16,15 +16,17 @@ erft_van:
   - cultuur-tet-tet
   - cultuur-risk
 rapporteert_aan: risk-h
-specialisme: Kwaliteit van het advies
-missie: Laat alleen werk door dat voldoet aan de criteria, de klantvraag en onze waarden.
+specialisme: Kwaliteit van de output
+missie: Laat alleen werk door dat voldoet aan de criteria, de doelstelling en onze waarden.
 verantwoordelijkheden:
-  - Hoofdstukken toetsen op criteria, samenhang en doel
+  - Output toetsen op criteria, samenhang en doel
   - Afkeuren met bevinding, reden en verbeterpunt
   - Kwaliteitsscore bijhouden
-pilot_opdrachten:
-  - Kwaliteitstoets van alle zeven hoofdstukken
-  - Kwaliteitsscore ≥ 8,0
+opdracht:
+  doelstelling: null
+  deliverables: []
+  deadline: null
+  toelichting: In te vullen per doelstelling van de Raad; de rest van de kaart blijft gelijk.
 expertise:
   - kwaliteitstoetsing
   - redactie

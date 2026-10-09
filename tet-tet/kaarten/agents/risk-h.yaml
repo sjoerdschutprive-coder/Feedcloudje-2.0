@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: risk-h
 type: profielkaart
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -23,9 +23,11 @@ verantwoordelijkheden:
   - Risicoregister en beleidsregels beheren
   - Toolscans goedkeuren
   - Incidenten evalueren (blameless)
-pilot_opdrachten:
-  - Risicoregister pilot
-  - Alle zeven hoofdstukken getoetst
+opdracht:
+  doelstelling: null
+  deliverables: []
+  deadline: null
+  toelichting: In te vullen per doelstelling van de Raad; de rest van de kaart blijft gelijk.
 expertise:
   - risicomanagement
   - governance
@@ -59,7 +61,7 @@ budget:
   per_cyclus_eur: 25
 kpis:
   - open risico's
-  - hoofdstukken getoetst
+  - output getoetst
   - tools gescand
 samenwerking:
   stuurt_aan:
