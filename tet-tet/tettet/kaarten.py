@@ -57,8 +57,16 @@ class Organisatie:
             raise KeyError(f"Onbekende agent: {agent_id}")
         return self.agents[agent_id]
 
-    def team(self, afdeling: str) -> list[dict]:
-        return [a for a in self.agents.values() if a["afdeling"] == afdeling]
+    @staticmethod
+    def ingezet(a: dict) -> bool:
+        """Een agent met `inzet: gepland` heeft een kaart maar werkt nog niet mee (de Raad activeert hem na een meting)."""
+        return a.get("inzet", "actief") == "actief"
+
+    def actieve_agents(self) -> list[dict]:
+        return [a for a in self.agents.values() if self.ingezet(a)]
+
+    def team(self, afdeling: str, ook_gepland: bool = False) -> list[dict]:
+        return [a for a in self.agents.values() if a["afdeling"] == afdeling and (ook_gepland or self.ingezet(a))]
 
     def hoofdtet(self, afdeling: str) -> dict:
         return next(a for a in self.team(afdeling) if a["rol"] == "hoofdtet")
@@ -67,7 +75,7 @@ class Organisatie:
         return [a for a in self.team(afdeling) if a["rol"] == "tet"]
 
     def control_tets(self) -> list[dict]:
-        return [a for a in self.agents.values() if a["rol"] == "controltet"]
+        return [a for a in self.actieve_agents() if a["rol"] == "controltet"]
 
     def kaartversies(self, agent_id: str) -> dict[str, str]:
         """Alle kaarten (met versie) die het gedrag van deze agent bepalen; gaat mee in elk grootboek-event."""

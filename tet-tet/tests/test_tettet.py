@@ -21,8 +21,18 @@ ORG = Organisatie()
 
 class KaartenTest(unittest.TestCase):
     def test_alle_agents_geladen(self):
-        self.assertEqual(len(ORG.agents), 21)
+        self.assertEqual(len(ORG.agents), 30)
+        self.assertEqual(len(ORG.actieve_agents()), 22)   # 21 bestaande + Privacy-Tet; de rest is gepland
         self.assertEqual(len(ORG.afdelingen), 7)
+
+    def test_afdelingsomvang(self):
+        """Norm: 1 Hoofdtet + 3 Tets per afdeling (Risk & Safety heeft daarnaast twee Control Tets)."""
+        for d in ORG.afdelingen:
+            tets = [a for a in ORG.team(d, ook_gepland=True) if a["rol"] == "tet"]
+            self.assertEqual(len(tets), 2 if d == "risk" else 3, d)
+            self.assertEqual(sum(1 for a in ORG.team(d, ook_gepland=True) if a["rol"] == "hoofdtet"), 1, d)
+        self.assertNotIn("ops-3", [a["id"] for a in ORG.tets("ops")])   # gepland: nog niet in het team
+        self.assertIn("risk-2", [a["id"] for a in ORG.tets("risk")])
 
     def test_instructies_in_vaste_volgorde(self):
         p = ORG.systeemprompt("fin-1")

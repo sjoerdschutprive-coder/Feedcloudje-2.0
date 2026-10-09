@@ -30,6 +30,20 @@ De `bron`-velden in de kaarten verwijzen naar de ids hieronder. Per bron: wat he
 | Deskundigheid beslist | Vakoordeel weegt zwaarder dan positie bij inhoudelijke vragen. | `hro` |
 | Veilig om te melden | Psychologische veiligheid was de belangrijkste factor voor effectieve teams. | `project-aristotle` |
 | Duidelijke rollen en structuur | Heldere doelen en rollen horen bij de kern van teameffectiviteit. | `project-aristotle`, `mast` |
+| Informeel contact is werk | Communicatiepatronen voorspellen teamsucces sterker dan talent; gezamenlijke pauzes en grotere lunchtafels hingen samen met hogere productiviteit en minder stress. Smalltalk verhoogt positieve emoties en burgerschapsgedrag, maar leidt ook af: daarom alleen in pauzes en kort. | `pentland-teams`, `sociometric-pauzes`, `methot-smalltalk` |
+| Wie weet wat is zichtbaar | Teams met een goed 'wie weet wat'-systeem (transactief geheugen) presteren beter; het ontstaat in de planningsfase en door direct contact. | `transactief-geheugen` |
+| Unieke informatie eerst | Groepen bespreken vooral wat iedereen al weet; unieke kennis blijft liggen, vooral als het om consensus gaat in plaats van om het juiste antwoord. | `hidden-profile` |
+| Need-to-know, ook aan de koffietafel | Agents lekken vaker naarmate ze langer sociaal interacteren, en na één lek stijgt de kans op het volgende sterk. Instructies alleen helpen beperkt; daarom een deelfilter vooraf en toezicht door Risk & Safety. | `geheimen-multi-agent` |
+
+## Kenmerken van de samenwerking
+
+| Onderdeel | Ontwerpkeuze | Bron |
+| --- | --- | --- |
+| Kantine | Eén gemengde tafel van 4–6 agents uit minstens drie afdelingen, roulerend; één pauze per werkdagrun, nooit tijdens taakuitvoering. | `sociometric-pauzes`, `methot-smalltalk` |
+| Afdelingshuddle | Dagelijks, kort, vlak vóór de pauze. Geen terugblik (staat op het bord), wel prioriteit, knelpunt en wie je nodig hebt. Roulerende voorzitter, gelijke spreektijd. | `rogelberg-huddle`, `standup-praktijk` |
+| Voorbereiding MT | Eerst ieder zelfstandig op schrift (met 'wat alleen ik weet'), dan een afdelingsmemo, bilaterale afstemming en vooraf lezen. In het MT eerst ieders oordeel apart, dan bespreken; correctheid boven consensus. | `hidden-profile`, `debat-faalwijzen` |
+| Afdelingsomvang | 1 Hoofdtet + 3 Tets per afdeling; nieuwe agents pas actief na een meting. Centrale coördinatie beperkt foutversterking; meer agents is niet vanzelf beter. | `teamomvang`, `schaal-agents` |
+| Cultuurmeting | Energie (interacties), betrokkenheid (gelijke spreektijd), verkenning (contact buiten de eigen afdeling) en veiligheid (zelf gemelde fouten). | `pentland-teams`, `project-aristotle` |
 | Eenvoudigste oplossing eerst | Complexiteit alleen toevoegen als metingen dat rechtvaardigen. | `anthropic-effectieve-agents` |
 
 ## Bronnen
@@ -46,3 +60,13 @@ De `bron`-velden in de kaarten verwijzen naar de ids hieronder. Per bron: wat he
 - `google-sre-postmortems`: Google SRE Book, *Postmortem Culture*. https://sre.google/sre-book/postmortem-culture/
 - `netflix-cultuur`: Netflix Culture Memo. https://jobs.netflix.com/culture
 - `amazon-working-backwards`: Bryar & Carr, *Working Backwards*. https://www.charterworks.com/book-briefing-working-backwards-by-colin-bryar-and-bill-carr/
+- `pentland-teams`: Pentland, *The New Science of Building Great Teams* (HBR 2012). https://capacity-building.com/favorite-articles/the-new-science-of-building-great-teams/
+- `sociometric-pauzes`: MIT News, *Behavioral analytics: moneyball for business* (2014), over gezamenlijke pauzes en lunchtafels. https://news.mit.edu/2014/behavioral-analytics-moneyball-for-business-1114
+- `methot-smalltalk`: Methot e.a., *Office Chit-Chat as a Social Ritual* (Academy of Management Journal 2021). https://ore.exeter.ac.uk/repository/handle/10871/123633
+- `transactief-geheugen`: Lewis, *Knowledge and Performance in Knowledge-Worker Teams: A Longitudinal Study of Transactive Memory Systems* (Management Science 2004). https://pubsonline.informs.org/doi/10.1287/mnsc.1040.0257
+- `hidden-profile`: Stasser & Titus, hidden-profileparadigma. https://en.wikipedia.org/wiki/Hidden_profile
+- `rogelberg-huddle`: Rogelberg, *The Surprising Science of Meetings*, over huddles van 10–15 minuten. https://ideas.ted.com/how-to-reap-big-benefits-from-meetings-that-are-just-10-to-15-minutes-long
+- `standup-praktijk`: Stray e.a., *Daily Stand-Up Meetings: Start Breaking the Rules* (IEEE Software 2018). https://arxiv.org/abs/1808.07650
+- `schaal-agents`: Google Research en MIT, *Towards a Science of Scaling Agent Systems* (2025). https://research.google/blog/towards-a-science-of-scaling-agent-systems-when-and-why-agent-systems-work/
+- `teamomvang`: Hackman & Vidmar (1970), samengevat in GWU-gids teameffectiviteit. https://guides.himmelfarb.gwu.edu/teameffectiveness/structural-factors
+- `geheimen-multi-agent`: *Got a Secret? LLM Agents Can't Keep It: Evaluating Privacy in Multi-Agent Systems* (2026). https://arxiv.org/abs/2605.27766

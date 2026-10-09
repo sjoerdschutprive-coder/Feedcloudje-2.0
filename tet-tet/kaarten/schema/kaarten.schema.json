@@ -266,6 +266,13 @@
         },
         "meetwaarden": {
           "type": "object"
+        },
+        "inzet": {
+          "enum": [
+            "actief",
+            "gepland"
+          ],
+          "description": "gepland = kaart klaar, agent nog niet ingezet (activeren door de Raad na meting)"
         }
       },
       "required": [
