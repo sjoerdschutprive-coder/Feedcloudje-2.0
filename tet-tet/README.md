@@ -74,15 +74,20 @@ pip install pyyaml jsonschema
 python tet-tet/scripts/valideer_kaarten.py
 ```
 
-## Eén ingang voor de Raad
+## Eén ingang voor de Raad: tickets
 
-Sinds 9 oktober 2026 stuurt de Raad het kantoor alleen via **Chat met de Oppertet** (zwevende knop rechtsonder; op telefoon schermvullend). De Oppertet antwoordt met een echt model (`sample`) of in mockmodus, en sluit werk af met een opdrachtvoorstel. Pas na **Uitzetten** wordt het een raadsopdracht (`D-002`, `D-003`, …): de Assistent-Oppertet vertaalt hem door naar één taak per afdeling (`opdracht` op de taak), met een regel in het besluitenregister. De status staat onder het kaartje in de chat.
+Sinds 9 oktober 2026 is er geen overkoepelende doelstelling meer; al het werk loopt via **tickets**. De Raad stuurt alleen via **Chat met de Oppertet** (zwevende knop; op telefoon schermvullend).
 
-- Afdelings-, agent- en Oppertet-pagina's zijn **alleen-lezen**: geen invoer voor taken, hoofdlijnen, afdelingsdoelen of de doelstelling. Elke pagina heeft een knop *Vraag de Oppertet hierover*.
-- De Raad houdt: goedkeuren en accepteren, de testknop op de Risk-pagina en het starten van een werkdag.
-- Een chatbericht verruimt nooit mandaat, toegang of grenzen; zulke verzoeken weigert de Oppertet (event `raad.chat_geweigerd`).
-- Collecties: `raadschat` (alleen toevoegen) en `raadsopdrachten`.
-- **D-001 Cloudopslag en back-ups** staat bij de eerste opening klaar: Drive inrichten en synchroniseren, dagelijkse back-up (02:00, retentie 7/4/12), herstel bij sessiestart, onderhoudsplan met runbook, eerste herstelproef. Eigenaar Assistent-Oppertet, uitvoering Onderhouds-Tet, toets deelrechten Privacy-Tet. Jouw akkoord is nodig op mappenstructuur en deelrechten.
+1. De Oppertet stelt een ticket voor. Na **Uitzetten** wordt het meteen uitgevoerd in het kantoor (met Claude als dat is toegestaan): de Assistent-Oppertet vertaalt door naar één deel per afdeling.
+2. Per afdeling verdeelt de **Hoofdtet** zijn deel over 1 tot 3 Tets (`ticket.verdeeld`).
+3. Elke **Tet** werkt met het ticket en het opgeleverde werk van collega's op hetzelfde ticket in zijn prompt (feedback tussen afdelingen).
+4. Een **Control Tet** van een andere afdeling toetst; afgekeurd werk gaat met bevindingen terug naar de Tet (feedback binnen de afdeling), na 2 afkeuringen naar de Raad.
+5. Als alles klaar is, vat de Assistent-Oppertet samen en meldt de Oppertet het in de chat. Wat jouw akkoord nodig heeft, verschijnt in de chat als knop **Akkoord geven** (ook als je gewoon "akkoord" typt), op de pagina **Tickets** en in de Raadsbrief.
+
+- Acties in de chat: goedkeuren, nu uitvoeren, intrekken. De Oppertet maakt nooit een ticket om een ander ticket door te zetten.
+- Afdelingspagina's zijn alleen-lezen en tonen de tickets van die afdeling. Het bord in het kantoor toont de open tickets.
+- Collecties: `raadschat` en `raadsopdrachten` (de tickets); taken dragen `opdracht` met het ticket-id. De gedeelde opslag is leidend: wat daar verwijderd is, verdwijnt ook uit de browser.
+- De geplande werkdagen werken open ticket-taken verder af.
 
 ## Weekrooster 24/7
 

@@ -24,7 +24,7 @@ Bij tegenstrijdigheid wint de hogere bron.
 
 ## Uitgangspunt: doelstelling-onafhankelijk
 
-- Er zit geen opdracht in de code of de kaarten. De Raad stelt een doelstelling in via het platform (naam, omschrijving, deadline).
+- Er zit geen opdracht in de code of de kaarten. De Raad zet tickets uit via de chat met de Oppertet (sinds 9 oktober 2026; het doelstellingenbord is vervangen door het ticketbord).
 - De Oppertet maakt daaruit afdelingsdoelen en hoofdlijnen; die vullen per agent het blok `opdracht` in de profielkaart (doelstelling, deliverables, deadline).
 - Na afsluiten van een doelstelling blijven organisatie, kaarten en geleerde lessen bestaan; alleen `opdracht` en afdelingsdoelen worden leeg.
 - `klantsysteem` in de toegangskaarten is het kernsysteem van de opdrachtgever en wordt per doelstelling gekoppeld.
@@ -92,7 +92,7 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 - **Kaarten in het kantoor**: het blok tussen `@@KAARTEN:BEGIN` en `@@KAARTEN:END` wordt gegenereerd door `scripts/bouw_kantoor.py`. Draai dat na elke kaartwijziging en publiceer opnieuw.
 - **Live-zicht**: collectie `activiteit` (alleen-toevoegen, per agent wat hij doet); de pagina toont tekstballonnen en het paneel 'Nu bezig'. Werk van buitenaf komt binnen als `patches`; documenten dragen `bijgewerkt` en de nieuwste wint.
 - **Werkdag**: zie `WERKDAG.md` en `tettet/werkdag.py`. Een geplande taak laat de agents meerdere keren per dag zelfstandig werken, met subagents per agentbeurt.
-- **Eén ingang voor de Raad**: chat met de Oppertet (collecties `raadschat` en `raadsopdrachten`), alleen-lezen afdelingspagina's, weekrooster 24/7 en de dagelijkse Raadsbrief; zie README.md.
+- **Eén ingang voor de Raad: tickets**: geen doelstelling meer; de Raad zet tickets uit in de chat met de Oppertet (collecties `raadschat` en `raadsopdrachten`, taken met `opdracht`). Assistent-Oppertet → Hoofdtets verdelen → Tets → Control Tets met feedbackloop → samenvatting in de chat. Alleen-lezen afdelingspagina's, weekrooster 24/7 en de dagelijkse Raadsbrief; zie README.md.
 - **Zelfontwikkeling**: zie `ZELFONTWIKKELING.md`. Een dagelijkse geplande taak bouwt de door de Raad goedgekeurde verbetervoorstellen in.
 
 Nog te bouwen, in deze volgorde:

@@ -344,6 +344,7 @@
   /* ---------- Rooster en chat met de Oppertet ---------- */
   .rooster-nu { margin-top: 2px !important; color: var(--accent) !important; }
   .rooster-btn { top: 62px; }
+  @media (min-width: 601px) { .livefeed { top: 104px; } }
   #view-office.nacht #office { filter: brightness(.62) saturate(.8); }
   .desk.rust { opacity: .42; }
   .rs-dagen { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
@@ -1152,26 +1153,26 @@ function renderOffice() {
   // doelstellingenbord op palen achter het Brein
   const s = projectStand();
   const bw = 330, bh = 140, bx = CENTER[0] - bw / 2, by = CENTER[1] - 220;
-  const board = el("g", { class: "board", tabindex: 0, role: "link", "aria-label": `Doelstellingenbord: ${s.voortgang}% voortgang` }, layerCards);
+  const board = el("g", { class: "board", tabindex: 0, role: "link", "aria-label": "Ticketbord" }, layerCards);
   [bx + 60, bx + bw - 60].forEach(px => el("rect", { x: px - 3, y: by + bh, width: 6, height: 14, fill: "#5a4a3d" }, board));
   el("rect", { x: bx, y: by, width: bw, height: bh, rx: 12, class: "card-bg", stroke: "#f0a04b" }, board);
-  svgText(board, bx + 16, by + 22, "DOELSTELLING", "svg-sub", "start", "#f0a04b").setAttribute("letter-spacing", "1.2");
-  svgText(board, bx + bw - 16, by + 22, s.dagenTotDeadline === null ? "geen deadline" : `nog ${s.dagenTotDeadline} dagen`, "svg-sub", "end");
-  const titel = doel.naam || "Nog in te stellen door de Raad";
-  svgText(board, bx + 16, by + 44, titel.length > 30 ? titel.slice(0, 29) + "…" : titel, "board-title", "start", doel.naam ? null : "#a8998a");
-  document.getElementById("doelLine").textContent = (doel.naam ? `Doelstelling: ${doel.naam}` : "Doelstelling nog niet ingesteld · klik op het bord")
-    + ` · agents: ${instellingen.modus === "claude" ? "Claude" : "mock"} · ${LIVE.gedeeld ? "gedeeld opgeslagen" : "alleen in deze browser"}`;
+  const tOpen = openTickets(), tTaken = tasks.filter(t => tOpen.some(o => o.id === t.opdracht)), tKlaar = tTaken.filter(t => t.status === "klaar").length;
+  const pct = tTaken.length ? Math.round(tKlaar / tTaken.length * 100) : 0;
+  svgText(board, bx + 16, by + 22, "TICKETS", "svg-sub", "start", "#f0a04b").setAttribute("letter-spacing", "1.2");
+  svgText(board, bx + bw - 16, by + 22, `${raadsopdrachten.filter(o => opdrachtStatus(o) === "klaar").length} klaar`, "svg-sub", "end");
+  const titel = tOpen.length ? `${tOpen[tOpen.length - 1].id} · ${tOpen[tOpen.length - 1].titel}` : "Geen open tickets";
+  svgText(board, bx + 16, by + 44, titel.length > 30 ? titel.slice(0, 29) + "…" : titel, "board-title", "start", tOpen.length ? null : "#a8998a");
+  document.getElementById("doelLine").textContent = `${tOpen.length} open ticket${tOpen.length === 1 ? "" : "s"}${s.wachtOpRaad ? ` · ${s.wachtOpRaad} wacht op jou` : ""} · agents: ${instellingen.modus === "claude" ? "Claude" : "mock"} · ${LIVE.gedeeld ? "gedeeld opgeslagen" : "alleen in deze browser"}`;
   el("rect", { x: bx + 16, y: by + 56, width: bw - 82, height: 9, rx: 4.5, fill: "#3a322b" }, board);
-  el("rect", { x: bx + 16, y: by + 56, width: Math.max(4, (bw - 82) * s.voortgang / 100), height: 9, rx: 4.5, fill: "#f0a04b" }, board);
-  svgText(board, bx + bw - 16, by + 66, `${s.voortgang}%`, "board-kpi", "end", "#f0a04b");
-  BORD_KPIS.map(id => kpiById[id]).forEach((k, i) => {
+  el("rect", { x: bx + 16, y: by + 56, width: Math.max(4, (bw - 82) * pct / 100), height: 9, rx: 4.5, fill: "#f0a04b" }, board);
+  svgText(board, bx + bw - 16, by + 66, `${pct}%`, "board-kpi", "end", "#f0a04b");
+  [[String(tOpen.length), "open tickets", "#f2e9df"], [String(s.wachtOpRaad), "wacht op Raad", s.wachtOpRaad ? "#ef5d5d" : "#7ccf8a"], [String(tTaken.filter(t => t.afkeuringen && t.status !== "klaar").length), "in feedbackronde", "#f2e9df"]].forEach(([w, l, c], i) => {
     const cx = bx + 16 + i * ((bw - 32) / 3);
-    const color = { ok: "#7ccf8a", warn: "#ef5d5d", neutral: "#f2e9df" }[k.stand(s)];
-    svgText(board, cx, by + 98, k.waarde(s), "board-kpi", "start", color);
-    svgText(board, cx, by + 114, k.kort || k.label, "svg-sub", "start");
+    svgText(board, cx, by + 98, w, "board-kpi", "start", c);
+    svgText(board, cx, by + 114, l, "svg-sub", "start");
   });
-  svgText(board, bx + 16, by + 131, doel.naam ? "Klik voor alle KPI's" : "Klik om de doelstelling in te stellen", "svg-sub", "start").setAttribute("font-size", "9.5");
-  onActivate(board, () => go("oppertet"));
+  svgText(board, bx + 16, by + 131, "Klik voor alle tickets", "svg-sub", "start").setAttribute("font-size", "9.5");
+  onActivate(board, () => go("tickets"));
 
   // afdelingseilanden met compacte statuskaart
   DEPTS.forEach(d => {
@@ -1361,6 +1362,7 @@ function route() {
   else if (h === "kantine") page = kantinePage();
   else if (h === "vergaderzaal") page = vergaderzaalPage();
   else if (h === "rooster") page = roosterPage();
+  else if (h === "tickets") page = ticketsPage();
   if (!page) { go("kantoor"); return; }
   viewOffice.hidden = true; viewPage.hidden = false;
   renderPage(page);
@@ -1606,25 +1608,21 @@ function wireMsgs(root) {
 
 /* ---------- Afdelingspagina ---------- */
 function deptBoard(id) {
-  const d = deptById[id], b = deptDoel(id), dt = tasks.filter(t => t.dept === id), hl = hlOf(id);
-  const prog = Math.round(deptProgress(id) * 100), dagen = dagenTot(b.deadline);
-  const kpis = [...(AFDELING_KAART_KPIS[id] || []).map(l => ({ label: l, waarde: "–", doel: "nader te bepalen" })),
-    ...AFDELING_KPIS.map(k => ({ label: k.label, waarde: k.waarde(dt), doel: k.doel, stand: k.stand ? k.stand(dt) : "neutral" }))];
-  return `<section class="goalboard dept" style="--dc:${d.kleur}" aria-label="Voortgangsbord ${esc(d.naam)}">
-      <div class="row" style="justify-content:space-between"><span class="eyebrow">Doel ${esc(d.naam)}</span><span class="i-meta">${b.deadline ? `deadline ${fmtDate(b.deadline)} · nog ${dagen} dagen` : "geen deadline"}</span></div>
-      <h3>${b.doel ? esc(b.doel) : `<span style="color:var(--muted)">Nog geen afdelingsdoel${doel.naam ? "" : ": eerst stelt de Raad de doelstelling in"}</span>`}</h3>
+  const d = deptById[id], dt = tasks.filter(t => t.dept === id);
+  const kpis = AFDELING_KPIS.map(k => ({ label: k.label, waarde: k.waarde(dt), doel: k.doel, stand: k.stand ? k.stand(dt) : "neutral" }));
+  const mijn = raadsopdrachten.filter(o => o.afdelingen.includes(id) && opdrachtStatus(o) !== "ingetrokken").slice().reverse();
+  const open = mijn.filter(o => opdrachtStatus(o) !== "klaar");
+  return `<section class="goalboard dept" style="--dc:${d.kleur}" aria-label="Tickets ${esc(d.naam)}">
+      <div class="row" style="justify-content:space-between"><span class="eyebrow">Tickets ${esc(d.naam)}</span><span class="i-meta">${open.length} open · ${mijn.length - open.length} klaar</span></div>
       <p class="lead" style="margin:0">${esc(d.missie)}</p>
-      <div class="goal-progress"><span class="pct">${prog}%</span><div class="bar"><i style="width:${prog}%;background:${d.kleur}"></i></div></div>
       <div class="board-cols">
-        <div><h4>Hoofdlijnen <span class="i-meta" style="text-transform:none;letter-spacing:0">· ${hl.filter(h => h.status === "klaar").length}/${hl.length} klaar</span></h4>
-          ${hl.length ? `<ul class="hl">${hl.map((h, i) => `<li><span>${esc(h.titel)}</span><span class="hl-act"><span class="st ${h.status === "open" ? "muted" : h.status}">${h.status}</span></span>
-            <div class="bar"><i style="width:${HL_WAARDE[h.status] * 100}%;background:${d.kleur}"></i></div></li>`).join("")}</ul>`
-            : `<p class="i-meta" style="margin:0">Nog geen hoofdlijnen. De Hoofdtet zet ze neer zodra de Oppertet het afdelingsdoel heeft uitgezet.</p>`}
-</div>
+        <div><h4>Tickets</h4>${mijn.length ? `<ul class="hl">${mijn.map(o => { const st = dt.filter(t => t.opdracht === o.id), k = st.filter(t => t.status === "klaar").length;
+          return `<li><button class="linkrow" data-go="tickets"><b>${esc(o.id)}</b> ${esc(kort(o.titel, 60))}</button><span class="st" style="color:${STATUS_KLEUR_OPDR[opdrachtStatus(o)]}">${esc(opdrachtStatus(o))}</span>
+            <div class="bar"><i style="width:${st.length ? k / st.length * 100 : 0}%;background:${d.kleur}"></i></div></li>`; }).join("")}</ul>`
+          : `<p class="i-meta" style="margin:0">Nog geen tickets voor ${esc(d.naam)}.</p>`}</div>
         <div><h4>KPI's</h4><div class="kpis">${kpis.map(k => `<div class="kpi ${k.stand || "neutral"}"><b>${esc(k.waarde)}</b><span>${esc(k.label)}</span><small>doel: ${esc(k.doel)}</small></div>`).join("")}</div></div>
       </div>
-      <div class="row"><span class="i-meta">Dit bord is alleen-lezen: de Oppertet stuurt de Hoofdtet aan.</span><button class="primary" data-vraag="${id}" style="margin-left:auto">Vraag de Oppertet hierover</button></div>
-      <p class="i-meta" style="margin:0">Voortgang = hoofdlijnen (klaar telt volledig, bezig half). KPI's met – worden gemeten zodra de agents draaien.</p>
+      <div class="row"><span class="i-meta">Alleen-lezen: de Oppertet stuurt via tickets, de Hoofdtet verdeelt ze over zijn Tets.</span><button class="primary" data-vraag="${id}" style="margin-left:auto">Vraag de Oppertet hierover</button></div>
     </section>`;
 }
 function wireDeptBoard(id, root) {
@@ -1825,10 +1823,10 @@ function oppertetPage() {
   const open = m => m.status === "bij Oppertet" || m.status === "geëscaleerd";
   return {
     eyebrow: "Midden van het kantoor", titel: "Oppertet & Brein", kleur: "var(--accent)",
-    top: goalBoard() + organigramHtml() + livePanel(),
+    top: ticketBord() + organigramHtml() + livePanel(),
     wire: root => { wireGoal(root); wireLive(root); root.querySelectorAll(".org-knoop").forEach(n => n.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(n.dataset.go); } })); },
     tiles: [
-      { key: "raadsopdrachten", icon: "doel", titel: "Raadsopdrachten", preview: `<span class="big">${raadsopdrachten.filter(o => opdrachtStatus(o) !== "klaar").length}</span><span class="sub">open · ${raadsopdrachten.map(o => o.id).slice(-3).join(", ") || "nog geen"}</span>`, sheet: raadsopdrachtenSheet },
+      { key: "tickets", icon: "doel", titel: "Tickets", preview: `<span class="big">${openTickets().length}</span><span class="sub">open · ${tasks.filter(t => t.approval && t.status !== "klaar").length} wacht op jou</span>`, sheet: () => ticketBord() },
       { key: "raadsbrief", icon: "berichten", titel: "Raadsbrief", preview: `<span class="sub">Dagelijks ${RAADSBRIEF.tijd} in ${esc(RAAD_MAIL)}</span>`, sheet: raadsbriefSheet },
       { key: "rooster", icon: "geschiedenis", titel: "Weekrooster 24/7", preview: `<span class="sub">Dagelijks MT 08:00 · deeloverleg 15:00–16:30</span>`, sheet: () => `<p style="margin-top:0">Per afdeling vaste blokken voor uitvoering, onderzoek, overleg, onderhoud, kantine en rust; Ops en Risk draaien 24/7 met roulerende dienst.</p><button class="primary" data-go="rooster">Open het rooster</button>` },
       { key: "taken", icon: "taken", titel: "Alle taken", preview: statusChips(tasks), sheet: () => tasksSheet(() => true, { chooseDept: true, showDept: true }), wire: r => wireTasks(r) },
@@ -2638,9 +2636,9 @@ function kiesControl(dept, toets) {
 }
 const openHoofdlijnen = id => hlOf(id).map((h, i) => i).filter(i => !tasks.some(t => t.dept === id && t.hl === i));
 function contract(t) {
+  const o = t.opdracht ? ticketBy(t.opdracht) : null;
   return [`# Taakcontract ${t.id}`, `Opdracht: ${t.title}`, "Acceptatiecriteria:", ...(t.criteria || []).map(c => `- ${c}`),
-    `Budget: ${(t.budget || 2).toFixed(2)} euro`, `Deadline: ${deptDoel(t.dept).deadline || doel.deadline || "geen"}`,
-    `Doelstelling: ${doel.naam || "-"}`, `Afdelingsdoel: ${deptDoel(t.dept).doel || "-"}`].join("\n");
+    `Budget: ${(t.budget || 2).toFixed(2)} euro`, `Deadline: ${(o && o.deadline) || "geen"}`, o ? `Ticket: ${o.id} (${o.titel})` : ""].filter(Boolean).join("\n");
 }
 const kort = (s, n = 70) => (s = String(s || "")).length > n ? s.slice(0, n - 1) + "…" : s;
 
@@ -2751,7 +2749,7 @@ async function voerUit(id) {
   while (true) {
     t = T(); if (!t) return;
     const lessen = rangorde(brein.filter(b => ["les", "incident", "besluit", undefined].includes(b.soort) && hoortBij(b, t.dept) && b.taak !== t.id && magZien(t.agent, b))).slice(0, 5).map(b => `- ${alsRegel(b)}`);
-    const bericht = [contract(t), lessen.length ? "# Lessen uit het Brein\n" + lessen.join("\n") : "", ...breinContext(t.agent, [t.title, ...(t.criteria || [])].join(" ")),
+    const bericht = [contract(t), ticketContext(t), lessen.length ? "# Lessen uit het Brein\n" + lessen.join("\n") : "", ...breinContext(t.agent, [t.title, ...(t.criteria || [])].join(" ")),
       t.bevindingen && t.bevindingen.length ? "# Bevindingen van de vorige beoordeling\n" + t.bevindingen.map(b => `- ${b}`).join("\n") : "",
       "# Werkwijze\n" + PROTOCOLS.tet].filter(Boolean).join("\n\n");
     const res = String(await vraagAgent(t.agent, bericht, { doel: "uitvoeren", taak: t.id, opdracht: t.title, criteria: t.criteria, label: "werkt aan: " + kort(t.title), klaarLabel: "leverde op: " + kort(t.title) }));
@@ -3054,8 +3052,8 @@ function livePanel() {
         <span class="i-meta" style="margin:0">${instellingen.modus === "claude" ? "Agents denken echt, op jouw Claude-gebruik." : "Gratis en voorspelbaar, zonder echte analyse."}</span></div>
       <div class="chips" id="liveAfd">${DEPTS.map(d => `<label class="chipcheck"><input type="checkbox" value="${d.id}" ${d.id === CONTROLELIJN ? "" : "checked"}><i class="dot" style="background:${d.kleur};margin:0"></i>${esc(d.naam)}</label>`).join("")}</div>
       <div class="row">
-        <button class="primary" id="liveKeten" ${!doel.naam || LIVE.run || LIVE.alleenLezen ? "disabled" : ""}>Draai de keten nu</button>
-        <span class="i-meta" style="margin:0">${doel.naam ? "Oppertet verdeelt, Hoofdtets maken taken, Tets voeren uit, Control Tets toetsen." : "Stel eerst een doelstelling in."}</span>
+        <button class="primary" id="liveKeten" ${!openTickets().length || LIVE.run || LIVE.alleenLezen ? "disabled" : ""}>Werk open tickets af</button>
+        <span class="i-meta" style="margin:0">${openTickets().length ? "Hoofdtets verdelen, Tets voeren uit, Control Tets toetsen en sturen terug met feedback." : "Geen open tickets. Zet werk uit via de chat."}</span>
       </div>
     </section>`;
 }
@@ -3066,9 +3064,10 @@ function wireLive(root) {
   });
   const k = root.querySelector("#liveKeten");
   if (k) k.onclick = () => {
-    const afd = [...root.querySelectorAll("#liveAfd input:checked")].map(i => i.value);
-    if (!afd.length) { melding("Kies minstens één afdeling."); return; }
-    metRun("Keten draait", () => draaiKeten(afd));
+    const afd = new Set([...root.querySelectorAll("#liveAfd input:checked")].map(i => i.value));
+    const ts = openTickets().filter(o => o.afdelingen.some(d => afd.has(d)));
+    if (!ts.length) { melding("Geen open tickets voor deze afdelingen."); return; }
+    ts.forEach(o => startTicket(o.id));
   };
 }
 function verslagenSheet() {
@@ -3162,7 +3161,12 @@ async function schrijfRaadDoc(col, doc) {
 }
 /* Chat en opdrachten zijn alleen-toevoegen (status van opdrachten wordt bijgewerkt). */
 function verbindRaad(db) {
-  const merge = (lijst, docs) => { const m = new Map(lijst.map(x => [x.id, x])); docs.forEach(d => { const o = m.get(d.id); if (!o || (d.bijgewerkt || 0) >= (o.bijgewerkt || 0)) m.set(d.id, d); }); return [...m.values()].sort((a, b) => (a.created || 0) - (b.created || 0)); };
+  /* De gedeelde opslag is de waarheid: wat daar verwijderd is, verdwijnt ook hier; alleen net lokaal geschreven items blijven staan. */
+  const merge = (lijst, docs) => {
+    const m = new Map(docs.map(d => [d.id, d]));
+    lijst.forEach(x => { const d = m.get(x.id); if (d ? (x.bijgewerkt || 0) > (d.bijgewerkt || 0) : Date.now() - (x.bijgewerkt || x.created || 0) < 15000) m.set(x.id, x); });
+    return [...m.values()].sort((a, b) => (a.created || 0) - (b.created || 0));
+  };
   db.collection("raadschat").onSnapshot(s => { raadschat = merge(raadschat, s.docs.filter(d => d.exists).map(d => ({ id: d.id, ...JSON.parse(JSON.stringify(d.data())) }))); bewaarRaad(); renderChat(); }, () => {});
   db.collection("raadsopdrachten").onSnapshot(s => {
     LIVE.raadGeladen = true;
@@ -3344,14 +3348,17 @@ async function exporteerRoosterIcs() {
 /* ---------- Raadsopdrachten ---------- */
 function opdrachtTaken(o) { return tasks.filter(t => t.opdracht === o.id); }
 function opdrachtStatus(o) {
+  if (o.status === "ingetrokken") return "ingetrokken";
   const t = opdrachtTaken(o);
-  if (!t.length) return o.status || "nieuw";
-  if (t.every(x => x.status === "klaar")) return "klaar";
+  if (o.status === "klaar" || (t.length && t.every(x => x.status === "klaar"))) return "klaar";
+  if (!t.length) return "nieuw";
   if (t.some(x => x.approval && x.status !== "klaar")) return "wacht op de Raad";
+  if (t.some(x => !x.agent)) return "bij de Hoofdtets";
+  if (t.some(x => x.afkeuringen && x.status !== "klaar")) return "feedbackronde";
   if (t.some(x => x.status === "bezig" || x.resultaat)) return "in uitvoering";
   return "uitgezet";
 }
-const STATUS_KLEUR_OPDR = { nieuw: "var(--muted)", uitgezet: "var(--next)", "in uitvoering": "var(--busy)", "wacht op de Raad": "var(--warn)", klaar: "var(--done)", geblokkeerd: "var(--warn)" };
+const STATUS_KLEUR_OPDR = { nieuw: "var(--muted)", ingetrokken: "var(--muted)", "bij de Hoofdtets": "var(--next)", feedbackronde: "var(--busy)", uitgezet: "var(--next)", "in uitvoering": "var(--busy)", "wacht op de Raad": "var(--warn)", klaar: "var(--done)", geblokkeerd: "var(--warn)" };
 function volgendNummer() { const n = raadsopdrachten.map(o => +String(o.id).replace(/\D/g, "") || 0); return "D-" + String(Math.max(0, ...n) + 1).padStart(3, "0"); }
 const DEELTAAK = { ops: "uitvoerbaarheid en uitvoering", fin: "kosten, budget en financiële onderbouwing", mkt: "doelgroep, boodschap en positionering", rnd: "onderzoek, technologie en experimenten", hr: "bezetting, rollen en cultuur", risk: "toets op risico's, privacy en grenzen", prod: "propositie en samenhang in het eindproduct" };
 /* De Oppertet zet uit; de Assistent-Oppertet vertaalt door naar één taak per afdeling (Hoofdtet verdeelt). */
@@ -3359,8 +3366,7 @@ async function zetUit(v, bron = "chat") {
   if (LIVE.alleenLezen) { melding("Je kunt dit kantoor bekijken, maar niet wijzigen."); return null; }
   const id = v.id || volgendNummer();
   const assistent = ASSISTENT();
-  const o = { id, titel: v.titel, doel: v.doel || "", afdelingen: (v.afdelingen || []).filter(d => deptById[d]), deadline: v.deadline || "", waarom: v.waarom || "", goedkeuring: !!v.goedkeuring_raad, soort: v.soort || "opdracht", eigenaar: assistent ? assistent.id : "oppertet", bron, status: "uitgezet", created: Date.now() };
-  if (o.soort === "doelstelling") { doel = { naam: o.titel, omschrijving: o.doel, deadline: o.deadline, bijgewerkt: Date.now() }; logEvent("raad.doelstelling", "raad", { titel: o.titel }); }
+  const o = { id, titel: v.titel, doel: v.doel || "", afdelingen: (v.afdelingen || []).filter(d => deptById[d]), deadline: v.deadline || "", waarom: v.waarom || "", goedkeuring: !!v.goedkeuring_raad, soort: "ticket", eigenaar: assistent ? assistent.id : "oppertet", bron, status: "uitgezet", created: Date.now() };
   const reg = { id: "reg-" + id, soort: "register", tekst: `${id} · ${o.titel}`, eigenaar: o.eigenaar, deadline: o.deadline, status: "op_schema", agent: o.eigenaar, created: Date.now(), labels: [] };
   brein.push(reg);
   const deeltaken = v.taken && v.taken.length ? v.taken : o.afdelingen.map(d => ({ dept: d, titel: `${id} · ${o.titel} – ${DEELTAAK[d]}` }));
@@ -3418,48 +3424,68 @@ function statusSamenvatting() {
 }
 function oppertetContext() {
   const open = tasks.filter(t => t.approval && t.status !== "klaar");
-  const reg = brein.filter(b => b.soort === "register" && b.status !== "afgerond").slice(-10);
   const nu = new Date();
-  return `## Context op ${nu.toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" })}
-Doelstelling: ${doel.naam ? `${doel.naam} (${doel.omschrijving || "geen omschrijving"}; deadline ${doel.deadline || "geen"})` : "nog geen"}
+  const tk = raadsopdrachten.filter(o => opdrachtStatus(o) !== "ingetrokken").slice(-12).map(o => {
+    const t = opdrachtTaken(o);
+    return `- ${o.id} "${o.titel}" (${opdrachtStatus(o)}, deadline ${o.deadline || "geen"})` + t.map(x => `\n    · ${x.id} [${deptById[x.dept].naam}${x.agent ? ", " + (agentById[x.agent]?.naam || x.agent) : ", Hoofdtet verdeelt"}] ${x.approval ? "wacht op Raad" : x.status}${x.afkeuringen ? `, ${x.afkeuringen}× teruggestuurd` : ""}${x.bevindingen && x.bevindingen.length && x.status !== "klaar" ? `, feedback: ${kort(x.bevindingen.join("; "), 140)}` : ""}${x.status === "klaar" && x.resultaat ? `, resultaat: ${kort(blokVan(x.resultaat, "Resultaat") || x.resultaat, 160)}` : ""}`).join("");
+  }).join("\n");
+  return `## Stand op ${nu.toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" })}
 Assistent-Oppertet: ${ASSISTENT() ? "ingezet" : "gepland (jij vertaalt zelf door)"}
 Afdelingen (id: naam): ${DEPTS.map(d => d.id + ": " + d.naam).join(", ")}
-Status per afdeling:
-${statusSamenvatting()}
-Wacht op goedkeuring van de Raad (${open.length}): ${open.slice(0, 8).map(t => `${t.title} [${deptById[t.dept].naam}]`).join("; ") || "niets"}
-Raadsopdrachten: ${raadsopdrachten.map(o => `${o.id} ${o.titel} (${opdrachtStatus(o)})`).join("; ") || "nog geen"}
-Besluitenregister open: ${reg.map(r => r.tekst + " · " + (r.status || "open")).join("; ") || "leeg"}
+Agents draaien in modus: ${instellingen.modus === "claude" ? "Claude (echt)" : "mock (proefdraaien, geen echte analyse)"}
+Tickets:
+${tk || "- nog geen"}
+Wacht op akkoord van de Raad (${open.length}): ${open.map(t => `${t.id} "${kort(t.title, 90)}" [${deptById[t.dept].naam}]${t.raadsvraag ? " vraag: " + kort(t.raadsvraag, 140) : ""}`).join("; ") || "niets"}
+Andere open taken zonder ticket: ${tasks.filter(t => !t.opdracht && t.status !== "klaar").length}
 Rooster nu: ${DEPTS.map(d => d.naam + " " + (blokkenVoor(d.id, nu).find(x => { const mi = nu.getHours() * 60 + nu.getMinutes(); return mi >= x.van && mi < x.tot; }) || {}).soort).join(", ")}
-Vandaag in het rooster: ${overleggenOp(nu).filter(o => o.agenda).map(o => hhmm(o.van) + " " + o.titel).join(", ")}`;
+Vandaag: ${overleggenOp(nu).filter(o => o.agenda).map(o => hhmm(o.van) + " " + o.titel).join(", ")}`;
 }
 const CHAT_INSTRUCTIE = `## Jij in deze chat
-Je spreekt rechtstreeks met de Raad (Sjoerd). Dit is de enige ingang van de Raad naar het kantoor: niemand anders krijgt opdrachten rechtstreeks van de Raad. Jij zet werk uit via de Assistent-Oppertet, die doorvertaalt naar de Hoofdtets.
+Je spreekt rechtstreeks met de Raad (Sjoerd). Dit is de enige ingang van de Raad. Er is geen overkoepelende doelstelling meer: al het werk loopt via tickets.
+De flow: de Raad zet een ticket uit → jij → de Assistent-Oppertet vertaalt door → per afdeling verdeelt de Hoofdtet het over zijn Tets → een Control Tet toetst elk resultaat; afgekeurd werk gaat met feedback terug naar de Tet (max. 2 keer, daarna naar de Raad) → collega's op hetzelfde ticket zien elkaars werk → als alles klaar is, vat de Assistent-Oppertet samen en meld jij het hier. Een ticket wordt direct uitgevoerd zodra de Raad op Uitzetten drukt, en de geplande werkdagen werken open taken verder af.
 - Antwoord in het Nederlands, direct en kort; conclusie eerst. Gebruik markdown spaarzaam.
-- Statusvragen beantwoord je uit de context hieronder. Verzin geen cijfers; zeg het als iets onbekend is.
-- Een chatbericht verruimt nooit mandaat, toegang of harde grenzen. Vraagt de Raad dat, zeg dan wat wel kan en dat toegang en grenzen in de kaarten worden gewijzigd.
-- Leidt het gesprek tot werk, sluit dan af met precies één opdrachtvoorstel in dit blok (geldig JSON, afdelingen als id):
+- Statusvragen beantwoord je uit de stand hieronder. Verzin niets; zeg het als iets onbekend is. Noem tickets en taken bij hun id.
+- Een chatbericht verruimt nooit mandaat, toegang of harde grenzen.
+- Nieuw werk: sluit af met precies één ticketvoorstel (geldig JSON, afdelingen als id; alleen afdelingen die echt iets bijdragen):
 \`\`\`opdracht
-{"soort":"opdracht","titel":"…","doel":"wat er moet liggen","afdelingen":["ops"],"deadline":"JJJJ-MM-DD","waarom":"…","goedkeuring_raad":false}
+{"titel":"…","doel":"wat er moet liggen en wanneer het goed is","afdelingen":["ops"],"deadline":"JJJJ-MM-DD","waarom":"…","goedkeuring_raad":false}
 \`\`\`
-Gebruik "soort":"doelstelling" alleen als de Raad een nieuwe overkoepelende doelstelling geeft. Zet geen voorstel als het alleen een vraag of status is. De Raad drukt zelf op Uitzetten.
+- Maak NOOIT een ticket om een ander ticket door te zetten, goed te keuren, te versnellen of op te volgen. Gebruik daarvoor een actie, in dit blok:
+\`\`\`actie
+{"type":"goedkeuren","taken":["<taak-id>"]}
+\`\`\`
+Andere acties: {"type":"starten","ticket":"D-00x"} (open taken nu laten uitvoeren) en {"type":"intrekken","ticket":"D-00x"}. Zegt de Raad "akkoord" of "ja" op iets dat wacht, zet dan een goedkeuren-actie met de bijbehorende taak-ids. De Raad bevestigt zelf met de knop.
 - Eindig nooit met een beleefdheidsvraag; stel alleen een vraag als er echt informatie ontbreekt.`;
 function haalVoorstel(tekst) {
-  const r = /```opdracht\s*([\s\S]*?)```/i.exec(tekst || "");
-  if (!r) return { schoon: (tekst || "").replace(/```opdracht[\s\S]*$/i, "").trim(), voorstel: null };
-  let v = null;
-  try { v = JSON.parse(r[1]); } catch (e) {}
-  if (v && v.titel) {
-    v = { soort: v.soort === "doelstelling" ? "doelstelling" : "opdracht", titel: String(v.titel).slice(0, 140), doel: String(v.doel || ""), afdelingen: (Array.isArray(v.afdelingen) ? v.afdelingen : []).filter(d => deptById[d]), deadline: /^\d{4}-\d{2}-\d{2}$/.test(v.deadline || "") ? v.deadline : "", waarom: String(v.waarom || ""), goedkeuring_raad: !!v.goedkeuring_raad };
-    if (!v.afdelingen.length && v.soort === "opdracht") v.afdelingen = ["ops"];
-  } else v = null;
-  return { schoon: tekst.replace(r[0], "").trim(), voorstel: v };
+  tekst = tekst || "";
+  let voorstel = null, actie = null;
+  const r = /```opdracht\s*([\s\S]*?)```/i.exec(tekst);
+  if (r) {
+    let v = null; try { v = JSON.parse(r[1]); } catch (e) {}
+    if (v && v.titel) {
+      voorstel = { soort: "ticket", titel: String(v.titel).slice(0, 140), doel: String(v.doel || ""), afdelingen: (Array.isArray(v.afdelingen) ? v.afdelingen : []).filter(d => deptById[d]), deadline: /^\d{4}-\d{2}-\d{2}$/.test(v.deadline || "") ? v.deadline : "", waarom: String(v.waarom || ""), goedkeuring_raad: !!v.goedkeuring_raad };
+      if (!voorstel.afdelingen.length) voorstel.afdelingen = ["ops"];
+    }
+    tekst = tekst.replace(r[0], "");
+  }
+  const a = /```actie\s*([\s\S]*?)```/i.exec(tekst);
+  if (a) {
+    let v = null; try { v = JSON.parse(a[1]); } catch (e) {}
+    if (v && v.type === "goedkeuren") { const ids = (v.taken || []).filter(id => tasks.some(t => t.id === id && t.approval && t.status !== "klaar")); if (ids.length) actie = { type: "goedkeuren", taken: ids }; }
+    else if (v && ["starten", "intrekken"].includes(v.type) && ticketBy(v.ticket)) actie = { type: v.type, ticket: v.ticket };
+    tekst = tekst.replace(a[0], "");
+  }
+  return { schoon: tekst.replace(/```(opdracht|actie)[\s\S]*$/i, "").trim(), voorstel, actie };
 }
+const AKKOORD = /^\s*(akkoord|ja|goedgekeurd|goedkeuren|ok(é|e|ay)?|prima|doen|go)\b/i;
 function mockAntwoord(vraag) {
   const q = vraag.toLowerCase();
-  const geraakt = DEPTS.filter(d => q.includes(d.naam.toLowerCase()) || q.includes(d.id)).map(d => d.id);
-  if (/status|hoe staat|stand|overzicht/.test(q)) return `**Stand van zaken**\n${statusSamenvatting()}\n\nOpen raadsopdrachten: ${raadsopdrachten.filter(o => opdrachtStatus(o) !== "klaar").map(o => o.id + " " + o.titel).join(", ") || "geen"}.`;
+  const wacht = tasks.filter(t => t.approval && t.status !== "klaar");
+  if (AKKOORD.test(vraag) && wacht.length) return `Dit wacht op jouw akkoord. Bevestig met de knop.\n\n\`\`\`actie\n${JSON.stringify({ type: "goedkeuren", taken: wacht.map(t => t.id) })}\n\`\`\``;
+  if (/status|hoe staat|stand|overzicht|wacht|waarom/.test(q)) return `**Stand van zaken**\n${raadsopdrachten.filter(o => opdrachtStatus(o) !== "ingetrokken").map(o => `- ${o.id} ${o.titel}: ${opdrachtStatus(o)}`).join("\n") || "- Nog geen tickets."}\n\n${wacht.length ? `${wacht.length} taak/taken wachten op jouw akkoord.` : "Niets wacht op jou."}${instellingen.modus !== "claude" ? "\n\nDe agents draaien in mockmodus: ze proefdraaien zonder echte analyse." : ""}`;
+  const geraakt = DEPTS.filter(d => q.includes(d.naam.toLowerCase()) || new RegExp("\\b" + d.id + "\\b").test(q)).map(d => d.id);
   const titel = vraag.replace(/^(kun je|wil je|graag|zorg dat|laat)\s+/i, "").split(/[.?!\n]/)[0].slice(0, 90);
-  return `Helder. Ik zet dit uit via de Assistent-Oppertet${geraakt.length ? " bij " + geraakt.map(d => deptById[d].naam).join(" en ") : " bij Operations"}.\n\n(Mockmodus: Claude is in deze weergave niet beschikbaar, dus dit voorstel is automatisch opgesteld.)\n\n\`\`\`opdracht\n${JSON.stringify({ soort: "opdracht", titel: titel.charAt(0).toUpperCase() + titel.slice(1), doel: vraag, afdelingen: geraakt.length ? geraakt : ["ops"], deadline: deadlineOver(7), waarom: "Op verzoek van de Raad", goedkeuring_raad: false })}\n\`\`\``;
+  return `Ik zet dit uit via de Assistent-Oppertet${geraakt.length ? " bij " + geraakt.map(d => deptById[d].naam).join(" en ") : " bij Operations"}.\n\n(Mockmodus: Claude is in deze weergave niet beschikbaar, dus dit voorstel is automatisch opgesteld.)\n\n\`\`\`opdracht\n${JSON.stringify({ titel: titel.charAt(0).toUpperCase() + titel.slice(1), doel: vraag, afdelingen: geraakt.length ? geraakt : ["ops"], deadline: deadlineOver(7), waarom: "Op verzoek van de Raad", goedkeuring_raad: false })}\n\`\`\``;
 }
 async function stuurChat(tekst) {
   tekst = tekst.trim();
@@ -3486,8 +3512,11 @@ async function stuurChat(tekst) {
     antwoord = e && e.code === "cancelled" ? "_Gestopt._" : (e && FOUTEN[e.code]) || "Ik kon nu geen antwoord geven. Probeer het zo opnieuw.";
     if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) LIVE.sample = null;
   }
-  const { schoon, voorstel } = haalVoorstel(antwoord);
-  const a = { id: "c" + Date.now() + "o", rol: "oppertet", tekst: schoon || (voorstel ? "Voorstel:" : "…"), voorstel, created: Date.now() };
+  let { schoon, voorstel, actie } = haalVoorstel(antwoord);
+  const wachtend = tasks.filter(t => t.approval && t.status !== "klaar");
+  if (!actie && AKKOORD.test(tekst) && wachtend.length) actie = { type: "goedkeuren", taken: wachtend.map(t => t.id) };   // "akkoord" wordt altijd een knop
+  if (actie && voorstel) voorstel = null;   // geen ticket om een ander ticket door te zetten
+  const a = { id: "c" + Date.now() + "o", rol: "oppertet", tekst: schoon || (voorstel ? "Voorstel:" : actie ? "Bevestig hieronder." : "…"), voorstel, actie, created: Date.now() };
   raadschat.push(a); schrijfRaadDoc("raadschat", a);
   CHAT.bezig = false; CHAT.ctl = null; CHAT.streamTekst = "";
   renderChat();
@@ -3500,16 +3529,29 @@ function md(t) {
 function voorstelKaart(c) {
   const v = c.voorstel, uitgezet = c.uitgezet ? raadsopdrachten.find(o => o.id === c.uitgezet) : null;
   const st = uitgezet ? opdrachtStatus(uitgezet) : null;
-  return `<div class="ch-kaart"><div class="ch-k-kop"><span>${v.soort === "doelstelling" ? "Nieuwe doelstelling" : "Opdrachtvoorstel"}</span>${uitgezet ? `<b>${esc(uitgezet.id)}</b>` : ""}</div>
+  return `<div class="ch-kaart"><div class="ch-k-kop"><span>Ticketvoorstel</span>${uitgezet ? `<b>${esc(uitgezet.id)}</b>` : ""}</div>
     <div class="ch-k-titel">${esc(v.titel)}</div>${v.doel ? `<div class="ch-k-meta">${esc(v.doel)}</div>` : ""}
     <div class="ch-k-meta">${v.afdelingen.map(d => `<span class="chip" style="border-color:${deptById[d].kleur}">${esc(deptById[d].naam)}</span>`).join(" ")} ${v.deadline ? "· deadline " + fmtDate(v.deadline) : ""}${v.goedkeuring_raad ? " · jouw akkoord nodig op het resultaat" : ""}</div>
     ${v.waarom ? `<div class="ch-k-meta"><i>Waarom:</i> ${esc(v.waarom)}</div>` : ""}
     ${uitgezet ? `<div class="ch-status"><i class="dot" style="background:${STATUS_KLEUR_OPDR[st]}"></i>${esc(st)} · eigenaar ${esc(agentById[uitgezet.eigenaar]?.naam || "Oppertet")} · ${opdrachtTaken(uitgezet).filter(t => t.status === "klaar").length}/${opdrachtTaken(uitgezet).length} taken klaar</div>`
       : `<div class="row" style="gap:6px;margin-top:8px"><button class="primary" data-uit="${c.id}">Uitzetten</button><button class="chip" data-pas="${c.id}">Aanpassen</button></div>`}</div>`;
 }
+function actieKaart(c) {
+  const a = c.actie;
+  if (a.type === "goedkeuren") {
+    const lijst = a.taken.map(id => tasks.find(t => t.id === id)).filter(Boolean);
+    const nogOpen = lijst.filter(t => t.approval && t.status !== "klaar");
+    return `<div class="ch-kaart"><div class="ch-k-kop"><span>Akkoord van de Raad</span></div>${lijst.map(t => `<div class="ch-k-meta">${t.approval && t.status !== "klaar" ? "○" : "✓"} <b>${esc(deptById[t.dept].naam)}</b> · ${esc(kort(t.title, 110))}${t.raadsvraag ? `<br><i>${esc(kort(t.raadsvraag, 200))}</i>` : ""}</div>`).join("")}
+      ${nogOpen.length && !LIVE.alleenLezen ? `<div class="row" style="margin-top:8px"><button class="primary" data-aok="${c.id}">Akkoord geven (${nogOpen.length})</button></div>` : `<div class="ch-status"><i class="dot" style="background:var(--done)"></i>akkoord gegeven</div>`}</div>`;
+  }
+  const o = ticketBy(a.ticket);
+  const gedaan = a.type === "intrekken" ? o && o.status === "ingetrokken" : c.actieGedaan;
+  return `<div class="ch-kaart"><div class="ch-k-kop"><span>${a.type === "intrekken" ? "Ticket intrekken" : "Ticket nu uitvoeren"}</span><b>${esc(a.ticket)}</b></div><div class="ch-k-titel">${esc(o ? o.titel : a.ticket)}</div>
+    ${gedaan || LIVE.alleenLezen ? `<div class="ch-status">${a.type === "intrekken" ? "ingetrokken" : "gestart"}</div>` : `<div class="row" style="margin-top:8px"><button class="${a.type === "intrekken" ? "chip" : "primary"}" data-actie="${c.id}">${a.type === "intrekken" ? "Intrekken" : "Nu uitvoeren"}</button></div>`}</div>`;
+}
 function chatBericht(c) {
   const o = c.opdracht ? raadsopdrachten.find(x => x.id === c.opdracht) : null;
-  return `<div class="ch-msg ${c.rol}">${c.rol === "oppertet" ? `<span class="ch-av">O</span>` : ""}<div class="ch-bubble">${md(c.tekst)}${c.voorstel ? voorstelKaart(c) : ""}${o ? `<div class="ch-status"><i class="dot" style="background:${STATUS_KLEUR_OPDR[opdrachtStatus(o)]}"></i>${esc(o.id)} · ${esc(opdrachtStatus(o))}</div>` : ""}</div></div>`;
+  return `<div class="ch-msg ${c.rol}">${c.rol === "oppertet" ? `<span class="ch-av">O</span>` : ""}<div class="ch-bubble">${md(c.tekst)}${c.voorstel ? voorstelKaart(c) : ""}${c.actie ? actieKaart(c) : ""}${o ? `<div class="ch-status"><i class="dot" style="background:${STATUS_KLEUR_OPDR[opdrachtStatus(o)]}"></i>${esc(o.id)} · ${esc(opdrachtStatus(o))}</div>` : ""}</div></div>`;
 }
 function renderChat() {
   const panel = document.getElementById("chatPanel");
@@ -3519,8 +3561,8 @@ function renderChat() {
   if (!panel || panel.hidden) return;
   const lijst = document.getElementById("chatLijst");
   const onder = lijst.scrollHeight - lijst.scrollTop - lijst.clientHeight < 60;
-  lijst.innerHTML = (raadschat.length ? "" : `<div class="ch-leeg"><b>Chat met de Oppertet</b><p>Geef koers, vraag de stand of zet werk uit. De Oppertet stelt een opdracht voor; pas als jij op <b>Uitzetten</b> drukt, gaat hij via de Assistent-Oppertet naar de afdelingen.</p>
-      <div class="chips">${["Hoe staat iedereen ervoor?", "Wat moet ik vandaag goedkeuren?", "Hoe ver is D-001?"].map(s => `<button class="chip" data-sug="${esc(s)}">${esc(s)}</button>`).join("")}</div></div>`)
+  lijst.innerHTML = (raadschat.length ? "" : `<div class="ch-leeg"><b>Chat met de Oppertet</b><p>Zet werk uit, vraag de stand of geef akkoord. De Oppertet stelt een ticket voor; druk je op <b>Uitzetten</b>, dan gaat het meteen via de Assistent-Oppertet naar de Hoofdtets en hun Tets.</p>
+      <div class="chips">${["Wat wacht op mij?", "Hoe staan de tickets ervoor?", "Hoe ver is D-001?"].map(s => `<button class="chip" data-sug="${esc(s)}">${esc(s)}</button>`).join("")}</div></div>`)
     + raadschat.slice(-80).map(chatBericht).join("")
     + (CHAT.bezig ? `<div class="ch-msg oppertet" id="chatStream"><span class="ch-av">O</span><div class="ch-bubble">${CHAT.streamTekst ? md(haalVoorstel(CHAT.streamTekst).schoon) : `<span class="ch-typ"><i></i><i></i><i></i></span>`}</div></div>` : "");
   if (onder || CHAT.bezig) lijst.scrollTop = lijst.scrollHeight;
@@ -3532,9 +3574,16 @@ function renderChat() {
   lijst.querySelectorAll("[data-uit]").forEach(b => b.onclick = async () => {
     const c = raadschat.find(x => x.id === b.dataset.uit); if (!c || c.uitgezet) return;
     b.disabled = true;
+    if (LIVE.sample && instellingen.modus !== "claude") { instellingen.modus = "claude"; logEvent("instellingen.modus", "raad", { modus: "claude", via: "chat" }); }
     const o = await zetUit(c.voorstel, "chat");
-    if (o) { c.uitgezet = o.id; schrijfRaadDoc("raadschat", c); melding(`${o.id} is uitgezet via de ${agentById[o.eigenaar]?.naam || "Oppertet"}.`); }
+    if (o) { c.uitgezet = o.id; schrijfRaadDoc("raadschat", c); melding(`${o.id} is uitgezet en wordt nu uitgevoerd.`); startTicket(o.id); }
     renderChat();
+  });
+  lijst.querySelectorAll("[data-aok]").forEach(b => b.onclick = () => { const c = raadschat.find(x => x.id === b.dataset.aok); if (!c) return; b.disabled = true; if (LIVE.sample && instellingen.modus !== "claude") { instellingen.modus = "claude"; logEvent("instellingen.modus", "raad", { modus: "claude", via: "chat" }); } keurGoed(c.actie.taken); schrijfRaadDoc("raadschat", c); renderChat(); });
+  lijst.querySelectorAll("[data-actie]").forEach(b => b.onclick = () => {
+    const c = raadschat.find(x => x.id === b.dataset.actie); if (!c) return;
+    if (c.actie.type === "intrekken") trekIn(c.actie.ticket); else startTicket(c.actie.ticket);
+    c.actieGedaan = true; schrijfRaadDoc("raadschat", c); renderChat();
   });
   lijst.querySelectorAll("[data-pas]").forEach(b => b.onclick = () => { const c = raadschat.find(x => x.id === b.dataset.pas); const ta = document.getElementById("chatIn"); ta.value = `Pas het voorstel "${c.voorstel.titel}" aan: `; ta.focus(); });
   lijst.querySelectorAll("[data-sug]").forEach(b => b.onclick = () => stuurChat(b.dataset.sug));
@@ -3581,10 +3630,10 @@ function raadsbriefData() {
     datum: new Date().toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Amsterdam" }),
     goedkeuring: open.map(t => ({ titel: t.title, afdeling: deptById[t.dept]?.naam || t.dept, kleur: deptById[t.dept]?.kleur || "#f0a04b", takeaway: t.raadsvraag || (t.resultaat ? "Resultaat ligt klaar ter acceptatie." : "Akkoord nodig voordat de afdeling verder kan."), anders: "Blijft liggen; de afdeling wacht.", opdracht: t.opdracht || "" })),
     afdelingen: DEPTS.map(d => { const dt = tasks.filter(t => t.dept === d.id); const w = dt.filter(t => t.approval && t.status !== "klaar").length, b = dt.filter(t => t.status === "bezig").length, o = dt.filter(t => t.status !== "klaar").length; return { naam: d.naam, kleur: d.kleur, licht: w ? "oranje" : o > 6 ? "oranje" : "groen", regel: `${o} open · ${b} bezig · ${dt.filter(t => t.status === "klaar").length} klaar${w ? ` · ${w} wacht op jou` : ""}` }; }),
-    kerncijfers: [["Taken klaar", klaar.length, tasks.length], ["Open raadsopdrachten", raadsopdrachten.filter(o => opdrachtStatus(o) !== "klaar").length, Math.max(1, raadsopdrachten.length)], ["Wacht op de Raad", open.length, Math.max(1, tasks.filter(t => t.status !== "klaar").length)]].concat(ekg != null ? [["Eerste keer goed (%)", ekg, 100]] : []),
+    kerncijfers: [["Taken klaar", klaar.length, tasks.length], ["Open tickets", openTickets().length, Math.max(1, raadsopdrachten.length)], ["Wacht op de Raad", open.length, Math.max(1, tasks.filter(t => t.status !== "klaar").length)]].concat(ekg != null ? [["Eerste keer goed (%)", ekg, 100]] : []),
     register: { open: reg.filter(r => r.status !== "afgerond").length, telaat: reg.filter(r => r.status !== "afgerond" && r.deadline && r.deadline < vandaag).length, nieuw: reg.filter(r => Date.now() - (r.created || 0) < 864e5).length },
-    signalen: [`${grootboek.filter(e => e.type === "kantine.lek_voorkomen").length} lekken voorkomen in de kantine`, `${grootboek.filter(e => /incident/.test(e.type || "")).length} incidenten`, "Back-up: wordt ingericht via D-001"],
-    opdrachten: raadsopdrachten.map(o => ({ id: o.id, titel: o.titel, status: opdrachtStatus(o) }))
+    signalen: [`${grootboek.filter(e => e.type === "kantine.lek_voorkomen").length} lekken voorkomen in de kantine`, `${grootboek.filter(e => /incident/.test(e.type || "")).length} incidenten`, "Back-up: wordt ingericht via ticket D-001"],
+    opdrachten: raadsopdrachten.filter(o => o.status !== "ingetrokken").map(o => ({ id: o.id, titel: o.titel, status: opdrachtStatus(o) }))
   };
 }
 function raadsbriefHtml(d = raadsbriefData()) {
@@ -3598,7 +3647,7 @@ function raadsbriefHtml(d = raadsbriefData()) {
 ${kaart(kop("Goedkeuring nodig") + (d.goedkeuring.length ? d.goedkeuring.map(g => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;border-left:4px solid ${g.kleur}"><tr><td style="padding:4px 10px"><div style="font-weight:700;font-size:14px">${esc(g.titel)}</div><div style="font-size:12px;color:${c.muted}">${esc(g.afdeling)}${g.opdracht ? " · " + esc(g.opdracht) : ""}</div><div style="font-size:13px;margin-top:4px">${esc(g.takeaway)}</div><div style="font-size:12px;color:${c.muted};margin-top:2px">Zonder besluit: ${esc(g.anders)}</div></td></tr></table>`).join("") : `<div style="font-size:13px;color:${c.muted}">Geen openstaande goedkeuringen.</div>`) + `<div style="font-size:12px;color:${c.muted}">Goedkeuren doe je in het kantoor, niet per mail.</div>`)}
 ${kaart(kop("Status per afdeling") + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${d.afdelingen.map(a => `<tr><td width="14" style="padding:5px 0"><div style="width:10px;height:10px;border-radius:5px;background:${licht[a.licht]}"></div></td><td style="padding:5px 8px;font-size:13px;font-weight:700;color:${a.kleur};white-space:nowrap">${esc(a.naam)}</td><td style="padding:5px 0;font-size:12px;color:${c.muted}">${esc(a.regel)}</td></tr>`).join("")}</table>`)}
 ${kaart(kop("Kerncijfers") + d.kerncijfers.map(([l, w, max]) => `<div style="font-size:13px;margin:6px 0 3px">${esc(l)} <b style="float:right">${w}</b></div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${c.lijn};border-radius:4px"><tr><td width="${Math.max(2, Math.min(100, Math.round(w / max * 100)))}%" style="background:${c.acc};height:8px;border-radius:4px;font-size:0;line-height:0">&nbsp;</td><td style="font-size:0;line-height:0">&nbsp;</td></tr></table>`).join(""))}
-${kaart(kop("Raadsopdrachten") + (d.opdrachten.length ? d.opdrachten.map(o => `<div style="font-size:13px;padding:4px 0"><b>${esc(o.id)}</b> ${esc(o.titel)} <span style="color:${STATUS_KLEUR_OPDR[o.status] && o.status === "klaar" ? c.ok : o.status === "wacht op de Raad" ? c.warn : c.acc}">· ${esc(o.status)}</span></div>`).join("") : `<div style="font-size:13px;color:${c.muted}">Nog geen.</div>`)
+${kaart(kop("Tickets") + (d.opdrachten.length ? d.opdrachten.map(o => `<div style="font-size:13px;padding:4px 0"><b>${esc(o.id)}</b> ${esc(o.titel)} <span style="color:${STATUS_KLEUR_OPDR[o.status] && o.status === "klaar" ? c.ok : o.status === "wacht op de Raad" ? c.warn : c.acc}">· ${esc(o.status)}</span></div>`).join("") : `<div style="font-size:13px;color:${c.muted}">Nog geen.</div>`)
   + `<div style="font-size:12px;color:${c.muted};margin-top:6px">Besluitenregister: ${d.register.open} open · ${d.register.telaat} te laat · ${d.register.nieuw} nieuw</div>`)}
 ${kaart(kop("Signalen") + d.signalen.map(s => `<div style="font-size:13px;padding:2px 0">• ${esc(s)}</div>`).join(""))}
 <tr><td style="padding:4px 16px 24px;font-size:11px;color:${c.muted}">Alleen geaggregeerde cijfers; geen dossierinhoud, klantdata of persoonsgegevens. Verstuurd door de Oppertet naar ${RAAD_MAIL}.</td></tr>
@@ -3614,6 +3663,164 @@ function raadsopdrachtenSheet() {
     <div class="i-meta">${esc(st)} · eigenaar ${esc(agentById[o.eigenaar]?.naam || "Oppertet")} · ${o.deadline ? "deadline " + fmtDate(o.deadline) : "geen deadline"} · ${o.afdelingen.map(d => esc(deptById[d].naam)).join(", ")} · bron ${esc(o.bron)}</div>
     ${t.length ? `<div class="i-meta">${t.map(x => `${x.status === "klaar" ? "✓" : x.approval ? "!" : "·"} ${esc(x.title.replace(o.id + " · ", ""))}`).join("<br>")}</div>` : ""}</li>`; }).join("")}</ul>
     <div class="row" style="margin-top:10px"><button class="primary" data-vraag="">Nieuwe opdracht via de chat</button></div>`;
+}
+
+/* =====================================================================
+   TICKETSYSTEEM
+   Raad (chat) → Oppertet → Assistent-Oppertet → Hoofdtets → Tets → Control Tets.
+   Elk uitgezet voorstel is een ticket. Per afdeling verdeelt de Hoofdtet het over zijn Tets;
+   binnen de afdeling toetst een Control Tet en gaat afgekeurd werk met bevindingen terug (feedbackloop);
+   tussen afdelingen ziet elke Tet het opgeleverde werk van collega's op hetzelfde ticket.
+   Is alles klaar, dan vat de Assistent-Oppertet samen en meldt de Oppertet het in de chat.
+   ===================================================================== */
+const ticketBy = id => raadsopdrachten.find(o => o.id === id);
+const openTickets = () => raadsopdrachten.filter(o => !["klaar", "ingetrokken"].includes(opdrachtStatus(o)));
+function ticketContext(t) {
+  const o = t && t.opdracht ? ticketBy(t.opdracht) : null;
+  if (!o) return "";
+  const collegas = tasks.filter(x => x.opdracht === o.id && x.id !== t.id && x.status === "klaar" && x.resultaat);
+  return [`# Ticket ${o.id}: ${o.titel}`, `Wat er moet liggen: ${o.doel || o.titel}`, `Waarom: ${o.waarom || "-"}`, `Deadline: ${o.deadline || "geen"}`,
+    collegas.length ? "# Werk van collega's op dit ticket (gebruik het, spreek het niet tegen zonder reden)\n" + collegas.map(x => `- ${deptById[x.dept].naam} · ${agentById[x.agent]?.naam || "-"}: ${kort(blokVan(x.resultaat, "Resultaat") || x.resultaat, 600)}`).join("\n") : ""].filter(Boolean).join("\n");
+}
+async function verdeelOverTets(t, o) {
+  const h = AGENTS.find(a => a.dept === t.dept && a.rol === "hoofdtet");
+  const tets = AGENTS.filter(a => actief(a) && a.dept === t.dept && a.rol === "tet");
+  const bericht = [`# Ticket ${o.id}: ${o.titel}`, `Wat er moet liggen: ${o.doel || o.titel}`, `Waarom: ${o.waarom || "-"}`, `Deadline: ${o.deadline || "geen"}`,
+    `Deel van ${deptById[t.dept].naam}: ${t.title}`, "", "# Jouw Tets", ...tets.map(x => `- ${x.id} (${x.naam}): ${x.specialisme}`), "",
+    "# Opdracht", "Splits het deel van je afdeling in 1 tot 3 taken (meestal 1) en wijs elke taak toe aan de Tet met het best passende specialisme.\n" + PROTOCOLS.hoofdtet].join("\n");
+  const plan = await vraagAgent(h.id, bericht, { json: true, doel: "taken", hoofdlijnen: [t.title.replace(o.id + " · ", "")], tets: tets.map(x => x.id), label: `verdeelt ticket ${o.id}`, klaarLabel: `verdeelde ticket ${o.id}` });
+  const geldig = new Set(tets.map(x => x.id));
+  const taken = ((plan && plan.taken) || []).slice(0, 3);
+  if (!taken.length) taken.push({ opdracht: t.title.replace(o.id + " · ", ""), acceptatiecriteria: t.criteria, toegewezen: tets[0] && tets[0].id });
+  taken.forEach((x, k) => {
+    const id = `${t.id}-${k + 1}`;
+    if (tasks.some(y => y.id === id)) return;
+    tasks.unshift({ id, dept: t.dept, agent: geldig.has(x.toegewezen) ? x.toegewezen : (tets[k % Math.max(1, tets.length)] || {}).id || null,
+      title: `${o.id} · ${String(x.opdracht || t.title)}`, criteria: (x.acceptatiecriteria && x.acceptatiecriteria.length ? x.acceptatiecriteria : t.criteria || ["Levert op wat het ticket vraagt"]).map(String),
+      status: "volgende", approval: false, created: Date.now() + k, budget: Number(x.budget_eur) || 2, control: kiesControl(t.dept, x.toets), afkeuringen: 0, opdracht: o.id });
+    logEvent("taak.gepubliceerd", h.id, { titel: x.opdracht, ticket: o.id }, id);
+  });
+  tasks = tasks.filter(x => x.id !== t.id);
+  logEvent("ticket.verdeeld", h.id, { ticket: o.id, afdeling: t.dept });
+  save(); planRefresh();
+}
+async function samenvatTicket(o, taken) {
+  const delen = taken.map(x => `## ${deptById[x.dept].naam} · ${agentById[x.agent]?.naam || "-"} (score ${x.score ?? "-"})\n${kort(blokVan(x.resultaat, "Resultaat") || x.resultaat || "", 1500)}`).join("\n\n");
+  if (instellingen.modus === "claude" && LIVE.sample) {
+    try {
+      const r = await LIVE.sample((AGENT_PROMPTS[o.eigenaar] || "") + `\n\n---\n\n# Ticket ${o.id}: ${o.titel}\nWat er moest liggen: ${o.doel}\n\n# Opgeleverd werk\n${delen}\n\n# Opdracht\nVat voor de Raad samen in hooguit vijf korte regels: wat er nu ligt, de belangrijkste conclusie, wat de Raad moet weten of beslissen. Geen opvulling.`, { cache: false });
+      return r.text.trim();
+    } catch (e) { /* valt terug op de korte samenvatting */ }
+  }
+  return taken.map(x => `- **${deptById[x.dept].naam}**: ${kort((blokVan(x.resultaat, "Resultaat") || x.resultaat || "").split("\n").find(r => r.trim()) || "opgeleverd", 160)}`).join("\n");
+}
+function chatVanOppertet(tekst, extra = {}) {
+  const c = { id: "c" + Date.now() + "s" + raadschat.length, rol: "oppertet", tekst, created: Date.now(), ...extra };
+  raadschat.push(c); schrijfRaadDoc("raadschat", c); renderChat();
+}
+async function rondTicketAf(id) {
+  const o = ticketBy(id); if (!o || o.status === "ingetrokken") return;
+  const t = tasks.filter(x => x.opdracht === id);
+  if (!t.length) return;
+  if (t.every(x => x.status === "klaar")) {
+    if (o.status === "klaar") return;
+    const sam = await samenvatTicket(o, t);
+    o.status = "klaar"; o.klaar_ts = Date.now(); o.samenvatting = sam;
+    const reg = brein.find(b => b.id === "reg-" + id); if (reg) { reg.status = "afgerond"; reg.bijgewerkt = Date.now(); }
+    logEvent("ticket.klaar", o.eigenaar, { ticket: id });
+    save(); await schrijfRaadDoc("raadsopdrachten", o);
+    chatVanOppertet(`**${id} · ${o.titel} is klaar.**\n\n${sam}`, { opdracht: id });
+    return;
+  }
+  const wacht = t.filter(x => x.approval && x.status !== "klaar");
+  const sleutel = wacht.map(x => x.id).sort().join(",");
+  if (wacht.length && o.wachtGemeld !== sleutel) {
+    o.wachtGemeld = sleutel; await schrijfRaadDoc("raadsopdrachten", o);
+    chatVanOppertet(`**${id} wacht op jou** (${wacht.length}). ${wacht.some(x => x.geescaleerd) ? "Een taak is twee keer afgekeurd door de Control Tet en geëscaleerd." : ""}`, { actie: { type: "goedkeuren", taken: wacht.map(x => x.id) }, opdracht: id });
+  }
+}
+async function verwerkTicket(id) {
+  const o = ticketBy(id); if (!o || ["klaar", "ingetrokken"].includes(o.status)) return;
+  for (const t of tasks.filter(x => x.opdracht === id && !x.agent && x.status !== "klaar").reverse()) { stopCheck(); zetRunTekst(`Hoofdtet ${deptById[t.dept].naam} verdeelt ${id}`); await verdeelOverTets(t, o); }
+  for (const t of tasks.filter(x => x.opdracht === id && x.status !== "klaar" && x.agent && !x.approval).reverse()) { stopCheck(); zetRunTekst(`${agentById[t.agent].naam}: ${kort(t.title)}`); await voerUit(t.id); }
+  await rondTicketAf(id);
+}
+const TICKET_RIJ = [];
+function startTicket(id) {
+  if (LIVE.alleenLezen) return;
+  if (!TICKET_RIJ.includes(id)) TICKET_RIJ.push(id);
+  pompTickets();
+}
+async function pompTickets() {
+  if (LIVE.run || !TICKET_RIJ.length) return;
+  const id = TICKET_RIJ.shift();
+  await metRun(`Ticket ${id} wordt uitgevoerd`, () => verwerkTicket(id));
+  setTimeout(pompTickets, 300);
+}
+function keurGoed(ids) {
+  const tickets = new Set();
+  ids.forEach(id => {
+    const t = tasks.find(x => x.id === id); if (!t || !t.approval) return;
+    t.approval = false;
+    if (t.raadsvraag || t.escalatie || t.geescaleerd) logEvent("escalatie.afgehandeld", "raad", { door: "raad", besluit: "raad" }, t.id);
+    if (t.resultaat) { t.status = "klaar"; t.geescaleerd = false; leer(t); markeerHoofdlijn(t); logEvent("output.geaccepteerd", "raad", {}, t.id); }
+    else logEvent("goedkeuring.gegeven", "raad", {}, t.id);
+    if (t.opdracht) tickets.add(t.opdracht);
+  });
+  save(); planRefresh();
+  tickets.forEach(startTicket);
+}
+function trekIn(id) {
+  const o = ticketBy(id); if (!o) return;
+  o.status = "ingetrokken";
+  tasks = tasks.filter(x => !(x.opdracht === id && x.status !== "klaar"));
+  const reg = brein.find(b => b.id === "reg-" + id); if (reg) { reg.status = "afgerond"; reg.toelichting = "ingetrokken door de Raad"; }
+  logEvent("ticket.ingetrokken", "raad", { ticket: id });
+  save(); schrijfRaadDoc("raadsopdrachten", o); planRefresh();
+}
+
+/* ---------- Ticketpagina ---------- */
+const TL = { "raad.opdracht": "uitgezet door de Raad", "opdracht.doorvertaald": "doorvertaald door de Assistent-Oppertet", "ticket.verdeeld": "verdeeld over de Tets",
+  "taak.gepubliceerd": "taak aangemaakt", "taak.gestart": "gestart", "taak.opgeleverd": "opgeleverd", "taak.beoordeeld": "beoordeeld", "escalatie": "geëscaleerd naar de Hoofdtet",
+  "goedkeuring.gevraagd": "wacht op de Raad", "goedkeuring.gegeven": "akkoord van de Raad", "output.geaccepteerd": "geaccepteerd door de Raad", "ticket.klaar": "ticket klaar", "ticket.ingetrokken": "ingetrokken" };
+function ticketTijdlijn(o) {
+  const ids = new Set(tasks.filter(t => t.opdracht === o.id).map(t => t.id));
+  const ev = grootboek.filter(e => TL[e.type] && ((e.data && (e.data.ticket === o.id || e.data.opdracht === o.id)) || ids.has(e.taak) || (e.taak && String(e.taak).startsWith(`t-${o.id.toLowerCase()}-`)))).slice(-14).reverse();
+  if (!ev.length) return `<p class="i-meta" style="margin:0">Nog geen activiteit.</p>`;
+  return ev.map(e => `<div class="ev"><small>${geleden(e.ts)}</small><div><b>${esc(agentById[e.agent]?.naam || (e.agent === "raad" ? "Raad" : e.agent))}</b> · ${esc(TL[e.type])}${e.type === "taak.beoordeeld" ? (e.data.goedgekeurd ? ` <span style="color:var(--done)">goedgekeurd${e.data.score != null ? " (" + e.data.score + ")" : ""}</span>` : ` <span style="color:var(--warn)">afgekeurd</span>${(e.data.bevindingen || []).length ? ": " + esc(kort(e.data.bevindingen.join("; "), 160)) : ""}`) : ""}</div></div>`).join("");
+}
+function ticketKaart(o) {
+  const st = opdrachtStatus(o), t = tasks.filter(x => x.opdracht === o.id), k = t.filter(x => x.status === "klaar").length;
+  return `<section class="goalboard" style="gap:10px;border-color:color-mix(in srgb, ${STATUS_KLEUR_OPDR[st] || "var(--accent)"} 55%, var(--line))">
+    <div class="row" style="justify-content:space-between"><span class="eyebrow">${esc(o.id)} · ${esc(st)}</span><span class="i-meta">${o.deadline ? "deadline " + fmtDate(o.deadline) : "geen deadline"} · eigenaar ${esc(agentById[o.eigenaar]?.naam || "Oppertet")}</span></div>
+    <h3 style="margin:0">${esc(o.titel)}</h3>${o.doel ? `<p class="lead" style="margin:0">${esc(o.doel)}</p>` : ""}
+    <div class="goal-progress"><span class="pct" style="font-size:24px">${t.length ? Math.round(k / t.length * 100) : 0}%</span><div class="bar"><i style="width:${t.length ? k / t.length * 100 : 0}%;background:var(--accent)"></i></div></div>
+    ${o.samenvatting ? `<div class="ch-bubble" style="background:var(--bg-2)">${md(o.samenvatting)}</div>` : ""}
+    <ul class="items">${t.map(x => `<li style="--dc:${deptById[x.dept].kleur}"><div class="i-title" style="font-weight:500">${esc(x.title.replace(o.id + " · ", ""))}</div>
+      <div class="i-meta">${esc(deptById[x.dept].naam)} · ${x.agent ? esc(agentById[x.agent]?.naam || x.agent) : "Hoofdtet verdeelt"} · <b>${esc(x.approval ? "wacht op de Raad" : x.status)}</b>${x.afkeuringen ? ` · ${x.afkeuringen}× teruggestuurd` : ""}${x.score != null ? " · score " + esc(x.score) : ""}</div>
+      ${x.bevindingen && x.bevindingen.length && x.status !== "klaar" ? `<div class="i-meta" style="color:var(--warn)">Feedback: ${esc(kort(x.bevindingen.join("; "), 220))}</div>` : ""}
+      ${x.resultaat ? `<details class="res"><summary>Resultaat</summary><pre>${esc(x.resultaat)}</pre></details>` : ""}</li>`).join("") || `<li style="--dc:var(--line)"><span class="i-meta">Nog geen taken.</span></li>`}</ul>
+    <details><summary>Tijdlijn en feedback</summary>${ticketTijdlijn(o)}</details>
+    ${["klaar", "ingetrokken"].includes(st) || LIVE.alleenLezen ? "" : `<div class="row">${t.some(x => x.approval && x.status !== "klaar") ? `<button class="primary" data-tok="${o.id}">Akkoord geven</button>` : ""}<button class="chip" data-tstart="${o.id}" ${LIVE.run ? "disabled" : ""}>Nu uitvoeren</button><button class="chip" data-vraag="">Vraag de Oppertet</button><button class="del" data-tin="${o.id}">Intrekken</button></div>`}
+  </section>`;
+}
+function ticketsPage() {
+  const open = openTickets(), rest = raadsopdrachten.filter(o => !open.includes(o)).slice().reverse();
+  return { eyebrow: "Raad → Oppertet → Assistent-Oppertet → Hoofdtets → Tets", titel: "Tickets", kleur: "var(--accent)", tiles: [],
+    top: `<p class="lead">Zet werk uit in de chat met de Oppertet. Elk ticket gaat via de Assistent-Oppertet naar de Hoofdtets, die het over hun Tets verdelen. Een Control Tet toetst elk resultaat; afgekeurd werk gaat met feedback terug naar de Tet. Collega's op hetzelfde ticket zien elkaars werk. Wat jouw akkoord nodig heeft, komt terug in de chat en in de Raadsbrief.</p>
+      ${open.length ? open.slice().reverse().map(ticketKaart).join("") : `<section class="goalboard"><h3 style="margin:0;color:var(--muted)">Geen open tickets</h3><div class="row"><button class="primary" data-vraag="">Nieuw ticket via de chat</button></div></section>`}
+      ${rest.length ? `<details><summary>Afgerond en ingetrokken (${rest.length})</summary><div style="display:grid;gap:12px;margin-top:10px">${rest.map(ticketKaart).join("")}</div></details>` : ""}`,
+    wire: root => {
+      root.querySelectorAll("[data-tstart]").forEach(b => b.onclick = () => startTicket(b.dataset.tstart));
+      root.querySelectorAll("[data-tok]").forEach(b => b.onclick = () => keurGoed(tasks.filter(x => x.opdracht === b.dataset.tok && x.approval && x.status !== "klaar").map(x => x.id)));
+      root.querySelectorAll("[data-tin]").forEach(b => b.onclick = () => { if (confirm(`Ticket ${b.dataset.tin} intrekken? Open taken verdwijnen; afgerond werk blijft staan.`)) trekIn(b.dataset.tin); });
+    } };
+}
+function ticketBord() {
+  const open = openTickets(), wacht = tasks.filter(t => t.approval && t.status !== "klaar").length;
+  return `<section class="goalboard" aria-label="Tickets"><div class="row" style="justify-content:space-between"><span class="eyebrow">Tickets</span><span class="i-meta">${open.length} open · ${raadsopdrachten.filter(o => opdrachtStatus(o) === "klaar").length} klaar</span></div>
+    ${open.length ? `<ul class="hl">${open.slice().reverse().map(o => { const t = tasks.filter(x => x.opdracht === o.id), k = t.filter(x => x.status === "klaar").length; return `<li><button class="linkrow" data-go="tickets"><b>${esc(o.id)}</b> ${esc(kort(o.titel, 70))}</button><span class="st" style="color:${STATUS_KLEUR_OPDR[opdrachtStatus(o)]}">${esc(opdrachtStatus(o))}</span><div class="bar"><i style="width:${t.length ? k / t.length * 100 : 0}%;background:var(--accent)"></i></div></li>`; }).join("")}</ul>` : `<p class="lead" style="margin:0">Geen open tickets. Zet werk uit via de chat met de Oppertet.</p>`}
+    <div class="row">${wacht ? `<span class="i-meta" style="color:var(--warn)">${wacht} wacht op jouw akkoord</span>` : ""}<button class="chip" data-go="tickets" style="margin-left:auto">Alle tickets ›</button><button class="primary" data-vraag="">Chat met de Oppertet</button></div></section>`;
 }
 
 /* Kopregel en nachtstand van het kantoor volgen het rooster. */
