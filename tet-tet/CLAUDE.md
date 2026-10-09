@@ -37,7 +37,7 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 | `kaarten.py` | Laadt en valideert de kaarten, stelt de systeemprompt samen (harde grenzen → organisatie → afdeling → profiel → rol en toegang), berekent effectieve toegang |
 | `validatie.py` | Schema-, verwijzings- en mandaatcontrole (ook gebruikt door `scripts/valideer_kaarten.py`) |
 | `grootboek.py` | Onveranderlijk eventlog met hashketen; elk event met agent, taak, kaartversies en kosten |
-| `brein.py` | Gedeeld geheugen; lessen na elke taak, gelezen vóór de volgende |
+| `brein.py` | Gedeeld geheugen; lessen na elke taak en na elke afkeuring (zekerheid laag tot de Hoofdtet bevestigt), dubbele lessen samengevoegd (`bevestigd`), gelezen vóór de volgende |
 | `beleid.py` | Beleidsmotor (harde grenzen, rolkaart, goedkeuringsinbox), tool-gateway, budgetbewaking |
 | `taken.py` | Taakcontract, takenmarkt, statussen, escalatie na `max_afkeuringen` |
 | `runtime.py` | `MockClient` (tests, demo) en `AnthropicClient` (echt), de `Agent` die kosten en kaartversies logt |

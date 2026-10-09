@@ -184,6 +184,17 @@ class KetenTest(unittest.TestCase):
         tweede_taak = [b for rol, b in client.aanroepen if rol == "tet"][1]
         self.assertIn("Lessen uit het Brein", tweede_taak)
 
+    def test_afkeuring_wordt_les_en_escalatie_incident(self):
+        k = Kantoor(client=MockClient(afkeuren={"*": 99}))
+        k.draai(Doelstelling("Streng"), ["mkt"])
+        afkeur = [i for i in k.brein.items if i.get("bron") == "afkeuring"]
+        self.assertTrue(any(i["soort"] == "les" for i in afkeur))
+        self.assertTrue(any(i["soort"] == "incident" for i in afkeur))
+        self.assertTrue(all(i["zekerheid"] == "laag" and i["afdeling"] == "mkt" for i in afkeur))
+        self.assertIn("Onderbouwing ontbreekt", afkeur[0]["tekst"])
+        # en komt in de lessen-selectie van de eigen afdeling
+        self.assertTrue(any(i.get("bron") == "afkeuring" for i in k.brein.lessen_voor("mkt")))
+
     def test_niet_meetbare_doelstelling_geeft_een_vraag(self):
         class Vaag(MockClient):
             def _oppertet(self, b):

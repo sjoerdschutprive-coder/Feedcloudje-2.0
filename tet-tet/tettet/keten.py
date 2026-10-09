@@ -68,8 +68,17 @@ PROTOCOL_TET = """Voer de taak uit binnen je toegang. Antwoord in vier delen:
 
 PROTOCOL_CONTROLTET = """Beoordeel het resultaat zelfstandig, op twee niveaus: de details (criteria, bronnen, berekeningen) en het doel (beantwoordt het de opdracht?). Toets ook op de waarden uit de cultuurkaarten.
 Keur af met concrete bevindingen: wat, waarom, en wat er moet veranderen.
-Antwoord uitsluitend met JSON: {"oordeel": "goedgekeurd|afgekeurd", "score": <0-10>, "bevindingen": ["<bevinding>"]}"""
+Noem bij een afkeuring de faalwijze uit de MAST-indeling als die duidelijk van toepassing is, anders null.
+Antwoord uitsluitend met JSON: {"oordeel": "goedgekeurd|afgekeurd", "score": <0-10>, "bevindingen": ["<bevinding>"], "faalwijze": "<MAST-faalwijze of null>"}"""
 
+
+def afkeurles(titel: str, control_naam: str, bevindingen: list[str], faalwijze: str | None, escalatie: bool) -> str:
+    """Tekst van de les of het incident na een afkeuring (blameless: over het werk, niet over de agent)."""
+    kop = "Geëscaleerd na afkeuring" if escalatie else "Afgekeurd"
+    tekst = f"{kop} door {control_naam} bij '{titel}': " + ("; ".join(bevindingen) or "geen bevindingen genoemd")
+    if faalwijze and str(faalwijze).lower() not in ("null", "none", "-"):
+        tekst += f" (MAST: {faalwijze})"
+    return tekst[:500]
 
 
 PROTOCOL_VOORSTELLEN = """Je kijkt als R&D naar hoe Tet Tet zelf werkt. Doe 1 tot 3 verbetervoorstellen die de organisatie aantoonbaar beter, sneller of betrouwbaarder maken: aan kaarten, werkwijze, platform of het kantoor. Alleen voorstellen met een concreet knelpunt, een benoemde oorzaak en een begrensd nadeel. Kritisch op hype.
@@ -204,6 +213,7 @@ class Kantoor:
             if status == "afgerond":
                 self._leer(taak)
                 return status
+            self._leer_van_afkeuring(taak, escalatie=status == "geëscaleerd")
             if status == "geëscaleerd":
                 self.gb.schrijf("escalatie", taak.control_tet, {"naar": self.org.hoofdtet(taak.eigenaar)["id"],
                                                                "bevindingen": taak.bevindingen}, taak=taak.id)
@@ -218,6 +228,7 @@ class Kantoor:
             oordeel = lees_json(self.agent(ct).vraag(bericht, taak=taak.id, doel="toetsen"))
         except ValueError:
             oordeel = {"oordeel": "afgekeurd", "score": None, "bevindingen": ["Beoordeling was niet leesbaar; opnieuw toetsen."]}
+        self._laatste_oordeel = oordeel
         return self.markt.beoordeel(taak, ct, oordeel.get("oordeel") == "goedgekeurd",
                                     list(oordeel.get("bevindingen", [])), oordeel.get("score"))
 
@@ -229,6 +240,16 @@ class Kantoor:
                                zekerheid=zeker.group(1).lower() if zeker else None)
         h = self.org.hoofdtet(taak.eigenaar)["id"]
         self.gb.schrijf("output.geaccordeerd", h, {"door_control_tet": taak.control_tet}, taak=taak.id)
+
+    def _leer_van_afkeuring(self, taak: Taak, escalatie: bool):
+        """Bijna-fouten tellen mee: elke afkeuring of escalatie wordt een les of incident in het Brein,
+        met zekerheid laag zolang de Hoofdtet de afkeuring niet heeft bevestigd."""
+        oordeel = getattr(self, "_laatste_oordeel", {}) or {}
+        tekst = afkeurles(taak.opdracht, self.org.agent(taak.control_tet)["naam"], list(taak.bevindingen),
+                          oordeel.get("faalwijze"), escalatie)
+        self.brein.schrijf("incident" if escalatie else "les", taak.control_tet, taak.eigenaar, tekst, taak=taak.id,
+                           bron="afkeuring", zekerheid="laag")
+        self.gb.schrijf("brein.afkeurles", taak.control_tet, {"escalatie": escalatie}, taak=taak.id)
 
     # ---------- alles achter elkaar ----------
     def draai(self, doel: Doelstelling, afdelingen: list[str] | None = None) -> str:

@@ -388,6 +388,8 @@ class Werkdag:
         ct = t["control"]
         self.s.event("taak.beoordeeld", ct, {"goedgekeurd": goed, "score": score, "bevindingen": bevindingen}, t["id"])
         self.s.activiteit(ct, "klaar", ("keurde goed: " if goed else "keurde af: ") + kort(t.get("title")), t["id"])
+        if not goed:
+            self._leer_van_afkeuring(t, ct, bevindingen, o.get("faalwijze"), escalatie=t.get("afkeuringen", 0) + 1 >= self.max_afkeuringen)
         if goed:
             self.s.patch("taken", t["id"], {"status": "klaar", "score": score, "bevindingen": bevindingen})
             self._leer(t)
@@ -419,11 +421,17 @@ class Werkdag:
 
     def _leer(self, t):
         m = re.search(r"## Les\s*\n(.+?)(?:\n##|\Z)", t.get("resultaat") or "", re.S)
-        if m and not any(b.get("taak") == t["id"] for b in self.staat.brein):
+        if m and not any(b.get("taak") == t["id"] and b.get("bron") != "afkeuring" for b in self.staat.brein):
             self._brein_les({"id": f"b{nu_ms()}", "soort": "les", "dept": t["dept"], "agent": t["agent"], "taak": t["id"],
                              "tekst": m.group(1).strip()[:500], "bevestigd": 1, "ts": nu_ms()})
             self.s.event("brein.les", t["agent"], {}, t["id"])
 
+    def _leer_van_afkeuring(self, t, ct, bevindingen, faalwijze, escalatie: bool):
+        """Bijna-fouten tellen mee: elke afkeuring of escalatie wordt een les of incident, zekerheid laag tot de Hoofdtet bevestigt."""
+        tekst = keten.afkeurles(t.get("title") or "", self.org.agent(ct)["naam"], bevindingen, faalwijze, escalatie)
+        self._brein_les({"id": f"b{nu_ms()}-a{t.get('afkeuringen', 0)}", "soort": "incident" if escalatie else "les", "dept": t["dept"],
+                         "agent": ct, "taak": t["id"], "tekst": tekst, "bron": "afkeuring", "zekerheid": "laag", "bevestigd": 1, "ts": nu_ms()})
+        self.s.event("brein.afkeurles", ct, {"escalatie": escalatie}, t["id"])
 
     def _markeer_hoofdlijn(self, t):
         ad = self.staat.afdelingsdoelen.get(t["dept"])
@@ -449,6 +457,10 @@ class Werkdag:
             self.s.patch("taken", t["id"], {"approval": True, "raadsvraag": str(o.get("toelichting", ""))})
             uit = "naar de Raad"
         self.s.event("escalatie.besluit", stap["agent"], {"besluit": uit}, t["id"])
+        # De Hoofdtet heeft de afkeuring nu gezien en erover besloten: de afkeurlessen van deze taak zijn bevestigd.
+        for b in self.staat.brein:
+            if b.get("taak") == t["id"] and b.get("bron") == "afkeuring" and b.get("zekerheid") == "laag":
+                self.s.patch("brein", b["id"], {"zekerheid": "middel", "bevestigd_door": stap["agent"]})
         self.s.activiteit(stap["agent"], "klaar", f"escalatie {uit}: " + kort(t.get("title")), t["id"])
         stap["status"] = "klaar"
         self.log(f"{self.org.agent(stap['agent'])['naam']} besloot over '{kort(t.get('title'), 50)}': {uit}.")

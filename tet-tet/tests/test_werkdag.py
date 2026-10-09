@@ -105,6 +105,11 @@ class WerkdagTest(unittest.TestCase):
         self.assertEqual(t1.get("herkansingen"), 1)  # Hoofdtet herformuleerde na escalatie
         self.assertEqual(t1["title"], "Scherper werk")
         self.assertFalse(t1.get("geescaleerd"))
+        # Elke afkeuring werd een les of incident; na het besluit van de Hoofdtet is de zekerheid niet meer laag.
+        afkeur = [b for b in st.brein if b.get("bron") == "afkeuring" and b.get("taak") == "t1"]
+        self.assertTrue(afkeur)
+        self.assertTrue(any(b["soort"] == "incident" for b in afkeur))
+        self.assertTrue(all(b["zekerheid"] == "middel" and b.get("bevestigd_door") == "fin-h" for b in afkeur))
 
     def test_niet_meetbaar_vraagt_de_raad(self):
         Werkdag.start(self.dump, self.werk)

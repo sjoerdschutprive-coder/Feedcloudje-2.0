@@ -1,6 +1,8 @@
 """Het Brein: gedeeld geheugen met lessen, besluiten en notities.
 
 Na elke afgeronde taak schrijft de agent één les (cultuurprincipe 'Leren na elke taak').
+Na een afkeuring of escalatie volgt automatisch een les of incident met de bevindingen van de Control Tet
+('bijna-fouten tellen mee'); die heeft zekerheid laag zolang de Hoofdtet de afkeuring niet heeft bevestigd.
 Voor de start van een taak leest een agent de lessen van zijn afdeling en de organisatie.
 
 Lessen worden niet dubbel opgeslagen: lijkt een nieuwe les op een bestaande (woordoverlap, Jaccard),
@@ -14,8 +16,8 @@ import pathlib
 import re
 import time
 
-SOORTEN = {"les", "besluit", "notitie"}
-LES_SOORTEN = ("les",)
+SOORTEN = {"les", "besluit", "notitie", "incident"}
+LES_SOORTEN = ("les", "incident")
 DREMPEL = 0.6          # standaard; de waarde in config/instellingen.yaml (brein.overlap_drempel) gaat voor
 MAX_VARIANTEN = 10
 
@@ -97,7 +99,7 @@ class Brein:
         return item
 
     def lessen_voor(self, afdeling: str, max_aantal: int = 5) -> list[dict]:
-        """Lessen van de eigen afdeling, aangevuld met lessen van de organisatie.
+        """Lessen (en incidenten) van de eigen afdeling, aangevuld met lessen van de organisatie.
 
         Binnen elke groep: eerst vaker bevestigd, daarna recenter."""
         lessen = [i for i in self.items if i["soort"] in LES_SOORTEN]
