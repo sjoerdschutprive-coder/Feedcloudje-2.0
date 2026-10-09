@@ -17,7 +17,7 @@ Tet Tet is een platform waarop AI-agents zelfstandig werken en samen één centr
 
 Bij tegenstrijdigheid wint de hogere bron.
 
-1. `kaarten/` (organisatiekaart v1.5.0): cultuur-, profiel-, rol- en toegangskaarten van alle 31 agents (alle 31 ingezet sinds 9 oktober 2026, ook de Assistent-Oppertet), het handboek (`kaarten/handboek/`) en de ijksets per rol (`kaarten/ijkset/`). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
+1. `kaarten/` (organisatiekaart v1.7.0): cultuur-, profiel-, rol- en toegangskaarten van alle 31 agents (alle 31 ingezet sinds 9 oktober 2026, ook de Assistent-Oppertet), het handboek (`kaarten/handboek/`) en de ijksets per rol (`kaarten/ijkset/`). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
 2. `WHITEPAPER.md`: architectuur, taakcontract, feedbackloops, governance, autonomieniveaus, KPI's en de bouwstappen. **De pilotcasus (hotelketen) en bijlagen A–C zijn verouderde voorbeelden**: gebruik de kaarten in `kaarten/` en bouw niets dat aan die casus vastzit.
 3. `kantoor/index.html`: het Tet Tet-kantoor, de referentie voor design en interactie van de interface (isometrisch kantoor, afdelingseilanden, doelstellingenbord, takenpaneel, kaarten per agent). De data in dat bestand is afgeleid van de kaarten.
 4. `ONDERZOEK.md`: onderbouwing van de `werkstijl`-velden en `edge_principes`.
@@ -92,6 +92,7 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 - **Kaarten in het kantoor**: het blok tussen `@@KAARTEN:BEGIN` en `@@KAARTEN:END` wordt gegenereerd door `scripts/bouw_kantoor.py`. Draai dat na elke kaartwijziging en publiceer opnieuw.
 - **Live-zicht**: collectie `activiteit` (alleen-toevoegen, per agent wat hij doet); de pagina toont tekstballonnen en het paneel 'Nu bezig'. Werk van buitenaf komt binnen als `patches`; documenten dragen `bijgewerkt` en de nieuwste wint.
 - **Werkdag**: zie `WERKDAG.md` en `tettet/werkdag.py`. Een geplande taak laat de agents meerdere keren per dag zelfstandig werken, met subagents per agentbeurt.
+- **Eén ingang voor de Raad**: chat met de Oppertet (collecties `raadschat` en `raadsopdrachten`), alleen-lezen afdelingspagina's, weekrooster 24/7 en de dagelijkse Raadsbrief; zie README.md.
 - **Zelfontwikkeling**: zie `ZELFONTWIKKELING.md`. Een dagelijkse geplande taak bouwt de door de Raad goedgekeurde verbetervoorstellen in.
 
 Nog te bouwen, in deze volgorde:

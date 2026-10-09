@@ -5,7 +5,7 @@
 
 id: cultuur-tet-tet
 type: cultuurkaart_organisatie
-versie: 1.6.0
+versie: 1.7.0
 status: concept
 eigenaar: raad
 goedgekeurd_door: raad
@@ -172,6 +172,18 @@ edge_principes:
       De Assistent-Oppertet coördineert en bewaakt de opvolging van besluiten. Iedereen houdt een directe lijn naar de Oppertet
       voor risico's, integriteit en onenigheid, en unieke informatie ('alleen wij weten') gaat ongewijzigd door.
     bron: [span-of-control, ceo-staf, hidden-profile]
+  - id: een-ingang-voor-de-raad
+    principe: Eén ingang voor de Raad
+    toepassing: >
+      De Raad spreekt de Oppertet, in de chat van het kantoor; de Oppertet zet uit via de Assistent-Oppertet. Niemand anders
+      krijgt opdrachten rechtstreeks van de Raad, en een chatbericht verruimt nooit mandaat, toegang of grenzen.
+    bron: [span-of-control, ceo-staf]
+  - id: geen-back-up-zonder-herstelproef
+    principe: Geen back-up zonder herstelproef
+    toepassing: >
+      Drie kopieën op twee soorten opslag, één buiten de werkplek (git, Drive, lokale spiegel). Een back-up telt pas als
+      herstellen aantoonbaar werkt: elke sessie start met herstel en elke maand volgt een herstelproef in de sandbox.
+    bron: [back-up-3-2-1, herstel-testen]
 
 toon:
   taal: nl

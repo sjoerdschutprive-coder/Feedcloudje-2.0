@@ -8,6 +8,7 @@ Repository: `sjoerdschutprive-coder/Feedcloudje-2.0`, map `tet-tet/`.
 ## Wat er op een werkdag gebeurt
 
 1. Vastgelopen taken worden hersteld.
+   Raadsopdrachten (collectie `raadsopdrachten`, uitgezet door de Raad in de chat met de Oppertet) zijn al doorvertaald naar gewone taken met het veld `opdracht`; de werkdag pakt ze op zoals elke andere taak. Agents die volgens het weekrooster rust hebben, krijgen geen beurt (zie README, 'Weekrooster 24/7').
 2. Heeft de Raad een doelstelling ingesteld, dan verdeelt de **Oppertet** die over afdelingen zonder doel.
 3. **Hoofdtets** besluiten over geëscaleerde taken (herformuleren of naar de Raad) en maken taken voor open hoofdlijnen. Is de **Assistent-Oppertet** ingezet, dan gaat 'naar de Raad' eerst langs hem (`escalatie_triage`): hij handelt operationele kwesties af of zet ze met samenvatting door naar de Oppertet, die besluit of het aan de Raad voorlegt. Risico's, integriteit en onenigheid met de assistent gaan via de directe lijn rechtstreeks naar de Oppertet. De Tet loopt daarbij het glazen kantoortje van zijn Hoofdtet binnen.
 4. **Tets** voeren tot 8 taken uit, tot 3 tegelijk; een **Control Tet** van een andere afdeling toetst elk resultaat. Afgekeurd: de Tet krijgt de bevindingen en probeert opnieuw; na 2 afkeuringen escaleert de taak naar de Hoofdtet. Werk van Risk & Safety gaat naar de Raad.

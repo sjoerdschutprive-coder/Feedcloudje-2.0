@@ -62,6 +62,17 @@ De `bron`-velden in de kaarten verwijzen naar de ids hieronder. Per bron: wat he
 | Fouten melden | Zelf gemelde fouten tellen positief; elke grensovertreding krijgt binnen een werkdag een blameless incidentevaluatie. | `psychologische-veiligheid`, `google-sre-postmortems` |
 | Handboek | Eén handboek (werkwijze, schrijfstijl, woordenlijst, huisstijl, mappenstructuur) is de enige bron van waarheid; documentatie volgt de vier soorten van Diátaxis. | `handboek-eerst`, `diataxis` |
 
+## Kenmerken van de sturing en het rooster
+
+| Onderdeel | Ontwerpkeuze | Bron |
+| --- | --- | --- |
+| Eén ingang voor de Raad | De Raad stuurt alleen via de chat met de Oppertet; de Assistent-Oppertet vertaalt door naar de Hoofdtets. Afdelingspagina's zijn alleen-lezen. | `span-of-control`, `ceo-staf` |
+| Back-ups | Drie kopieën op twee soorten opslag, één buiten de werkplek: git, Google Drive en de lokale spiegel. | `back-up-3-2-1` |
+| Herstelproef | Herstel bij elke sessiestart en maandelijks een herstelproef in de sandbox; een back-up zonder bewezen herstel telt niet. | `herstel-testen` |
+| Onderhoud | Dagelijks, wekelijks en maandelijks onderhoud volgens een runbook, zoveel mogelijk geautomatiseerd. | `sre-toil` |
+| Weekrooster | Overleg geclusterd in vaste vensters (07:30–08:30 en 15:00–16:30); het onderzoeksblok 12:30–15:00 blijft vrij van overleg. Agents in rust draaien niet en kosten niets. | `makers-schedule`, `schaal-agents` |
+| Dagelijks MT | Elke dag 15 minuten met vaste agenda en zonder terugblik; maandag het lange MT met besluitvragen. | `rogelberg-huddle`, `standup-praktijk` |
+
 ## Bronnen
 
 - `mast`: Cemri e.a., *Why Do Multi-Agent LLM Systems Fail?* (NeurIPS 2025). https://arxiv.org/abs/2503.13657
@@ -99,3 +110,7 @@ De `bron`-velden in de kaarten verwijzen naar de ids hieronder. Per bron: wat he
 - `diataxis`: Procida, *Diátaxis*. https://diataxis.fr/
 - `span-of-control`: Graicunas, *Relationship in Organization* (Bulletin of the International Management Institute, 1933): bij n ondergeschikten groeit het aantal relaties volgens n(2^(n−1) + n − 1); bij 7 zijn dat er 490. https://nickols.us/graicunas.htm
 - `ceo-staf`: Barton, Cave, Cook & Reeves, *The Heart of CEO Effectiveness* (BCG 2020), over de staf rond de CEO: het bereik van de leider vergroten, integreren tussen afdelingen, heldere rollen, en vertrouwen dat zorgen accuraat worden doorgegeven. https://www.bcg.com/publications/2020/heart-ceo-effectiveness
+- `back-up-3-2-1`: US-CERT/CISA, *Data Backup Options* (2012): bewaar drie kopieën op twee soorten opslag, waarvan één buiten de werkplek. https://www.cisa.gov/sites/default/files/publications/data_backup_options.pdf
+- `herstel-testen`: Google, *Site Reliability Engineering*, hoofdstuk 26 'Data Integrity: What You Read Is What You Wrote' (2016): niemand wil back-ups, iedereen wil herstel; test herstel regelmatig. https://sre.google/sre-book/data-integrity/
+- `sre-toil`: Google, *Site Reliability Engineering*, hoofdstuk 5 'Eliminating Toil' (2016). https://sre.google/sre-book/eliminating-toil/
+- `makers-schedule`: Paul Graham, *Maker's Schedule, Manager's Schedule* (2009): één vergadering kan een blok diep werk breken. https://paulgraham.com/makersschedule.html

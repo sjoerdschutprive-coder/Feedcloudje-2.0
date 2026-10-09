@@ -74,6 +74,29 @@ pip install pyyaml jsonschema
 python tet-tet/scripts/valideer_kaarten.py
 ```
 
+## Eén ingang voor de Raad
+
+Sinds 9 oktober 2026 stuurt de Raad het kantoor alleen via **Chat met de Oppertet** (zwevende knop rechtsonder; op telefoon schermvullend). De Oppertet antwoordt met een echt model (`sample`) of in mockmodus, en sluit werk af met een opdrachtvoorstel. Pas na **Uitzetten** wordt het een raadsopdracht (`D-002`, `D-003`, …): de Assistent-Oppertet vertaalt hem door naar één taak per afdeling (`opdracht` op de taak), met een regel in het besluitenregister. De status staat onder het kaartje in de chat.
+
+- Afdelings-, agent- en Oppertet-pagina's zijn **alleen-lezen**: geen invoer voor taken, hoofdlijnen, afdelingsdoelen of de doelstelling. Elke pagina heeft een knop *Vraag de Oppertet hierover*.
+- De Raad houdt: goedkeuren en accepteren, de testknop op de Risk-pagina en het starten van een werkdag.
+- Een chatbericht verruimt nooit mandaat, toegang of grenzen; zulke verzoeken weigert de Oppertet (event `raad.chat_geweigerd`).
+- Collecties: `raadschat` (alleen toevoegen) en `raadsopdrachten`.
+- **D-001 Cloudopslag en back-ups** staat bij de eerste opening klaar: Drive inrichten en synchroniseren, dagelijkse back-up (02:00, retentie 7/4/12), herstel bij sessiestart, onderhoudsplan met runbook, eerste herstelproef. Eigenaar Assistent-Oppertet, uitvoering Onderhouds-Tet, toets deelrechten Privacy-Tet. Jouw akkoord is nodig op mappenstructuur en deelrechten.
+
+## Weekrooster 24/7
+
+Pagina **Rooster** (knop rechtsboven): per afdeling vaste blokken voor uitvoering, onderzoek, overleg, onderhoud, toezicht, kantine en rust, met een nu-lijn en een filter per agent. Ops en Risk draaien 24/7 met roulerende nachtdienst; de rest rust 's nachts en kost dan niets. Op de plattegrond zijn agents in rust gedimd en 's nachts is het kantoor donkerder.
+
+- Vast: 07:15 Raadsbrief, 07:30 huddles, 07:45 directiehuddle, 08:00 dagelijks MT (maandag lang MT tot 09:00), 12:00 kantine, 19:00 goedkeuringsmoment.
+- Deeloverleggen 15:00–16:30: bilateraal over twee directe lijnen per dag (roulerend), een kleine kring van Oppertet met drie Hoofdtets op woensdag, en afstemming over raadsopdrachten die meer afdelingen raken. Nooit in onderzoek of rust, niemand dubbel geboekt, max. 3 per agent per dag, alleen met onderwerp.
+- HR: check-ins op dinsdag, zelfreflectie en snapshot in de laatste week, evaluatiegesprekken twee dagen vóór het retrospectief (laatste vrijdag, 15:00), kalibratie en raadsreview per kwartaal.
+- De vaste overleg- en HR-momenten staan als terugkerende events met prefix `[Tet Tet]` in Google Agenda (`tetclaude167@gmail.com`); *Exporteer 4 weken overleg (.ics)* op de roosterpagina is de terugval.
+
+## Raadsbrief
+
+Elke dag om 07:15 stuurt een geplande taak de Raadsbrief naar `tetclaude167@gmail.com`: goedkeuringen bovenaan (met key takeaway en wat er gebeurt zonder besluit), stoplicht per afdeling, kerncijfers als balkjes, raadsopdrachten en besluitenregister, signalen. HTML met inline stijl, max. 600 px, geen scripts of externe afbeeldingen, met platte-tekstversie. Om 19:00 volgt één herinnering als een goedkeuring langer dan 24 uur openstaat. Alleen geaggregeerde cijfers: geen dossierinhoud, klantdata of persoonsgegevens. Voorbeeld: Oppertet-pagina → *Raadsbrief*.
+
 ## Gedeelde agenda koppelen
 
 De HR-momenten (check-ins, evaluaties, kalibratie, raadsreview, MT, retrospectief, proefperiodes en incidenten) staan in een gedeelde agenda. Tot die bestaat, plant de werkdag ze in de collectie `kalender` van het kantoor; zo koppel je de echte Google-agenda:
