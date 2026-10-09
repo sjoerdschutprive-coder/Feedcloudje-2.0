@@ -10,11 +10,11 @@ tet-tet/
     schema/kaarten.schema.json   # JSON Schema voor alle kaarttypes
     organisatie/tet-tet.yaml     # cultuurkaart organisatie (laag 1)
     afdelingen/<afdeling>.yaml   # 7 cultuurkaarten afdeling (laag 2)
-    agents/<agent-id>.yaml       # 21 profielkaarten (laag 3)
+    agents/<agent-id>.yaml       # 30 profielkaarten (laag 3); 8 met 'inzet: gepland'
     rollen/<rol>.yaml            # 4 rolkaarten: wat een rol mag
     toegang/<afdeling>.yaml      # 8 toegangskaarten: tools en data per afdeling, plus centraal
   config/                        # instellingen (model, budget) en harde grenzen (beleid.yaml)
-  tettet/                        # het platform: kaartenlader, grootboek, Brein, beleid, taken, agents, keten
+  tettet/                        # het platform: kaartenlader, grootboek, Brein, beleid, taken, agents, keten, samenwerking
   tests/                         # tests, draaien zonder API-sleutel
   scripts/valideer_kaarten.py    # controleert schema, verwijzingen en mandaten
   kantoor/index.html             # het Tet Tet-kantoor (interface-referentie)

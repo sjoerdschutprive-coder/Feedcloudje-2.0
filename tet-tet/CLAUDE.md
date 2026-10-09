@@ -16,7 +16,7 @@ Tet Tet is een platform waarop AI-agents zelfstandig werken en samen één centr
 
 Bij tegenstrijdigheid wint de hogere bron.
 
-1. `kaarten/` (v1.1.0): cultuur-, profiel-, rol- en toegangskaarten van alle 21 agents. Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
+1. `kaarten/` (organisatiekaart v1.2.0): cultuur-, profiel-, rol- en toegangskaarten van alle 30 agents (22 ingezet, 8 `inzet: gepland`). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
 2. `WHITEPAPER.md`: architectuur, taakcontract, feedbackloops, governance, autonomieniveaus, KPI's en de bouwstappen. **De pilotcasus (hotelketen) en bijlagen A–C zijn verouderde voorbeelden**: gebruik de kaarten in `kaarten/` en bouw niets dat aan die casus vastzit.
 3. `kantoor/index.html`: het Tet Tet-kantoor, de referentie voor design en interactie van de interface (isometrisch kantoor, afdelingseilanden, doelstellingenbord, takenpaneel, kaarten per agent). De data in dat bestand is afgeleid van de kaarten.
 4. `ONDERZOEK.md`: onderbouwing van de `werkstijl`-velden en `edge_principes`.
@@ -43,12 +43,22 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 | `runtime.py` | `MockClient` (tests, demo) en `AnthropicClient` (echt), de `Agent` die kosten en kaartversies logt |
 | `keten.py` | `Kantoor`: Raad → Oppertet → Hoofdtet → Tet → Control Tet; risk-werk gaat naar de Raad |
 | `__main__.py` | Opdrachtregel: `run`, `prompt`, `toegang`, `grootboek` |
+| `samenwerking.py` | Collectief Brein (toegangslabels, wie-weet-wat, wie-werkt-waaraan, vraagbaak, signalen), kantinetafel, deelfilter, overlegcyclus, cultuurmeting, protocollen |
+| `werkdag_samen.py` | Werkdagstappen voor huddle, kantine met toezicht en de overlegcyclus naar het MT |
+
+### Samenwerking (zie ONDERZOEK.md, 'Kenmerken van de samenwerking')
+
+- **Collectief Brein**: elk item draagt `labels` (de bronnen waarop het steunt, uit het blok `## Bronnen` van een resultaat). Wie die bronnen niet mag zien, krijgt het item niet; Risk & Safety (`alle_afdelingsoutput`) ziet alles voor het toezicht. Elke taakprompt bevat lessen, wie weet wat, wie werkt waaraan, open vragen en signalen. Tets kunnen vragen, signalen en antwoorden toevoegen (`## Vragen aan het Brein`, `## Signalen`, `## Antwoorden`).
+- **Kantine**: één gemengde tafel per werkdagrun (4–6 agents, minstens 3 afdelingen, roulerend). Elke beurt gaat eerst door het deelfilter en daarna langs de **Privacy-Tet** (`risk-2`); tegengehouden beurten worden zonder inhoud vastgelegd, met een blameless les en strenger toezicht in de volgende pauzes.
+- **Overleg**: dagelijkse huddle per afdeling; per week voorbereiding → afdelingsoverleg (memo) → bilateraal → vooraf lezen → eigen oordeel → MT; retrospectief bij het eerste MT van de maand. Instellingen in `config/instellingen.yaml` (`overleg`, `kantine`).
+- **Afdelingsomvang**: norm 1 Hoofdtet + 3 Tets. Nieuwe agents staan op `inzet: gepland` tot de Raad ze activeert na een meting; `Organisatie.team()` en `tets()` geven alleen ingezette agents.
+- **Kantoor**: kantine en vergaderzaal onder het plein, een overleghoek op elk eiland, agents lopen erheen (veld `plek` in `activiteit`; collecties `kantine` en `overleggen`). Knop 'Terugkijken' speelt de laatste werkdag af. HR toont de cultuurmeting.
 
 ### Het live kantoor
 
 `kantoor/index.html` is gepubliceerd als artifact (`https://claude.ai/code/artifact/ed7cfae4-f453-4b86-bf01-b9304f737e70`) met de capabilities `db`, `user` en `sample`:
 
-- **Gedeelde opslag** (`db`): collecties `staat` (doel, instellingen, connectors), `afdelingsdoelen`, `taken`, `berichten`, `brein`, `voorstellen` en `grootboek` (blokken van 100 events). Lezen en schrijven kan ook vanuit Claude Code met de ArtifactData-tool.
+- **Gedeelde opslag** (`db`): collecties `staat` (doel, instellingen, connectors), `afdelingsdoelen`, `taken`, `berichten`, `brein`, `voorstellen`, `grootboek` (blokken van 100 events), en alleen-toevoegen `overleggen` en `kantine`. Lezen en schrijven kan ook vanuit Claude Code met de ArtifactData-tool.
 - **Agents**: modus `mock` (gratis, voorspelbaar) of `claude` (via `sample`, op het Claude-account van de kijker). De keten in de pagina volgt `tettet/keten.py`: dezelfde protocollen en dezelfde samengestelde prompts.
 - **Kaarten in het kantoor**: het blok tussen `@@KAARTEN:BEGIN` en `@@KAARTEN:END` wordt gegenereerd door `scripts/bouw_kantoor.py`. Draai dat na elke kaartwijziging en publiceer opnieuw.
 - **Live-zicht**: collectie `activiteit` (alleen-toevoegen, per agent wat hij doet); de pagina toont tekstballonnen en het paneel 'Nu bezig'. Werk van buitenaf komt binnen als `patches`; documenten dragen `bijgewerkt` en de nieuwste wint.
