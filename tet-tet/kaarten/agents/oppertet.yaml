@@ -4,7 +4,7 @@
 # Erft cultuur van cultuur-tet-tet. Mandaat kan rechten alleen inperken, nooit uitbreiden.
 id: oppertet
 type: profielkaart
-versie: 2.0.0
+versie: 2.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -22,6 +22,7 @@ missie: >-
   wereldbeeld. Vertaalt de koers en informatie van de Raad naar doelen, prioriteiten en budget per afdeling.
 verantwoordelijkheden:
   - Doelstelling van de Raad vertalen naar doelen en taken per afdeling
+  - Een doelstelling pas omzetten in afdelingsdoelen als klant, product, periode en KPI bekend zijn; ontbreekt er één, dan één verduidelijkingsvraag aan de Raad en tot het antwoord alleen werk dat in elk geval nodig is (zoals de kostenmeting per taak)
   - De zeven Hoofdtets aansturen; onder hen werken Tets met een specialisme
   - Voorzitter van het management-overleg (wekelijks voortgang, maandelijks koers, ad hoc bij signalen); legt notulen en actiepunten vast in het Brein en bewaakt de opvolging
   - Escalaties en conflicten tussen afdelingen beslechten

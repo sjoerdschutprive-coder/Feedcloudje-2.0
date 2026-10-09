@@ -66,7 +66,7 @@ class MockClient:
     def _oppertet(self, b: str) -> str:
         naam = _veld(b, "Naam") or "de doelstelling"
         afd = re.findall(r"^- ([a-z]+) \((.+?)\):", b, re.M)
-        return json.dumps({"afdelingsdoelen": [
+        return json.dumps({"meetbaar": True, "ontbreekt": [], "vraag_aan_raad": None, "afdelingsdoelen": [
             {"afdeling": a, "doel": f"Bijdrage van {n} aan: {naam}",
              "hoofdlijnen": [f"Analyse {n}", f"Advies {n}"], "waarom": f"{n} levert de eigen expertise."} for a, n in afd]},
             ensure_ascii=False)

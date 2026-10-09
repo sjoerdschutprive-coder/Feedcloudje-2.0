@@ -106,6 +106,26 @@ class WerkdagTest(unittest.TestCase):
         self.assertEqual(t1["title"], "Scherper werk")
         self.assertFalse(t1.get("geescaleerd"))
 
+    def test_niet_meetbaar_vraagt_de_raad(self):
+        Werkdag.start(self.dump, self.werk)
+        wd = Werkdag(self.werk)
+        stap = wd.volgende(3)["stappen"][0]
+        self.assertEqual(stap["soort"], "oppertet_plan")
+        p = Werkdag(self.werk).prompt(stap["id"])
+        self.assertIn("meetbaar", pathlib.Path(p["prompt"]).read_text())
+        pathlib.Path(p["antwoord"]).write_text(json.dumps({"meetbaar": False, "ontbreekt": ["kpi"], "vraag_aan_raad": "Welke KPI?", "afdelingsdoelen": []}))
+        r = Werkdag(self.werk).verwerk(stap["id"])
+        self.assertEqual(r["uitkomst"], "verduidelijking")
+        st = Werkdag(self.werk).staat
+        self.assertEqual(st.doel["verduidelijking"]["vraag"], "Welke KPI?")
+        patches = [json.loads(pathlib.Path(x["file_path"]).read_text()) for b in r["batches"] for x in b if x["collection"] == "patches"]
+        self.assertTrue(any(x["collectie"] == "staat" and x["velden"].get("verduidelijking") for x in patches))
+        # een nieuwe werkdag zet de doelstelling niet opnieuw om zolang de vraag openstaat
+        schrijf_dump(self.dump, {"staat": {"doel": {**st.doel}}})
+        Werkdag.start(self.dump, self.werk)
+        soorten = [s["soort"] for s in Werkdag(self.werk).volgende(3)["stappen"]]
+        self.assertNotIn("oppertet_plan", soorten)
+
     def test_dump_met_patches_laden(self):
         st = KantoorStaat.uit_dump(self.dump)
         self.assertEqual(st.taken["t2"]["title"], "Risk-taak (gepatcht)")

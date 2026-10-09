@@ -183,6 +183,24 @@ class KetenTest(unittest.TestCase):
         tweede_taak = [b for rol, b in client.aanroepen if rol == "tet"][1]
         self.assertIn("Lessen uit het Brein", tweede_taak)
 
+    def test_niet_meetbare_doelstelling_geeft_een_vraag(self):
+        class Vaag(MockClient):
+            def _oppertet(self, b):
+                return json.dumps({"meetbaar": False, "ontbreekt": ["klant", "kpi", "onzin"], "vraag_aan_raad": "Voor welke klant, en welke KPI?",
+                                   "afdelingsdoelen": [{"afdeling": "fin", "doel": "Kosten per taak meten", "hoofdlijnen": ["Kostenmeting"]}]})
+        k = Kantoor(client=Vaag())
+        k.stel_doelstelling_in(Doelstelling("The beginning"))
+        doelen = k.plan_oppertet(["fin", "mkt"])
+        self.assertEqual([d.afdeling for d in doelen], ["fin"])
+        self.assertEqual(k.verduidelijking["ontbreekt"], ["klant", "kpi"])
+        self.assertTrue(k.gb.zoek(type="doelstelling.verduidelijking_gevraagd"))
+
+    def test_meetbare_doelstelling_geen_vraag(self):
+        k = Kantoor(mock=True)
+        k.stel_doelstelling_in(Doelstelling("Doel"))
+        k.plan_oppertet(["fin"])
+        self.assertIsNone(k.verduidelijking)
+
     def test_geen_doelstelling_geen_plan(self):
         with self.assertRaises(RuntimeError):
             Kantoor(mock=True).plan_oppertet()

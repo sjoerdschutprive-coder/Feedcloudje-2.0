@@ -111,7 +111,8 @@ class Werkdag:
         lopende_taken = {s.get("taak") for s in lopend}
         # 1. Oppertet verdeelt de doelstelling over afdelingen zonder doel
         zonder = [a for a in self.org.afdelingen if not st.afdelingsdoelen.get(a, {}).get("doel")]
-        if d.get("naam") and zonder and not self._gedaan("oppertet_plan") and not lopend:
+        # (niet zolang een verduidelijkingsvraag aan de Raad openstaat: die verdwijnt als de Raad de doelstelling aanpast)
+        if d.get("naam") and zonder and not d.get("verduidelijking") and not self._gedaan("oppertet_plan") and not lopend:
             return [self._nieuwe_stap("oppertet_plan", "oppertet", afdelingen=zonder)]
         # 2. Hoofdtets besluiten over geëscaleerde taken
         if not lopend:
@@ -316,6 +317,17 @@ class Werkdag:
             self.s.event("afdelingsdoel.ingesteld", "oppertet", {"afdeling": a, "doel": velden["doel"]})
             n += 1
         stap["status"] = "klaar"
+        vz = keten.verduidelijking_uit(plan)
+        if vz:
+            vz["ts"] = nu_ms()
+            self.s.patch("staat", "doel", {"verduidelijking": vz})
+            self.s.event("doelstelling.verduidelijking_gevraagd", "oppertet", vz)
+            self.s.activiteit("oppertet", "klaar", "vraagt de Raad: " + kort(vz["vraag"], 120))
+            self.log(f"Oppertet: doelstelling niet meetbaar (ontbreekt: {', '.join(vz['ontbreekt']) or 'onbekend'}); vraag aan de Raad: {vz['vraag']} "
+                     f"Alleen {n} afdelingsdoel(en) voor werk dat in elk geval nodig is.")
+            return {"uitkomst": "verduidelijking", "afdelingsdoelen": n, "vraag": vz["vraag"], "klaar": True}
+        if self.staat.doel.get("verduidelijking"):
+            self.s.patch("staat", "doel", {"verduidelijking": None})
         self.s.activiteit("oppertet", "klaar", f"zette {n} afdelingsdoelen")
         self.log(f"Oppertet zette {n} afdelingsdoelen.")
         return {"uitkomst": "klaar", "afdelingsdoelen": n, "klaar": True}

@@ -34,9 +34,22 @@ class Afdelingsdoel:
     waarom: str = ""
 
 
-PROTOCOL_OPPERTET = """Vertaal de doelstelling naar afdelingsdoelen. Zet alleen afdelingen in die echt iets bijdragen, en geef elk doel 1 tot 4 hoofdlijnen (deelresultaten).
+MEETBAARHEID = ("klant", "product", "periode", "kpi")
+
+PROTOCOL_OPPERTET = """Toets eerst of de doelstelling meetbaar is op vier punten: klant (voor wie), product (wat er moet liggen), periode (tot wanneer) en KPI (waaraan succes te meten is). Gebruik naam, omschrijving en deadline; vul niets zelf in.
+Ontbreekt er één, zet dan "meetbaar": false, noem wat ontbreekt en stel precies één verduidelijkingsvraag aan de Raad. Zet in dat geval alleen afdelingsdoelen voor werk dat in elk geval nodig is (zoals de kostenmeting per taak), of geen.
+Is de doelstelling meetbaar, vertaal haar dan naar afdelingsdoelen. Zet alleen afdelingen in die echt iets bijdragen, en geef elk doel 1 tot 4 hoofdlijnen (deelresultaten).
 Antwoord uitsluitend met JSON in deze vorm:
-{"afdelingsdoelen": [{"afdeling": "<id>", "doel": "<één zin>", "hoofdlijnen": ["<deelresultaat>"], "waarom": "<één zin>"}]}"""
+{"meetbaar": true, "ontbreekt": ["klant|product|periode|kpi"], "vraag_aan_raad": "<één vraag, of null>", "afdelingsdoelen": [{"afdeling": "<id>", "doel": "<één zin>", "hoofdlijnen": ["<deelresultaat>"], "waarom": "<één zin>"}]}"""
+
+
+def verduidelijking_uit(plan: dict) -> dict | None:
+    """Verduidelijkingsvraag van de Oppertet als de doelstelling niet meetbaar is, anders None."""
+    if not isinstance(plan, dict) or plan.get("meetbaar") is not False:
+        return None
+    ontbreekt = [str(x).lower() for x in plan.get("ontbreekt") or [] if str(x).lower() in MEETBAARHEID]
+    vraag = str(plan.get("vraag_aan_raad") or "").strip() or "Kun je de doelstelling meetbaar maken (klant, product, periode, KPI)?"
+    return {"vraag": vraag[:500], "ontbreekt": ontbreekt, "door": "oppertet"}
 
 PROTOCOL_HOOFDTET = """Maak per hoofdlijn één taak voor een Tet uit je afdeling. Geef context, geen stappenplan: wat moet er liggen en wanneer is het goed.
 Gebruik "toets": "feiten" als de taak vooral cijfers of bronnen oplevert, anders "kwaliteit".
@@ -56,6 +69,7 @@ PROTOCOL_TET = """Voer de taak uit binnen je toegang. Antwoord in vier delen:
 PROTOCOL_CONTROLTET = """Beoordeel het resultaat zelfstandig, op twee niveaus: de details (criteria, bronnen, berekeningen) en het doel (beantwoordt het de opdracht?). Toets ook op de waarden uit de cultuurkaarten.
 Keur af met concrete bevindingen: wat, waarom, en wat er moet veranderen.
 Antwoord uitsluitend met JSON: {"oordeel": "goedgekeurd|afgekeurd", "score": <0-10>, "bevindingen": ["<bevinding>"]}"""
+
 
 
 PROTOCOL_VOORSTELLEN = """Je kijkt als R&D naar hoe Tet Tet zelf werkt. Doe 1 tot 3 verbetervoorstellen die de organisatie aantoonbaar beter, sneller of betrouwbaarder maken: aan kaarten, werkwijze, platform of het kantoor. Alleen voorstellen met een concreet knelpunt, een benoemde oorzaak en een begrensd nadeel. Kritisch op hype.
@@ -92,6 +106,7 @@ class Kantoor:
         self._agents: dict[str, Agent] = {}
         self.doelstelling: Doelstelling | None = None
         self.afdelingsdoelen: list[Afdelingsdoel] = []
+        self.verduidelijking: dict | None = None
 
     def agent(self, agent_id: str) -> Agent:
         if agent_id not in self._agents:
@@ -117,6 +132,9 @@ class Kantoor:
             "", "# Opdracht", PROTOCOL_OPPERTET])
         self.beleid.eis("oppertet", "opdrachten.van_raad_vertalen", d.naam)
         plan = lees_json(self.agent("oppertet").vraag(bericht, doel="afdelingsdoelen"))
+        self.verduidelijking = verduidelijking_uit(plan)
+        if self.verduidelijking:
+            self.gb.schrijf("doelstelling.verduidelijking_gevraagd", "oppertet", self.verduidelijking)
         self.afdelingsdoelen = [Afdelingsdoel(x["afdeling"], x["doel"], list(x.get("hoofdlijnen", [])), x.get("waarom", ""))
                                 for x in plan["afdelingsdoelen"] if x.get("afdeling") in toegestaan]
         for ad in self.afdelingsdoelen:
