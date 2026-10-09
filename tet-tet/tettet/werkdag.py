@@ -240,7 +240,8 @@ class Werkdag:
         return [f"Doelstelling: {st.doel.get('naam') or 'nog niet ingesteld'} (deadline {st.doel.get('deadline') or 'geen'})",
                 f"Afdelingen met doel: {sum(1 for a in st.afdelingsdoelen.values() if a.get('doel'))} van 7",
                 f"Taken: {len(st.taken)} totaal, {tel(lambda t: t.get('status') == 'klaar')} klaar, {tel(lambda t: t.get('status') == 'volgende')} open, "
-                f"{tel(lambda t: t.get('approval'))} wachten op de Raad, {tel(lambda t: t.get('geescaleerd'))} geëscaleerd",
+                f"{tel(lambda t: t.get('status') not in ('klaar', 'volgende'))} overig "
+                f"(los daarvan: {tel(lambda t: t.get('approval'))} met een Raadsakkoord nodig, {tel(lambda t: t.get('geescaleerd'))} geëscaleerd; die tellen ook mee in de aantallen hiervoor)",
                 f"Open verbetervoorstellen: {sum(1 for v in st.voorstellen.values() if v.get('status') == 'open')}",
                 f"Lessen in het Brein: {len(st.brein)}"]
 
