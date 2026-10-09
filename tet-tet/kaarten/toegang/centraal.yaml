@@ -1,0 +1,20 @@
+# Toegangskaart voor de centrale laag (Oppertet).
+# De Oppertet stuurt via doelen, budget en het Brein; afdelingstools gebruikt hij niet zelf.
+id: toegang-centraal
+type: toegangskaart_afdeling
+afdeling: centraal
+versie: 1.0.0
+status: concept
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+eigenaar: risk-h
+connectors: {}
+intern:
+  brein: rw
+  takensysteem: rw
+  agentregister: r
+  grootboek: r
+geen_toegang: []
+spelregels:
+  - Voert zelf geen taken uit; verdeelt werk via de takenmarkt.
+kenmerken: {}

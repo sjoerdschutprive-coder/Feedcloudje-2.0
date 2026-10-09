@@ -28,15 +28,40 @@ Bij tegenstrijdigheid wint de hogere bron.
 - Na afsluiten van een doelstelling blijven organisatie, kaarten en geleerde lessen bestaan; alleen `opdracht` en afdelingsdoelen worden leeg.
 - `klantsysteem` in de toegangskaarten is het kernsysteem van de opdrachtgever en wordt per doelstelling gekoppeld.
 
-## Volgende fase: de agents inbouwen
+## Stand van de bouw
 
-Werk in deze volgorde; elke stap is pas klaar met groene tests. Details per stap staan in de sectie *Bouwopdracht voor Claude Code* van de whitepaper.
+Stap 1 t/m 4 zijn gebouwd in `tettet/` met 23 tests (`python -m unittest discover -s tests -t .`, vanuit `tet-tet/`).
 
-1. **Kaartenlader**: laadt en valideert `kaarten/`, stelt per agent de instructies samen (harde grenzen → organisatie → afdeling → profiel → taakcontract) en berekent effectieve toegang (doorsnede van rolkaart, toegangskaart en profielmandaat).
-2. **Agent-runtime**: Anthropic Python SDK, met een mockmodus zonder API-aanroepen voor tests. Model, sleutel en budgetlimieten via configuratie. De velden onder `werkstijl` gaan letterlijk in de systeemprompt.
-3. **Taken en grootboek**: taakcontract, takenmarkt, statussen, escalatie, en een onveranderlijk eventlog met per event agent, taak, kaartversies en kosten.
-4. **De keten**: Raad → Oppertet → Hoofdtet → Tet → Control Tet, met de taakloop en afdelingsloop actief. Begin met één afdeling en twee agents; schaal pas op als het werkt.
-5. **Kantoor koppelen**: de interface uit `kantoor/index.html` leest live uit het platform in plaats van uit localStorage.
+| Module | Wat het doet |
+| --- | --- |
+| `kaarten.py` | Laadt en valideert de kaarten, stelt de systeemprompt samen (harde grenzen → organisatie → afdeling → profiel → rol en toegang), berekent effectieve toegang |
+| `validatie.py` | Schema-, verwijzings- en mandaatcontrole (ook gebruikt door `scripts/valideer_kaarten.py`) |
+| `grootboek.py` | Onveranderlijk eventlog met hashketen; elk event met agent, taak, kaartversies en kosten |
+| `brein.py` | Gedeeld geheugen; lessen na elke taak, gelezen vóór de volgende |
+| `beleid.py` | Beleidsmotor (harde grenzen, rolkaart, goedkeuringsinbox), tool-gateway, budgetbewaking |
+| `taken.py` | Taakcontract, takenmarkt, statussen, escalatie na `max_afkeuringen` |
+| `runtime.py` | `MockClient` (tests, demo) en `AnthropicClient` (echt), de `Agent` die kosten en kaartversies logt |
+| `keten.py` | `Kantoor`: Raad → Oppertet → Hoofdtet → Tet → Control Tet; risk-werk gaat naar de Raad |
+| `__main__.py` | Opdrachtregel: `run`, `prompt`, `toegang`, `grootboek` |
+
+Nog te bouwen, in deze volgorde:
+
+1. **Echte tools achter de tool-gateway**: Brein-zoeken, webzoeken en rekenmodule eerst, daarna connectors. Elke tool-aanroep via `Beleidsmotor.gebruik_bron`.
+2. **Kantoor koppelen**: een kleine API (FastAPI) boven `Kantoor`, en `kantoor/index.html` leest live daaruit in plaats van uit localStorage. De goedkeuringsinbox wordt daar bedienbaar.
+3. **Afdelingsloop en organisatieloop**: verslag per afdeling met KPI's uit het grootboek; reputatie- en stabiliteitsscore in `meetwaarden`.
+
+## Draaien
+
+```bash
+cd tet-tet
+pip install -r requirements.txt
+python -m tettet run "Naam van de doelstelling" --deadline 2026-12-31 --afdelingen fin,mkt   # mockmodus
+python -m tettet prompt fin-1      # samengestelde systeemprompt van een agent
+python -m tettet toegang fin-1     # effectieve toegang
+ANTHROPIC_API_KEY=... python -m tettet run "..." --afdelingen fin --echt --opslaan        # echte agents
+```
+
+Begin met `--echt` op één afdeling. Controleer de prijzen in `config/instellingen.yaml` voordat je dat doet: de budgetbewaking rekent ermee.
 
 ## Werkafspraken
 

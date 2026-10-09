@@ -6,101 +6,360 @@
   "$defs": {
     "basis": {
       "type": "object",
-      "required": ["id", "type", "versie", "status", "eigenaar", "goedgekeurd_door", "geldig_vanaf", "kenmerken"],
+      "required": [
+        "id",
+        "type",
+        "versie",
+        "status",
+        "eigenaar",
+        "goedgekeurd_door",
+        "geldig_vanaf",
+        "kenmerken"
+      ],
       "properties": {
-        "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
-        "versie": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
-        "status": {"enum": ["concept", "actief", "vervangen"]},
-        "eigenaar": {"type": "string"},
-        "goedgekeurd_door": {"type": "string"},
-        "geldig_vanaf": {"type": "string", "format": "date"},
-        "kenmerken": {"type": "object"}
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "versie": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "status": {
+          "enum": [
+            "concept",
+            "actief",
+            "vervangen"
+          ]
+        },
+        "eigenaar": {
+          "type": "string"
+        },
+        "goedgekeurd_door": {
+          "type": "string"
+        },
+        "geldig_vanaf": {
+          "type": "string",
+          "format": "date"
+        },
+        "kenmerken": {
+          "type": "object"
+        }
       }
     },
-    "afdeling_id": {"enum": ["ops", "fin", "mkt", "rnd", "hr", "risk", "prod"]},
-    "tekstlijst": {"type": "array", "items": {"type": "string"}, "minItems": 1},
-    "recht": {"enum": ["r", "rw"]}
+    "afdeling_id": {
+      "enum": [
+        "ops",
+        "fin",
+        "mkt",
+        "rnd",
+        "hr",
+        "risk",
+        "prod"
+      ]
+    },
+    "tekstlijst": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "recht": {
+      "enum": [
+        "r",
+        "rw"
+      ]
+    }
   },
   "oneOf": [
     {
       "title": "Cultuurkaart organisatie",
-      "allOf": [{"$ref": "#/$defs/basis"}],
+      "allOf": [
+        {
+          "$ref": "#/$defs/basis"
+        }
+      ],
       "properties": {
-        "type": {"const": "cultuurkaart_organisatie"},
-        "missie": {"type": "string"},
-        "kernwaarden": {
-          "type": "array", "minItems": 1,
-          "items": {"type": "object", "required": ["id", "naam", "betekenis"],
-                    "properties": {"id": {"type": "string"}, "naam": {"type": "string"}, "betekenis": {"type": "string"},
-                                   "we_doen": {"type": "array"}, "we_doen_niet": {"type": "array"}}}
+        "type": {
+          "const": "cultuurkaart_organisatie"
         },
-        "edge_principes": {"type": "array"},
-        "toon": {"type": "object"},
-        "beslisprincipes": {"$ref": "#/$defs/tekstlijst"},
-        "rode_lijnen": {"$ref": "#/$defs/tekstlijst"}
+        "missie": {
+          "type": "string"
+        },
+        "kernwaarden": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "naam",
+              "betekenis"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "naam": {
+                "type": "string"
+              },
+              "betekenis": {
+                "type": "string"
+              },
+              "we_doen": {
+                "type": "array"
+              },
+              "we_doen_niet": {
+                "type": "array"
+              }
+            }
+          }
+        },
+        "edge_principes": {
+          "type": "array"
+        },
+        "toon": {
+          "type": "object"
+        },
+        "beslisprincipes": {
+          "$ref": "#/$defs/tekstlijst"
+        },
+        "rode_lijnen": {
+          "$ref": "#/$defs/tekstlijst"
+        }
       },
-      "required": ["type", "missie", "kernwaarden", "rode_lijnen"]
+      "required": [
+        "type",
+        "missie",
+        "kernwaarden",
+        "rode_lijnen"
+      ]
     },
     {
       "title": "Cultuurkaart afdeling",
-      "allOf": [{"$ref": "#/$defs/basis"}],
+      "allOf": [
+        {
+          "$ref": "#/$defs/basis"
+        }
+      ],
       "properties": {
-        "type": {"const": "cultuurkaart_afdeling"},
-        "afdeling": {"$ref": "#/$defs/afdeling_id"},
-        "erft_van": {"type": "string"},
-        "missie": {"type": "string"},
-        "accent_op": {"type": "array", "items": {"type": "string"}},
-        "waarden": {"$ref": "#/$defs/tekstlijst"},
-        "werkwijze": {"$ref": "#/$defs/tekstlijst"},
-        "edge_principes": {"type": "array"},
-        "kwaliteitsnorm": {"type": "string"}
+        "type": {
+          "const": "cultuurkaart_afdeling"
+        },
+        "afdeling": {
+          "$ref": "#/$defs/afdeling_id"
+        },
+        "erft_van": {
+          "type": "string"
+        },
+        "missie": {
+          "type": "string"
+        },
+        "accent_op": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "waarden": {
+          "$ref": "#/$defs/tekstlijst"
+        },
+        "werkwijze": {
+          "$ref": "#/$defs/tekstlijst"
+        },
+        "edge_principes": {
+          "type": "array"
+        },
+        "kwaliteitsnorm": {
+          "type": "string"
+        }
       },
-      "required": ["type", "afdeling", "erft_van", "missie", "waarden", "werkwijze"]
+      "required": [
+        "type",
+        "afdeling",
+        "erft_van",
+        "missie",
+        "waarden",
+        "werkwijze"
+      ]
     },
     {
       "title": "Profielkaart agent",
-      "allOf": [{"$ref": "#/$defs/basis"}],
+      "allOf": [
+        {
+          "$ref": "#/$defs/basis"
+        }
+      ],
       "properties": {
-        "type": {"const": "profielkaart"},
-        "naam": {"type": "string"},
-        "rol": {"enum": ["oppertet", "hoofdtet", "tet", "controltet"]},
-        "rolkaart": {"type": "string"},
-        "afdeling": {"anyOf": [{"$ref": "#/$defs/afdeling_id"}, {"const": "centraal"}]},
-        "erft_van": {"type": "array", "items": {"type": "string"}, "minItems": 1},
-        "rapporteert_aan": {"type": "string"},
-        "missie": {"type": "string"},
-        "werkstijl": {"type": "object"},
-        "autonomieniveau": {"type": "integer", "minimum": 0, "maximum": 4},
-        "mandaat": {"type": "object", "required": ["toegangskaart", "inperkingen"],
-                    "properties": {"toegangskaart": {"type": "string"}, "inperkingen": {"type": "array", "items": {"type": "string"}}}},
-        "budget": {"type": "object"},
-        "samenwerking": {"type": "object"},
-        "meetwaarden": {"type": "object"}
+        "type": {
+          "const": "profielkaart"
+        },
+        "naam": {
+          "type": "string"
+        },
+        "rol": {
+          "enum": [
+            "oppertet",
+            "hoofdtet",
+            "tet",
+            "controltet"
+          ]
+        },
+        "rolkaart": {
+          "type": "string"
+        },
+        "afdeling": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/afdeling_id"
+            },
+            {
+              "const": "centraal"
+            }
+          ]
+        },
+        "erft_van": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "rapporteert_aan": {
+          "type": "string"
+        },
+        "missie": {
+          "type": "string"
+        },
+        "werkstijl": {
+          "type": "object"
+        },
+        "autonomieniveau": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "mandaat": {
+          "type": "object",
+          "required": [
+            "toegangskaart",
+            "inperkingen"
+          ],
+          "properties": {
+            "toegangskaart": {
+              "type": "string"
+            },
+            "inperkingen": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "budget": {
+          "type": "object"
+        },
+        "samenwerking": {
+          "type": "object"
+        },
+        "meetwaarden": {
+          "type": "object"
+        }
       },
-      "required": ["type", "naam", "rol", "rolkaart", "afdeling", "erft_van", "rapporteert_aan", "missie", "autonomieniveau", "mandaat"]
+      "required": [
+        "type",
+        "naam",
+        "rol",
+        "rolkaart",
+        "afdeling",
+        "erft_van",
+        "rapporteert_aan",
+        "missie",
+        "autonomieniveau",
+        "mandaat"
+      ]
     },
     {
       "title": "Rolkaart",
-      "allOf": [{"$ref": "#/$defs/basis"}],
+      "allOf": [
+        {
+          "$ref": "#/$defs/basis"
+        }
+      ],
       "properties": {
-        "type": {"const": "rolkaart"},
-        "bereik": {"enum": ["organisatie", "eigen_afdeling", "eigen_taak"]},
-        "max_autonomieniveau": {"type": "integer", "minimum": 0, "maximum": 4},
-        "mag": {"$ref": "#/$defs/tekstlijst"},
-        "mag_niet": {"$ref": "#/$defs/tekstlijst"}
+        "type": {
+          "const": "rolkaart"
+        },
+        "bereik": {
+          "enum": [
+            "organisatie",
+            "eigen_afdeling",
+            "eigen_taak"
+          ]
+        },
+        "max_autonomieniveau": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "mag": {
+          "$ref": "#/$defs/tekstlijst"
+        },
+        "mag_niet": {
+          "$ref": "#/$defs/tekstlijst"
+        }
       },
-      "required": ["type", "naam", "bereik", "max_autonomieniveau", "mag", "mag_niet"]
+      "required": [
+        "type",
+        "naam",
+        "bereik",
+        "max_autonomieniveau",
+        "mag",
+        "mag_niet"
+      ]
     },
     {
       "title": "Toegangskaart afdeling",
-      "allOf": [{"$ref": "#/$defs/basis"}],
+      "allOf": [
+        {
+          "$ref": "#/$defs/basis"
+        }
+      ],
       "properties": {
-        "type": {"const": "toegangskaart_afdeling"},
-        "afdeling": {"$ref": "#/$defs/afdeling_id"},
-        "connectors": {"type": "object", "additionalProperties": {"$ref": "#/$defs/recht"}},
-        "intern": {"type": "object", "additionalProperties": {"$ref": "#/$defs/recht"}}
+        "type": {
+          "const": "toegangskaart_afdeling"
+        },
+        "afdeling": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/afdeling_id"
+            },
+            {
+              "const": "centraal"
+            }
+          ]
+        },
+        "connectors": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/recht"
+          }
+        },
+        "intern": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/recht"
+          }
+        }
       },
-      "required": ["type", "afdeling", "connectors", "intern"]
+      "required": [
+        "type",
+        "afdeling",
+        "connectors",
+        "intern"
+      ]
     }
   ]
 }

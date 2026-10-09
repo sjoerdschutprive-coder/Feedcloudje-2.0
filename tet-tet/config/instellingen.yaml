@@ -1,0 +1,21 @@
+# Instellingen voor het Tet Tet-platform. Geen geheimen in dit bestand:
+# de API-sleutel komt uit de omgevingsvariabele ANTHROPIC_API_KEY.
+
+model:
+  # mock = draait zonder API-aanroepen (tests en demo's); anthropic = echte agents
+  aanbieder: mock
+  naam: claude-sonnet-5-5
+  max_tokens: 4000
+  # Prijzen per miljoen tokens in euro, voor de budgetbewaking.
+  # Placeholder: controleer de actuele prijzen voordat je echt geld uitgeeft.
+  prijs_per_mtok_in_eur: 3.0
+  prijs_per_mtok_uit_eur: 15.0
+
+taken:
+  # Na zoveel afkeuringen door een Control Tet escaleert een taak naar de Hoofdtet.
+  max_afkeuringen: 2
+
+opslag:
+  # Relatief ten opzichte van de map tet-tet/
+  grootboek: data/grootboek.jsonl
+  brein: data/brein.json

@@ -12,7 +12,10 @@ tet-tet/
     afdelingen/<afdeling>.yaml   # 7 cultuurkaarten afdeling (laag 2)
     agents/<agent-id>.yaml       # 21 profielkaarten (laag 3)
     rollen/<rol>.yaml            # 4 rolkaarten: wat een rol mag
-    toegang/<afdeling>.yaml      # 7 toegangskaarten: tools en data per afdeling
+    toegang/<afdeling>.yaml      # 8 toegangskaarten: tools en data per afdeling, plus centraal
+  config/                        # instellingen (model, budget) en harde grenzen (beleid.yaml)
+  tettet/                        # het platform: kaartenlader, grootboek, Brein, beleid, taken, agents, keten
+  tests/                         # tests, draaien zonder API-sleutel
   scripts/valideer_kaarten.py    # controleert schema, verwijzingen en mandaten
   kantoor/index.html             # het Tet Tet-kantoor (interface-referentie)
   WHITEPAPER.md                  # de whitepaper als Markdown

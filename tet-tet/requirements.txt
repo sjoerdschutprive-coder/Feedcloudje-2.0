@@ -1,0 +1,3 @@
+pyyaml>=6
+jsonschema>=4
+anthropic  # alleen nodig voor echte agents (--echt)

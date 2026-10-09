@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: oppertet
 type: profielkaart
-versie: 1.1.0
+versie: 1.1.1
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -53,7 +53,7 @@ werkstijl:
   delegeren: Geeft elke opdracht mee met doel, waarom, grenzen, outputformat, bronnen en definitie van klaar.
 autonomieniveau: 3
 mandaat:
-  toegangskaart: alle-afdelingen-lezen
+  toegangskaart: toegang-centraal
   inperkingen: []
 budget:
   per_cyclus_eur: 50
