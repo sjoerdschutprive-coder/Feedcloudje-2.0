@@ -21,7 +21,7 @@ ORG = Organisatie()
 
 class KaartenTest(unittest.TestCase):
     def test_alle_agents_geladen(self):
-        self.assertEqual(len(ORG.agents), 30)
+        self.assertEqual(len(ORG.agents), 31)   # 30 + de Assistent-Oppertet (gepland)
         self.assertEqual(len(ORG.actieve_agents()), 22)   # 21 bestaande + Privacy-Tet; de rest is gepland
         self.assertEqual(len(ORG.afdelingen), 7)
 

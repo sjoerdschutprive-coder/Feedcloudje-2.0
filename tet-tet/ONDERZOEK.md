@@ -34,6 +34,7 @@ De `bron`-velden in de kaarten verwijzen naar de ids hieronder. Per bron: wat he
 | Wie weet wat is zichtbaar | Teams met een goed 'wie weet wat'-systeem (transactief geheugen) presteren beter; het ontstaat in de planningsfase en door direct contact. | `transactief-geheugen` |
 | Unieke informatie eerst | Groepen bespreken vooral wat iedereen al weet; unieke kennis blijft liggen, vooral als het om consensus gaat in plaats van om het juiste antwoord. | `hidden-profile` |
 | Need-to-know, ook aan de koffietafel | Agents lekken vaker naarmate ze langer sociaal interacteren, en na één lek stijgt de kans op het volgende sterk. Instructies alleen helpen beperkt; daarom een deelfilter vooraf en toezicht door Risk & Safety. | `geheimen-multi-agent` |
+| Een extra laag versnelt, filtert niet | Het aantal relaties dat een leidinggevende moet bijhouden groeit veel sneller dan het aantal mensen dat aan hem rapporteert. Een stafrol kan de leider ontlasten door coördinatie, opvolging en het voorbereiden van besluiten, mits rollen helder zijn en anderen erop kunnen vertrouwen dat zorgen accuraat worden doorgegeven. Unieke informatie verdwijnt makkelijk onderweg; daarom houdt ieder een directe lijn naar de Oppertet. | `span-of-control`, `ceo-staf`, `hidden-profile` |
 
 ## Kenmerken van de samenwerking
 
@@ -45,6 +46,7 @@ De `bron`-velden in de kaarten verwijzen naar de ids hieronder. Per bron: wat he
 | Afdelingsomvang | 1 Hoofdtet + 3 Tets per afdeling; nieuwe agents pas actief na een meting. Centrale coördinatie beperkt foutversterking; meer agents is niet vanzelf beter. | `teamomvang`, `schaal-agents` |
 | Cultuurmeting | Energie (interacties), betrokkenheid (gelijke spreektijd), verkenning (contact buiten de eigen afdeling) en veiligheid (zelf gemelde fouten). | `pentland-teams`, `project-aristotle` |
 | Eenvoudigste oplossing eerst | Complexiteit alleen toevoegen als metingen dat rechtvaardigen. | `anthropic-effectieve-agents` |
+| Assistent-Oppertet | Een chief of staff onder de Oppertet en boven de Hoofdtets: vertaalt MT-besluiten door, bewaakt opvolging in een besluitenregister, coördineert tussen afdelingen en is eerste lijn voor operationele escalaties. Geen eigen strategische besluiten en geen filter: risico's, integriteit en onenigheid met de assistent gaan rechtstreeks naar de Oppertet, het blok 'alleen wij weten' gaat ongewijzigd door. Pas actief na een meting vóór en na. | `span-of-control`, `ceo-staf`, `hidden-profile`, `schaal-agents` |
 
 ## Bronnen
 
@@ -70,3 +72,5 @@ De `bron`-velden in de kaarten verwijzen naar de ids hieronder. Per bron: wat he
 - `schaal-agents`: Google Research en MIT, *Towards a Science of Scaling Agent Systems* (2025). https://research.google/blog/towards-a-science-of-scaling-agent-systems-when-and-why-agent-systems-work/
 - `teamomvang`: Hackman & Vidmar (1970), samengevat in GWU-gids teameffectiviteit. https://guides.himmelfarb.gwu.edu/teameffectiveness/structural-factors
 - `geheimen-multi-agent`: *Got a Secret? LLM Agents Can't Keep It: Evaluating Privacy in Multi-Agent Systems* (2026). https://arxiv.org/abs/2605.27766
+- `span-of-control`: Graicunas, *Relationship in Organization* (Bulletin of the International Management Institute, 1933): bij n ondergeschikten groeit het aantal relaties volgens n(2^(n−1) + n − 1); bij 7 zijn dat er 490. https://nickols.us/graicunas.htm
+- `ceo-staf`: Barton, Cave, Cook & Reeves, *The Heart of CEO Effectiveness* (BCG 2020), over de staf rond de CEO: het bereik van de leider vergroten, integreren tussen afdelingen, heldere rollen, en vertrouwen dat zorgen accuraat worden doorgegeven. https://www.bcg.com/publications/2020/heart-ceo-effectiveness

@@ -2,7 +2,7 @@
 # Deze laag komt als eerste in de instructies en gaat altijd voor.
 
 id: beleid-tet-tet
-versie: 1.0.0
+versie: 1.1.0
 
 harde_grenzen:
   - Geen externe communicatie namens de organisatie zonder akkoord van de Raad.
@@ -23,3 +23,10 @@ goedkeuring_raad:
 # Handelingen die nooit zijn toegestaan, ook niet met akkoord.
 verboden:
   - betaling.uitvoeren
+
+# Escalaties van een Hoofdtet met deze soort gaan rechtstreeks naar de Oppertet (directe lijn),
+# ook als er een Assistent-Oppertet actief is; die krijgt alleen een kopie. Zie ONDERZOEK.md.
+directe_lijn:
+  - risico
+  - integriteit
+  - oneens_assistent

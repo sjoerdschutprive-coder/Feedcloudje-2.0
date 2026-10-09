@@ -1,13 +1,14 @@
 # Rolkaart: wat een rol mag en hoe ver hij reikt. Eigenaar: Raad.
 id: rol-oppertet
 type: rolkaart
-versie: 1.1.0
+versie: 1.2.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
 eigenaar: raad
 naam: Oppertet
 bereik: organisatie
+niveau: 1
 max_autonomieniveau: 3
 mag:
   - opdrachten.van_raad_vertalen
@@ -17,6 +18,13 @@ mag:
   - budget.verdelen
   - brein.lezen
   - brein.schrijven
+# Besluiten die bij de Oppertet (en het MT dat hij voorzit) of de Raad liggen.
+# Geen rol lager in de lijn mag deze handelingen hebben (validator).
+voorbehouden:
+  - opdrachten.van_raad_vertalen
+  - prioriteiten.bepalen
+  - escalaties.beslechten
+  - budget.verdelen
 mag_niet:
   - taak.uitvoeren
   - kaarten.wijzigen

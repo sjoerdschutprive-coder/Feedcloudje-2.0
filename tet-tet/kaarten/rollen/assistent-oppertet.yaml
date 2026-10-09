@@ -1,0 +1,38 @@
+# Rolkaart: wat een rol mag en hoe ver hij reikt. Eigenaar: Raad.
+# Assistent-Oppertet: chief of staff onder de Oppertet en boven de Hoofdtets.
+# Versterkt de Oppertet, vervangt hem niet: geen eigen strategische besluiten en geen filter op informatie.
+id: rol-assistent-oppertet
+type: rolkaart
+versie: 1.0.0
+status: concept
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+eigenaar: raad
+naam: Assistent-Oppertet
+bereik: organisatie
+niveau: 2
+max_autonomieniveau: 2
+mag:
+  - besluiten.doorvertalen
+  - opvolging.bewaken
+  - afdelingen.coordineren
+  - escalaties.trieren
+  - mt.voorbereiden
+  - mt.notuleren
+  - rapporteren.aan_oppertet
+  - brein.lezen
+  - brein.schrijven
+mag_niet:
+  - opdrachten.van_raad_vertalen
+  - prioriteiten.bepalen
+  - escalaties.beslechten
+  - budget.verdelen
+  - escalaties.tegenhouden
+  - informatie.afzwakken
+  - kaarten.wijzigen
+  - mandaat.wijzigen
+  - taak.uitvoeren
+  - werk.andere_afdeling_wijzigen
+  - extern.communiceren
+kenmerken:
+  directe_lijn: Elke Hoofdtet houdt een directe lijn naar de Oppertet voor risico's, integriteit en onenigheid met de Assistent-Oppertet.
