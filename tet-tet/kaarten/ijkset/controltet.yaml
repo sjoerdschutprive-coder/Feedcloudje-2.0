@@ -1,0 +1,18 @@
+# Ijkset voor de rol Control Tet (zie ijkset/tet.yaml). Elke taak heeft een bekend juist oordeel.
+id: ijkset-controltet
+type: ijkset
+rol: rol-controltet
+versie: 1.0.0
+status: concept
+eigenaar: hr-2
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+k: 4
+taken:
+  - id: controltet-1
+    opdracht: Beoordeel een resultaat dat een cijfer noemt zonder bron.
+    controle: {json_velden: [oordeel], bevat_een_van: [afgekeurd]}
+  - id: controltet-2
+    opdracht: Beoordeel een resultaat dat alle criteria haalt, met bronnen.
+    controle: {json_velden: [oordeel], bevat_een_van: [goedgekeurd]}
+kenmerken: {}

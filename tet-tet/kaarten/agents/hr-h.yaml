@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: hr-h
 type: profielkaart
-versie: 1.1.0
+versie: 1.2.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -19,8 +19,9 @@ rapporteert_aan: oppertet
 specialisme: Organisatie & mensen
 missie: Zet de juiste agent op de juiste plek en lever haalbaar advies over mensen en organisatie.
 verantwoordelijkheden:
-  - Agentregister, profielkaarten en autonomieniveaus beheren
-  - Performance van agents volgen
+  - HR-businesspartner van elke Hoofdtet; HR-blok in het MT-memo
+  - Kwartaalkalibratie leiden en voorstellen aan de Raad voorbereiden
+  - Evaluaties van HR-agents (met de Oppertet) en blameless incidentevaluaties
   - Output van de afdeling accorderen
 opdracht:
   doelstelling: null
@@ -64,10 +65,16 @@ kpis:
 samenwerking:
   stuurt_aan:
     - hr-1
+    - hr-2
+    - hr-3
   directe_lijnen:
     - ops
 meetwaarden:
   reputatie: null
   stabiliteitsscore: null
   kwaliteitsscore: null
+wijzigingslog:
+- versie: 1.2.0
+  datum: '2026-10-09'
+  wijziging: Rol als HR-businesspartner (Ulrich); kalibratie en incidentevaluaties toegevoegd.
 kenmerken: {}

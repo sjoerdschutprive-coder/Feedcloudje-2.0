@@ -8,15 +8,18 @@ import sys
 from collections import Counter
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
-from tettet.validatie import valideer  # noqa: E402
+from tettet.validatie import controleer_mappen, valideer  # noqa: E402
 
 NAMEN = [("cultuurkaart_organisatie", "organisatiekaart"), ("cultuurkaart_afdeling", "afdelingskaarten"),
-         ("profielkaart", "profielkaarten"), ("rolkaart", "rolkaarten"), ("toegangskaart_afdeling", "toegangskaarten")]
+         ("profielkaart", "profielkaarten"), ("rolkaart", "rolkaarten"), ("toegangskaart_afdeling", "toegangskaarten"),
+         ("handboek", "handboekdelen"), ("ijkset", "ijksets")]
 
 if __name__ == "__main__":
     kaarten, fouten = valideer()
     n = Counter(k["type"] for k in kaarten.values())
     print(", ".join(f"{n[t]} {naam}" for t, naam in NAMEN))
+    for w in controleer_mappen():
+        print(f"LET OP  {w}")
     if fouten:
         print("\n".join(f"FOUT  {f}" for f in fouten))
         sys.exit(1)

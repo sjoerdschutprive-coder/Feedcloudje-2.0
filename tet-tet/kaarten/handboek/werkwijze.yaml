@@ -1,0 +1,32 @@
+# Handboek – werkwijze. Enige bron van waarheid voor hoe we werken (principe 'Eén bron van waarheid').
+# Beheer: Governance-Tet (hr-3) stelt voor, de Raad stelt vast. Wijzig je iets: verhoog versie.
+id: handboek-werkwijze
+type: handboek
+onderdeel: werkwijze
+versie: 1.0.0
+status: concept
+eigenaar: hr-3
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+documentsoort: uitleg
+# Verwijst naar principes in de organisatiekaart in plaats van ze te herhalen.
+stappen:
+  - stap: Starten
+    regel: Lees eerst het Brein (lessen, wie weet wat, wie werkt waaraan, open vragen) en de acceptatiecriteria.
+    principes: [wie-weet-wat, context-niet-controle]
+  - stap: Uitvoeren
+    regel: Eenvoudigste aanpak eerst; binnen je toegang en mandaat; geef elke conclusie een zekerheid tussen 0 en 1.
+    principes: [eerlijk-over-zekerheid]
+  - stap: Afronden
+    regel: Zelfcheck per criterium, bronnen vermelden, één les in het Brein. Stop zodra 'klaar' bereikt is.
+    principes: [leren-zonder-hertraining, verificatie-op-twee-niveaus]
+  - stap: Overdragen
+    regel: Wat een andere afdeling raakt, gaat als signaal in het Brein of via een directe lijn; één eigenaar per vervolgstap.
+    principes: [een-eigenaar, wie-weet-wat]
+  - stap: Escaleren
+    regel: Bij twijfel over feiten of mandaat escaleren, niet gokken. Een gemelde fout is goed werk.
+    principes: [gemelde-fout-is-goed-werk, bijna-fouten-tellen]
+wijzigen:
+  - Iedere afdeling kan via de vraagbaak een wijziging voorstellen (vraag aan hr, begin met 'Handboek:').
+  - De Governance-Tet werkt het voorstel uit; de Raad stelt het vast; daarna gaat de versie omhoog.
+kenmerken: {}

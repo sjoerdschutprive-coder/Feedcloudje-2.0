@@ -1,0 +1,68 @@
+# Handboek – mappenstructuur. De validator waarschuwt (geen fout) bij een bestand op een onverwachte plek.
+# Documentatie volgt Diátaxis: leren, handleiding, naslag, uitleg.
+id: handboek-mappenstructuur
+type: handboek
+onderdeel: mappenstructuur
+versie: 1.0.0
+status: concept
+eigenaar: hr-3
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+documentsoort: naslag
+basis: tet-tet
+mappen:
+  - pad: kaarten/organisatie
+    waarom: Cultuurkaart van de organisatie (laag 1).
+    patronen: ['*.yaml']
+  - pad: kaarten/afdelingen
+    waarom: Cultuurkaarten per afdeling (laag 2).
+    patronen: ['*.yaml']
+  - pad: kaarten/agents
+    waarom: Profielkaarten, één per agent; bestandsnaam = id.
+    patronen: ['*.yaml']
+  - pad: kaarten/rollen
+    waarom: Rolkaarten.
+    patronen: ['*.yaml']
+  - pad: kaarten/toegang
+    waarom: Toegangskaarten per afdeling.
+    patronen: ['*.yaml']
+  - pad: kaarten/schema
+    waarom: JSON-schema van alle kaarten.
+    patronen: ['*.json']
+  - pad: kaarten/handboek
+    waarom: Het handboek, de enige bron van waarheid voor werkwijze, stijl en structuur.
+    patronen: ['*.yaml']
+  - pad: kaarten/ijkset
+    waarom: Vaste ijkset per rol voor pass^k.
+    patronen: ['*.yaml']
+  - pad: config
+    waarom: Instellingen en beleid; geen geheimen.
+    patronen: ['*.yaml']
+  - pad: tettet
+    waarom: Het platform (Python).
+    patronen: ['*.py']
+  - pad: tests
+    waarom: Tests per module.
+    patronen: ['*.py']
+  - pad: scripts
+    waarom: Hulpscripts (validator, bouw van het kantoor).
+    patronen: ['*.py']
+  - pad: kantoor
+    waarom: Het live kantoor (artifact).
+    patronen: ['*.html']
+  - pad: .
+    waarom: Documentatie in de hoofdmap.
+    patronen: ['*.md', 'requirements.txt', '.gitignore']
+documentatie:
+  README.md: leren
+  WERKDAG.md: handleiding
+  ZELFONTWIKKELING.md: handleiding
+  CLAUDE.md: naslag
+  WHITEPAPER.md: uitleg
+  ONDERZOEK.md: uitleg
+naamgeving:
+  bestanden: kleine letters, woorden met een streepje of underscore, Nederlands
+  kaarten: bestandsnaam is het id van de kaart
+  collecties: kleine letters, meervoud of verzamelnaam (taken, overleggen, kantine)
+negeren: [data, __pycache__, '*.pyc', .git]
+kenmerken: {}

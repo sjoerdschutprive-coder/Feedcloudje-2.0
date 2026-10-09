@@ -1,0 +1,34 @@
+# Handboek – schrijfstijl. tettet/stijl.py toetst eindproducten hiertegen (signalerend, nooit blokkerend).
+id: handboek-schrijfstijl
+type: handboek
+onderdeel: schrijfstijl
+versie: 1.0.0
+status: concept
+eigenaar: hr-3
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+documentsoort: naslag
+toon: direct, licht, geen opvulling
+aanspreekvorm: je
+regels:
+  max_zinslengte: 25
+  actief_schrijven: true
+  conclusie_eerst: true
+  bron_bij_getal: true
+  getallen: Cijfers met eenheid; bedragen als € 1.250; percentages als 12%.
+  datums: Datums als 9 oktober 2026 of 2026-10-09; nooit 10/9.
+# Patronen voor de lijdende vorm (hulpwerkwoord + voltooid deelwoord).
+lijdende_vorm:
+  hulpwerkwoorden: [wordt, worden, werd, werden]
+  deelwoord: '\bge\w+[dt]\b'
+# Openingen die op een aanloop wijzen in plaats van een conclusie.
+aanloop_openingen: [in dit document, in deze, hieronder, eerst, allereerst, zoals gevraagd, om te beginnen]
+bronpatronen: ['https?://', '\(bron', '\[\d+\]', 'bron:']
+weging:
+  te_lang: 4
+  lijdend: 3
+  opvulling: 2
+  engels: 2
+  geen_bron: 5
+  geen_conclusie_eerst: 8
+kenmerken: {}

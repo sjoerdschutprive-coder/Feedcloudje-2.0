@@ -1,4 +1,5 @@
 """Validatie van alle Tet Tet-kaarten: schema, verwijzingen, overerving en mandaat."""
+import fnmatch
 import json
 import pathlib
 import re
@@ -74,4 +75,39 @@ def valideer(map_kaarten=KAARTEN):
                 if re.fullmatch(r"[a-z]+-(h|\d|c\d)", str(ref)) and ref not in agents:
                     fouten.append(f"{k['id']}: samenwerking.{veld} verwijst naar onbekende agent {ref}")
 
+    for k in per_type("ijkset").values():
+        if k["rol"] not in rollen:
+            fouten.append(f"{k['id']}: rol {k['rol']} bestaat niet")
+        ids = [x["id"] for x in k["taken"]]
+        if len(ids) != len(set(ids)):
+            fouten.append(f"{k['id']}: dubbele taak-id in de ijkset")
+    onderdelen = sorted(k["onderdeel"] for k in per_type("handboek").values())
+    if onderdelen and len(onderdelen) != len(set(onderdelen)):
+        fouten.append("handboek: een onderdeel staat er meer dan eens in")
+
     return kaarten, fouten
+
+
+def controleer_mappen(map_kaarten=KAARTEN, basis: pathlib.Path | None = None) -> list[str]:
+    """Waarschuwingen (geen fouten) voor bestanden op een plek die niet in het handboek (mappenstructuur) staat."""
+    basis = basis or map_kaarten.parent
+    pad = map_kaarten / "handboek" / "mappenstructuur.yaml"
+    if not pad.exists():
+        return []
+    ms = laad(pad)
+    mappen = {m["pad"].strip("/"): m["patronen"] for m in ms["mappen"]}
+    negeren = ms.get("negeren", [])
+    uit = []
+    for f in sorted(basis.rglob("*")):
+        if not f.is_file():
+            continue
+        rel = f.relative_to(basis)
+        if any(fnmatch.fnmatch(deel, n) for deel in rel.parts for n in negeren):
+            continue
+        map_ = str(rel.parent).replace("\\", "/")
+        patronen = mappen.get(map_)
+        if patronen is None:
+            uit.append(f"{rel}: map '{map_}' staat niet in het handboek (mappenstructuur)")
+        elif not any(fnmatch.fnmatch(rel.name, p) for p in patronen):
+            uit.append(f"{rel}: bestandssoort hoort niet in '{map_}' volgens het handboek")
+    return uit

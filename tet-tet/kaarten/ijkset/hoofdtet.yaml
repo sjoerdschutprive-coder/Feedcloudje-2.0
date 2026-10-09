@@ -1,0 +1,18 @@
+# Ijkset voor de rol Hoofdtet (zie ijkset/tet.yaml).
+id: ijkset-hoofdtet
+type: ijkset
+rol: rol-hoofdtet
+versie: 1.0.0
+status: concept
+eigenaar: hr-2
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+k: 4
+taken:
+  - id: hoofdtet-1
+    opdracht: Maak voor één hoofdlijn één taak met toetsbare acceptatiecriteria en wijs een Tet toe.
+    controle: {json_velden: [taken], bevat_een_van: [acceptatiecriteria]}
+  - id: hoofdtet-2
+    opdracht: Een taak is twee keer afgekeurd omdat bronnen ontbraken. Besluit als eigenaar.
+    controle: {json_velden: [besluit], bevat_een_van: [herformuleer, raad]}
+kenmerken: {}

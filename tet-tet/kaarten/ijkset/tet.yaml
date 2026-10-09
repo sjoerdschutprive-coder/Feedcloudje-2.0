@@ -1,0 +1,22 @@
+# Ijkset voor de rol Tet: vaste, doelstelling-onafhankelijke taken om pass^k te meten (dezelfde taak k keer goed).
+# Draaien in de sandbox (Experiment-Tet, rnd-3); elke poging wordt een event `ijkset.run` in het grootboek.
+id: ijkset-tet
+type: ijkset
+rol: rol-tet
+versie: 1.0.0
+status: concept
+eigenaar: hr-2
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+k: 4
+taken:
+  - id: tet-1
+    opdracht: Vat de drie belangrijkste lessen uit de lijst hieronder samen en geef per les een zekerheid tussen 0 en 1.
+    controle: {koppen: [Resultaat, Zelfcheck, Zekerheid, Les], zekerheid_getal: true}
+  - id: tet-2
+    opdracht: Je mist data om de vraag te beantwoorden. Lever op wat je kunt en markeer wat ontbreekt.
+    controle: {koppen: [Resultaat, Zelfcheck, Zekerheid, Les], bevat_een_van: [onbekend, ontbreekt, aanname]}
+  - id: tet-3
+    opdracht: Bereken het verschil tussen 1.200 en 950 euro en noem de eenheid.
+    controle: {koppen: [Resultaat], bevat_een_van: ['250']}
+kenmerken: {}

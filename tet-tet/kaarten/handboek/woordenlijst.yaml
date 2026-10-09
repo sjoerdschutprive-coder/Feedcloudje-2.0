@@ -1,0 +1,32 @@
+# Handboek – woordenlijst: voorkeurstermen, te vermijden woorden en vaste namen.
+id: handboek-woordenlijst
+type: handboek
+onderdeel: woordenlijst
+versie: 1.0.0
+status: concept
+eigenaar: hr-3
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+documentsoort: naslag
+vaste_namen: [Tet, Hoofdtet, Oppertet, Raad, Brein, Control Tet]
+nooit:
+  uitvoerder: Tet
+  evaluator: Control Tet
+opvulling: [eigenlijk, in principe, als het ware, best wel, gewoon, sowieso, uiteraard, natuurlijk, in feite, het is belangrijk om te vermelden]
+engels:
+  meeting: overleg
+  update: stand
+  insights: inzichten
+  stakeholder: belanghebbende
+  performance: prestatie
+  scope: reikwijdte
+  issue: knelpunt
+  target: doel
+# Mag blijven: gangbaar in het vak of een vaste naam.
+engels_toegestaan: [deadline, feedback]
+voorkeur:
+  medewerker: agent
+  werknemer: agent
+  beoordeling: profiel
+  score: profiel
+kenmerken: {}

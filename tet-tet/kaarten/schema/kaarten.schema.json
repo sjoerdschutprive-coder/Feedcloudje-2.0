@@ -367,6 +367,260 @@
         "connectors",
         "intern"
       ]
+    },
+    {
+      "title": "Handboek – werkwijze",
+      "allOf": [
+        {
+          "$ref": "#/$defs/basis"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "handboek"
+        },
+        "onderdeel": {
+          "const": "werkwijze"
+        },
+        "documentsoort": {
+          "enum": [
+            "leren",
+            "handleiding",
+            "naslag",
+            "uitleg"
+          ]
+        },
+        "stappen": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "stap",
+              "regel"
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "onderdeel",
+        "documentsoort",
+        "stappen",
+        "wijzigen"
+      ]
+    },
+    {
+      "title": "Handboek – schrijfstijl",
+      "allOf": [
+        {
+          "$ref": "#/$defs/basis"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "handboek"
+        },
+        "onderdeel": {
+          "const": "schrijfstijl"
+        },
+        "documentsoort": {
+          "enum": [
+            "leren",
+            "handleiding",
+            "naslag",
+            "uitleg"
+          ]
+        },
+        "regels": {
+          "type": "object",
+          "required": [
+            "max_zinslengte"
+          ],
+          "properties": {
+            "max_zinslengte": {
+              "type": "integer",
+              "minimum": 5
+            }
+          }
+        },
+        "weging": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "onderdeel",
+        "documentsoort",
+        "toon",
+        "regels",
+        "weging"
+      ]
+    },
+    {
+      "title": "Handboek – woordenlijst",
+      "allOf": [
+        {
+          "$ref": "#/$defs/basis"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "handboek"
+        },
+        "onderdeel": {
+          "const": "woordenlijst"
+        },
+        "documentsoort": {
+          "enum": [
+            "leren",
+            "handleiding",
+            "naslag",
+            "uitleg"
+          ]
+        },
+        "opvulling": {
+          "$ref": "#/$defs/tekstlijst"
+        },
+        "engels": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "onderdeel",
+        "documentsoort",
+        "vaste_namen",
+        "opvulling",
+        "engels"
+      ]
+    },
+    {
+      "title": "Handboek – huisstijl",
+      "allOf": [
+        {
+          "$ref": "#/$defs/basis"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "handboek"
+        },
+        "onderdeel": {
+          "const": "huisstijl"
+        },
+        "documentsoort": {
+          "enum": [
+            "leren",
+            "handleiding",
+            "naslag",
+            "uitleg"
+          ]
+        },
+        "kleuren": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
+        },
+        "afdelingen": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "onderdeel",
+        "documentsoort",
+        "kleuren",
+        "afdelingen",
+        "typografie"
+      ]
+    },
+    {
+      "title": "Handboek – mappenstructuur",
+      "allOf": [
+        {
+          "$ref": "#/$defs/basis"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "handboek"
+        },
+        "onderdeel": {
+          "const": "mappenstructuur"
+        },
+        "documentsoort": {
+          "enum": [
+            "leren",
+            "handleiding",
+            "naslag",
+            "uitleg"
+          ]
+        },
+        "mappen": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "pad",
+              "waarom",
+              "patronen"
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "onderdeel",
+        "documentsoort",
+        "basis",
+        "mappen"
+      ]
+    },
+    {
+      "title": "Ijkset",
+      "allOf": [
+        {
+          "$ref": "#/$defs/basis"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "ijkset"
+        },
+        "rol": {
+          "type": "string"
+        },
+        "k": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "taken": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "opdracht",
+              "controle"
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "rol",
+        "k",
+        "taken"
+      ]
     }
   ]
 }

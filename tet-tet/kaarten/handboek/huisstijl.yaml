@@ -1,0 +1,53 @@
+# Handboek – huisstijl. Eenmalig gehaald uit kantoor/index.html; vanaf nu leidend.
+# scripts/bouw_kantoor.py zet de tokens als :root in het kantoor.
+id: handboek-huisstijl
+type: handboek
+onderdeel: huisstijl
+versie: 1.0.0
+status: concept
+eigenaar: hr-3
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+documentsoort: naslag
+kleuren:
+  bg: '#14110f'
+  bg-2: '#1c1815'
+  panel: '#221d19'
+  panel-2: '#2b251f'
+  line: '#3a322b'
+  text: '#f2e9df'
+  muted: '#a8998a'
+  accent: '#f0a04b'
+  accent-2: '#e8734a'
+  busy: '#f0a04b'
+  next: '#7fb2e5'
+  done: '#7ccf8a'
+  idle: '#6d625a'
+  warn: '#ef5d5d'
+afdelingen:
+  ops: '#e8a33d'
+  fin: '#5fbf8f'
+  mkt: '#e86a8a'
+  rnd: '#7f8fe8'
+  hr: '#c98be0'
+  risk: '#ef6b5b'
+  prod: '#4fbfd0'
+vormen:
+  radius: 14px
+typografie:
+  font-display: '"Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif'
+  font-body: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+  kleurschema: dark
+iconen: [team, cultuur, toegang, rol, profiel, taken, berichten, lijnen, doel, geschiedenis, regels]
+componenten:
+  - naam: tegel
+    gebruik: Doorklikbare samenvatting op een pagina; opent een kaart (sheet).
+  - naam: kaart
+    gebruik: Volledige inhoud van een tegel, onderaan het scherm op telefoon.
+  - naam: chip
+    gebruik: Kort label of knop in een rij.
+  - naam: kpi
+    gebruik: Eén getal met uitleg; nooit een totaalscore van een agent.
+  - naam: bord
+    gebruik: Bovenblok van een pagina met stand en acties.
+kenmerken: {}
