@@ -4,7 +4,7 @@ type: cultuurkaart_afdeling
 afdeling: prod
 naam: Product
 erft_van: cultuur-tet-tet
-versie: 1.2.0
+versie: 1.3.0
 status: concept
 eigenaar: prod-h
 goedgekeurd_door: raad
@@ -41,5 +41,7 @@ kpis: [concepten uitgewerkt, klantreizen getekend, getoetst door Finance]
 # een profielkaart kan ze inperken of, met akkoord van de Raad, een connector van een andere afdeling toevoegen.
 connectors:
   gdrive: rw
+  gcal: rw
+  gmail: rw
   firecrawl: r
 kenmerken: {}

@@ -111,8 +111,9 @@ class Organisatie:
         return bool(self.connectors.get(connector, {}).get("verbonden"))
 
     def afdelingsconnectors(self, afdeling: str) -> dict[str, str]:
-        """Connectors van een afdeling: van haar cultuurkaart, alleen wat in de cloudomgeving echt verbonden is."""
-        kaart = self.afdelingen.get(afdeling) or {}
+        """Connectors van een afdeling: van haar cultuurkaart (voor de directie, afdeling centraal: de organisatiekaart),
+        alleen wat in de cloudomgeving echt verbonden is."""
+        kaart = self.organisatie if afdeling == "centraal" else (self.afdelingen.get(afdeling) or {})
         return {c: r for c, r in (kaart.get("connectors") or {}).items() if self.verbonden(c)}
 
     def extra_connectors(self, agent_id: str) -> dict[str, str]:

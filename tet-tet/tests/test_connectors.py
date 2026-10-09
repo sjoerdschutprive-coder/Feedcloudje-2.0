@@ -20,7 +20,14 @@ def kopie(aanpassen) -> pathlib.Path:
     return tmp
 
 
+def zonder_gmail_bij_mkt(map_):
+    """Testopzet voor uitzonderingen: Marketing heeft Gmail en Firecrawl niet op haar cultuurkaart, de andere afdelingen wel."""
+    p = map_ / "afdelingen" / "mkt.yaml"
+    p.write_text(p.read_text(encoding="utf-8").replace("  gmail: rw\n", "").replace("  firecrawl: r\n", ""), encoding="utf-8")
+
+
 def extra(map_, agent: str, regel: str):
+    zonder_gmail_bij_mkt(map_)
     p = map_ / "agents" / f"{agent}.yaml"
     p.write_text(p.read_text(encoding="utf-8").replace("  extra_connectors: []", "  extra_connectors:\n" + regel), encoding="utf-8")
 
@@ -44,7 +51,11 @@ class RegisterTest(unittest.TestCase):
                         self.assertIn(c, t, (a["id"], c))
         self.assertTrue(all("connectors" not in t for t in ORG.toegang.values()))
         self.assertEqual(ORG.effectieve_toegang("mkt-1").bronnen.get("firecrawl"), "r")
-        self.assertNotIn("gmail", ORG.effectieve_toegang("mkt-1").bronnen)
+        # alle afdelingen en de directie hebben alle verbonden connectors
+        for eenheid in [*ORG.afdelingen, "centraal"]:
+            self.assertEqual(set(ORG.afdelingsconnectors(eenheid)), {"gdrive", "gcal", "gmail", "firecrawl"}, eenheid)
+        self.assertEqual(ORG.effectieve_toegang("oppertet").bronnen.get("gmail"), "rw")
+        self.assertEqual(ORG.effectieve_toegang("risk-c1").bronnen.get("gdrive"), "r")   # Control Tets alleen lezen
 
     def test_niet_verbonden_telt_niet(self):
         def zet(m):
@@ -82,11 +93,12 @@ class ExtraConnectorTest(unittest.TestCase):
 
     def test_grenzen_aan_extra_connectors(self):
         gevallen = {
-            "schrijfrecht dat geen afdeling heeft": ("mkt-1", "    - {connector: gmail, recht: rw, reden: 'versturen', goedgekeurd_door: raad}\n", "met schrijfrecht"),
+            "schrijfrecht dat geen afdeling heeft": ("mkt-1", "    - {connector: firecrawl, recht: rw, reden: 'schrijven', goedgekeurd_door: raad}\n", "met schrijfrecht"),
             "connector van de eigen afdeling": ("mkt-1", "    - {connector: gdrive, recht: rw, reden: 'dubbel', goedgekeurd_door: raad}\n", "heeft de afdeling al"),
             "zonder akkoord van de Raad": ("mkt-1", "    - {connector: gmail, recht: r, reden: 'zomaar', goedgekeurd_door: mkt-h}\n", "schema"),
             "niet in het register": ("mkt-1", "    - {connector: slack, recht: r, reden: 'chat', goedgekeurd_door: raad}\n", "niet in het connectorregister"),
             "assistent": ("oppertet-a", "    - {connector: gmail, recht: r, reden: 'mail', goedgekeurd_door: raad}\n", "geen extra connectors"),
+            "geen andere afdeling": ("mkt-1", "    - {connector: omniroute, recht: r, reden: 'routes', goedgekeurd_door: raad}\n", "hoort bij geen andere afdeling"),
         }
         for naam, (agent, regel, verwacht) in gevallen.items():
             tmp = kopie(lambda m: extra(m, agent, regel))
@@ -106,9 +118,11 @@ class WerkdagPromptTest(unittest.TestCase):
         wd.org = ORG
         hr = "\n".join(wd._connector_regels("hr-h"))
         self.assertIn("mcp__Gmail__", hr)
-        self.assertIn("alleen lezen", hr)
-        self.assertNotIn("mcp__Firecrawl__", hr)
-        self.assertIn("geen tools waarvan de naam met mcp__ begint", "\n".join(wd._connector_regels("oppertet")))
+        self.assertIn("mcp__Firecrawl__", hr)
+        self.assertNotIn("mcp__Gmail__", "\n".join(wd._connector_regels("hr-1")))    # ingeperkt op de profielkaart
+        self.assertIn("alleen lezen", "\n".join(wd._connector_regels("risk-c1")))
+        self.assertIn("mcp__Google_Drive__", "\n".join(wd._connector_regels("oppertet")))
+        self.assertIn("Gebruik geen andere tools die met mcp__ beginnen", hr)
         self.assertTrue(re.search(r"Google Drive.*lezen en schrijven", "\n".join(wd._connector_regels("fin-1"))))
 
 

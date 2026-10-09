@@ -67,7 +67,7 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 ### Connectors
 
 - **Register**: `kaarten/connectors/register.yaml` (type `connectorregister`): elke connector met `verbonden`, `tools`-prefix, spelregel en weergave. Stand 9 oktober 2026: Google Drive, Google Agenda, Gmail en Firecrawl verbonden; Omniroute moet opnieuw verbonden worden. Webzoeken via WebSearch/WebFetch is een ingebouwde tool (`web` in de toegangskaart), geen connector.
-- **Toewijzing**: op de cultuurkaart van de afdeling (`connectors`); de toegangskaart heeft alleen nog interne systemen. Uitzonderingen per agent: `mandaat.extra_connectors` op de profielkaart, alleen met `goedgekeurd_door: raad` (validator).
+- **Toewijzing**: op de cultuurkaart van de afdeling (`connectors`); voor de directie (afdeling centraal) op de organisatiekaart. Sinds 9 oktober 2026 hebben alle afdelingen en de directie alle vier verbonden connectors (Drive, Agenda en Gmail schrijven, Firecrawl lezen; Control Tets alleen lezen). De toegangskaart heeft alleen nog interne systemen. Uitzonderingen per agent: `mandaat.extra_connectors` op de profielkaart, alleen met `goedgekeurd_door: raad` (validator).
 - **Gebruik**: `Organisatie.effectieve_toegang` rekent het samen; de werkdagprompt noemt per agent welke connector-tools (mcp-prefix) hij mag gebruiken en in welke modus, en verbiedt de rest.
 
 ### Het live kantoor

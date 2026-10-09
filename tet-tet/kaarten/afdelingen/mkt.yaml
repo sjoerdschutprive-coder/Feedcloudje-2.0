@@ -4,7 +4,7 @@ type: cultuurkaart_afdeling
 afdeling: mkt
 naam: Marketing
 erft_van: cultuur-tet-tet
-versie: 1.2.0
+versie: 1.3.0
 status: concept
 eigenaar: mkt-h
 goedgekeurd_door: raad
@@ -41,5 +41,7 @@ kpis: [doelgroepen uitgewerkt, reviews geanalyseerd, gemiddelde reviewscore, cla
 # een profielkaart kan ze inperken of, met akkoord van de Raad, een connector van een andere afdeling toevoegen.
 connectors:
   gdrive: rw
+  gcal: rw
+  gmail: rw
   firecrawl: r
 kenmerken: {}

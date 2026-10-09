@@ -127,6 +127,13 @@
         },
         "rode_lijnen": {
           "$ref": "#/$defs/tekstlijst"
+        },
+        "connectors": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/recht"
+          },
+          "description": "Connectors van de directie (afdeling centraal)."
         }
       },
       "required": [
