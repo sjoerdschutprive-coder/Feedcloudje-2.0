@@ -9,13 +9,14 @@ Repository: `sjoerdschutprive-coder/Feedcloudje-2.0`, map `tet-tet/`.
 
 1. Vastgelopen taken worden hersteld.
 2. Heeft de Raad een doelstelling ingesteld, dan verdeelt de **Oppertet** die over afdelingen zonder doel.
-3. **Hoofdtets** besluiten over geëscaleerde taken (herformuleren of naar de Raad) en maken taken voor open hoofdlijnen.
+3. **Hoofdtets** besluiten over geëscaleerde taken (herformuleren of naar de Raad) en maken taken voor open hoofdlijnen. Is de **Assistent-Oppertet** ingezet, dan gaat 'naar de Raad' eerst langs hem (`escalatie_triage`): hij handelt operationele kwesties af of zet ze met samenvatting door naar de Oppertet, die besluit of het aan de Raad voorlegt. Risico's, integriteit en onenigheid met de assistent gaan via de directe lijn rechtstreeks naar de Oppertet. De Tet loopt daarbij het glazen kantoortje van zijn Hoofdtet binnen.
 4. **Tets** voeren tot 8 taken uit, tot 3 tegelijk; een **Control Tet** van een andere afdeling toetst elk resultaat. Afgekeurd: de Tet krijgt de bevindingen en probeert opnieuw; na 2 afkeuringen escaleert de taak naar de Hoofdtet. Werk van Risk & Safety gaat naar de Raad.
-5. **Huddles**: elke afdeling met werk houdt dagelijks een korte huddle in haar overleghoek (voorzitter rouleert).
+5. **Huddles**: elke afdeling met werk houdt dagelijks een korte huddle in haar overleghoek (voorzitter rouleert). Met een ingezette Assistent-Oppertet is er tegelijk een **directiehuddle** in het kantoortje van de Oppertet, en krijgen afdelingen hun opdrachten uit het MT mee in de huddle.
 6. **Kantine**: een gemengde tafel pauzeert; de **Privacy-Tet** toetst elke beurt vóór de anderen hem horen.
-7. **Overlegcyclus** (richting het MT op `overleg.mt_dag`): voorbereiding en afdelingsoverleg twee dagen ervoor, bilateraal en vooraf lezen één dag ervoor, op de MT-dag eerst ieders eigen oordeel en dan het MT; retrospectief bij het eerste MT van de maand. Wat een run niet afkrijgt (`max_stappen_per_run`), volgt in de volgende.
-8. Vaste rondes (eens per ~20 uur): R&D doet verbetervoorstellen, HR kijkt naar prestaties, Risk & Safety naar risico's.
-9. De **Oppertet** schrijft het dagverslag voor de Raad.
+7. **Overlegcyclus** (richting het MT op `overleg.mt_dag`): voorbereiding en afdelingsoverleg twee dagen ervoor, bilateraal en vooraf lezen één dag ervoor, op de MT-dag eerst ieders eigen oordeel en dan het MT; retrospectief bij het eerste MT van de maand. Wat een run niet afkrijgt (`max_stappen_per_run`), volgt in de volgende. De Assistent-Oppertet (als hij is ingezet) leidt de afstemming als meer dan twee afdelingen aan één afhankelijkheid hangen, stelt bij het vooraf lezen een conceptagenda voor, notuleert het MT zonder stem en zet elk besluit in het **besluitenregister** (Brein, soort `register`).
+8. **Directie** (alleen met een ingezette Assistent-Oppertet): MT-besluiten **doorvertalen** naar opdrachten per afdeling (Brein, soort `opdracht`, één eigenaar per opdracht) en één keer per dag de **opvolging** van het register, met een vraag aan wie achterloopt.
+9. Vaste rondes (eens per ~20 uur): R&D doet verbetervoorstellen, HR kijkt naar prestaties, Risk & Safety naar risico's.
+10. De **Oppertet** schrijft het dagverslag voor de Raad.
 
 ## Procedure voor de sessie
 
