@@ -151,9 +151,18 @@ class Organisatie:
             "Verantwoordelijkheden:\n" + L(a["verantwoordelijkheden"]),
             "Expertise: " + ", ".join(a["expertise"]) + ".",
             f"Stijl: {p['stijl']}. Sterk in: {p['sterk_in']}. Let op je valkuilen: {'; '.join(p['valkuilen'])}.",
-            f"Toon: {a['toon']}.",
+            f"Toon: {a['toon'].strip().rstrip('.')}.",
             "Werkstijl:\n" + L(f"{k.replace('_', ' ').capitalize()}: {v}" for k, v in a["werkstijl"].items()),
         ]
+        # Vrije kenmerken (uitbreidbaar zonder schema- of codewijziging) gaan als eigen kopjes mee.
+        for sleutel, waarde in (a.get("kenmerken") or {}).items():
+            kop = sleutel.replace("_", " ").capitalize()
+            if isinstance(waarde, list):
+                delen.append(f"{kop}:\n" + L(waarde))
+            elif isinstance(waarde, dict):
+                delen.append(f"{kop}:\n" + L(f"{k}: {v}" for k, v in waarde.items()))
+            else:
+                delen.append(f"{kop}: {waarde}")
         opdracht = a.get("opdracht") or {}
         if opdracht.get("doelstelling"):
             delen.append("Huidige opdracht:\n" + L([f"Doelstelling: {opdracht['doelstelling']}",

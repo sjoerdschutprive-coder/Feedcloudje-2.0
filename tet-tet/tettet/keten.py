@@ -58,6 +58,11 @@ Keur af met concrete bevindingen: wat, waarom, en wat er moet veranderen.
 Antwoord uitsluitend met JSON: {"oordeel": "goedgekeurd|afgekeurd", "score": <0-10>, "bevindingen": ["<bevinding>"]}"""
 
 
+PROTOCOL_VOORSTELLEN = """Je kijkt als R&D naar hoe Tet Tet zelf werkt. Doe 1 tot 3 verbetervoorstellen die de organisatie aantoonbaar beter, sneller of betrouwbaarder maken: aan kaarten, werkwijze, platform of het kantoor. Alleen voorstellen met een concreet knelpunt, een benoemde oorzaak en een begrensd nadeel. Kritisch op hype.
+Antwoord uitsluitend met JSON:
+{"voorstellen": [{"titel": "<kort>", "toelichting": "<knelpunt, oorzaak, voorstel, verwacht effect>", "soort": "kaart|werkwijze|platform|kantoor"}]}"""
+
+
 class Kantoor:
     def __init__(self, *, mock: bool | None = None, opslaan: bool = False, client=None, instellingen: dict | None = None,
                  org: Organisatie | None = None):

@@ -44,6 +44,15 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met 23 tests (`python -m unittest discove
 | `keten.py` | `Kantoor`: Raad → Oppertet → Hoofdtet → Tet → Control Tet; risk-werk gaat naar de Raad |
 | `__main__.py` | Opdrachtregel: `run`, `prompt`, `toegang`, `grootboek` |
 
+### Het live kantoor
+
+`kantoor/index.html` is gepubliceerd als artifact (`https://claude.ai/code/artifact/ed7cfae4-f453-4b86-bf01-b9304f737e70`) met de capabilities `db`, `user` en `sample`:
+
+- **Gedeelde opslag** (`db`): collecties `staat` (doel, instellingen, connectors), `afdelingsdoelen`, `taken`, `berichten`, `brein`, `voorstellen` en `grootboek` (blokken van 100 events). Lezen en schrijven kan ook vanuit Claude Code met de ArtifactData-tool.
+- **Agents**: modus `mock` (gratis, voorspelbaar) of `claude` (via `sample`, op het Claude-account van de kijker). De keten in de pagina volgt `tettet/keten.py`: dezelfde protocollen en dezelfde samengestelde prompts.
+- **Kaarten in het kantoor**: het blok tussen `@@KAARTEN:BEGIN` en `@@KAARTEN:END` wordt gegenereerd door `scripts/bouw_kantoor.py`. Draai dat na elke kaartwijziging en publiceer opnieuw.
+- **Zelfontwikkeling**: zie `ZELFONTWIKKELING.md`. Een dagelijkse geplande taak bouwt de door de Raad goedgekeurde verbetervoorstellen in.
+
 Nog te bouwen, in deze volgorde:
 
 1. **Echte tools achter de tool-gateway**: Brein-zoeken, webzoeken en rekenmodule eerst, daarna connectors. Elke tool-aanroep via `Beleidsmotor.gebruik_bron`.
