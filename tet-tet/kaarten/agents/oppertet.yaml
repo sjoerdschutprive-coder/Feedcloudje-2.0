@@ -4,7 +4,7 @@
 # Erft cultuur van cultuur-tet-tet. Mandaat kan rechten alleen inperken, nooit uitbreiden.
 id: oppertet
 type: profielkaart
-versie: 2.1.0
+versie: 2.2.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -65,6 +65,9 @@ autonomieniveau: 3
 mandaat:
   toegangskaart: toegang-centraal
   inperkingen: []
+  # Connectors van een andere afdeling voor alleen deze agent; alleen met akkoord van de Raad.
+  # Vorm: - {connector: gmail, recht: r, reden: '...', goedgekeurd_door: raad}
+  extra_connectors: []
 budget:
   per_cyclus_eur: 50
 kpis:

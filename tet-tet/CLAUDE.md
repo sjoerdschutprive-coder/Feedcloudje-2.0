@@ -64,6 +64,12 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 - **Besluiten**: MT-besluiten in het register (Brein `register`), doorvertaald als `opdracht` per afdeling, dagelijks opgevolgd. Meting vóór/na (`directie.meting`, ook op de Oppertet-pagina).
 - **Kantoor**: Oppertet en Hoofdtets zitten in afgesloten glazen kantoortjes binnen hun eigen ruimte; de assistent zit open in de directie bij de deur. Wie op bezoek gaat (`plek: kantoor-<id>`), loopt door de deur.
 
+### Connectors
+
+- **Register**: `kaarten/connectors/register.yaml` (type `connectorregister`): elke connector met `verbonden`, `tools`-prefix, spelregel en weergave. Stand 9 oktober 2026: Google Drive, Google Agenda, Gmail en Firecrawl verbonden; Omniroute moet opnieuw verbonden worden. Webzoeken via WebSearch/WebFetch is een ingebouwde tool (`web` in de toegangskaart), geen connector.
+- **Toewijzing**: op de cultuurkaart van de afdeling (`connectors`); de toegangskaart heeft alleen nog interne systemen. Uitzonderingen per agent: `mandaat.extra_connectors` op de profielkaart, alleen met `goedgekeurd_door: raad` (validator).
+- **Gebruik**: `Organisatie.effectieve_toegang` rekent het samen; de werkdagprompt noemt per agent welke connector-tools (mcp-prefix) hij mag gebruiken en in welke modus, en verbiedt de rest.
+
 ### Het live kantoor
 
 `kantoor/index.html` is gepubliceerd als artifact (`https://claude.ai/code/artifact/ed7cfae4-f453-4b86-bf01-b9304f737e70`) met de capabilities `db`, `user` en `sample`:

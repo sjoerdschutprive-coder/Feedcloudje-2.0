@@ -49,6 +49,9 @@ class Organisatie:
         self.agents = per("profielkaart")
         self.rollen = per("rolkaart")
         self.toegang = per("toegangskaart_afdeling")
+        reg = next(iter(per("connectorregister").values()), {"id": None, "connectors": []})
+        self.register_id = reg["id"]
+        self.connectors = {c["id"]: c for c in reg.get("connectors", [])}   # alle bekende connectors, ook niet-verbonden
         self.beleid = yaml.safe_load(((map_config or BASIS / "config") / "beleid.yaml").read_text(encoding="utf-8"))
 
     # ---------- opzoeken ----------
@@ -98,17 +101,31 @@ class Organisatie:
     def kaartversies(self, agent_id: str) -> dict[str, str]:
         """Alle kaarten (met versie) die het gedrag van deze agent bepalen; gaat mee in elk grootboek-event."""
         a = self.agent(agent_id)
-        ids = [*a["erft_van"], a["id"], a["rolkaart"], a["mandaat"]["toegangskaart"]]
+        ids = [*a["erft_van"], a["id"], a["rolkaart"], a["mandaat"]["toegangskaart"], self.register_id]
         versies = {i: self.kaarten[i]["versie"] for i in ids if i in self.kaarten}
         versies[self.beleid["id"]] = self.beleid["versie"]
         return versies
 
     # ---------- toegang ----------
+    def verbonden(self, connector: str) -> bool:
+        return bool(self.connectors.get(connector, {}).get("verbonden"))
+
+    def afdelingsconnectors(self, afdeling: str) -> dict[str, str]:
+        """Connectors van een afdeling: van haar cultuurkaart, alleen wat in de cloudomgeving echt verbonden is."""
+        kaart = self.afdelingen.get(afdeling) or {}
+        return {c: r for c, r in (kaart.get("connectors") or {}).items() if self.verbonden(c)}
+
+    def extra_connectors(self, agent_id: str) -> dict[str, str]:
+        """Uitzonderingen op de profielkaart: connectors van een andere afdeling, met akkoord van de Raad."""
+        return {x["connector"]: x["recht"] for x in self.agent(agent_id)["mandaat"].get("extra_connectors") or []
+                if x.get("goedgekeurd_door") == "raad" and self.verbonden(x["connector"])}
+
     def effectieve_toegang(self, agent_id: str) -> Toegang:
-        """Doorsnede van toegangskaart en profielmandaat. Het mandaat kan alleen inperken."""
+        """Interne systemen (toegangskaart) + connectors (cultuurkaart van de afdeling), ingeperkt door het profielmandaat,
+        plus de connectors die de Raad deze agent apart gaf (mandaat.extra_connectors)."""
         a = self.agent(agent_id)
         tk = self.toegang[a["mandaat"]["toegangskaart"]]
-        bronnen = {**tk.get("intern", {}), **tk.get("connectors", {})}
+        bronnen = {**tk.get("intern", {}), **self.afdelingsconnectors(a["afdeling"])}
         regels = []
         for inperking in a["mandaat"]["inperkingen"]:
             m = re.match(r"^([a-z_]+):\s*(.+)$", inperking)
@@ -122,10 +139,14 @@ class Organisatie:
                 bronnen[bron] = "r"
             else:
                 regels.append(inperking)
+        for c, r in self.extra_connectors(agent_id).items():
+            if bronnen.get(c) != "rw":
+                bronnen[c] = r
         if self.rollen[a["rolkaart"]].get("toegangsmodus") == "alleen_lezen":
             bronnen = {b: "r" for b in bronnen}
-        # Spelregels van de afdeling alleen tonen voor bronnen die de agent echt heeft.
+        # Spelregels van de afdeling en van de connectors alleen tonen voor bronnen die de agent echt heeft.
         spel = [r for r in tk.get("spelregels", []) if (m := re.match(r"^([a-z_]+):", r)) is None or m.group(1) in bronnen]
+        spel += [f"{c}: {self.connectors[c]['spelregel']}" for c in sorted(bronnen) if c in self.connectors and self.connectors[c].get("spelregel")]
         return Toegang(bronnen=bronnen, regels=regels + spel)
 
     def mag_handeling(self, agent_id: str, handeling: str) -> bool:

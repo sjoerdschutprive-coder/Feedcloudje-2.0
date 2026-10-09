@@ -116,7 +116,7 @@ class DeelfilterTest(unittest.TestCase):
         index = {"t1": {"id": "t1", "labels": ["boekhouding"]}, "b1": {"id": "b1", "labels": []}}
         beurten = [{"agent": "fin-1", "tekst": "Mijn taak loopt", "verwijst_naar": ["t1"]},
                    {"agent": "fin-1", "tekst": "Mooie les in het Brein", "verwijst_naar": ["b1"]},
-                   {"agent": "fin-1", "tekst": "In exact zag ik iets geks", "verwijst_naar": []}]
+                   {"agent": "fin-1", "tekst": "In de boekhouding zag ik iets geks", "verwijst_naar": []}]
         uit = sw.deelfilter(beurten, ["fin-1", "mkt-1", "rnd-1"], ORG, index)
         self.assertEqual([b["filter"] for b in uit], ["geblokkeerd", "ok", "twijfel"])
         self.assertIn("boekhouding", uit[0]["reden"])

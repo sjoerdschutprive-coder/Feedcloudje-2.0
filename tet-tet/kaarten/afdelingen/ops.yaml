@@ -4,7 +4,7 @@ type: cultuurkaart_afdeling
 afdeling: ops
 naam: Operations
 erft_van: cultuur-tet-tet
-versie: 1.1.0
+versie: 1.2.0
 status: concept
 eigenaar: ops-h
 goedgekeurd_door: raad
@@ -38,4 +38,10 @@ edge_principes:
 
 kwaliteitsnorm: Geen wijziging zonder terugdraaiplan, geen order zonder bevestigde levering.
 kpis: [uptime agents, open onderhoudstickets, doorlooptijd orders, incidenten met evaluatie]
+# Connectors waarmee deze afdeling werkt (zie kaarten/connectors/register.yaml). Alle agents van de afdeling erven ze;
+# een profielkaart kan ze inperken of, met akkoord van de Raad, een connector van een andere afdeling toevoegen.
+connectors:
+  gdrive: rw
+  gcal: r
+  firecrawl: r
 kenmerken: {}

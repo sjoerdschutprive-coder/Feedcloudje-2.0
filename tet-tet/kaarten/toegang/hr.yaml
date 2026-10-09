@@ -1,25 +1,19 @@
-# Toegangskaart afdeling: tools en data die de afdeling mag gebruiken.
+# Toegangskaart afdeling: interne systemen en ingebouwde tools die de afdeling mag gebruiken.
+# Connectors staan op de cultuurkaart van de afdeling (kaarten/afdelingen/), zie kaarten/connectors/register.yaml.
 # rw = lezen en schrijven, r = alleen lezen, niet genoemd = geen toegang.
 id: toegang-hr
 type: toegangskaart_afdeling
 afdeling: hr
-versie: 1.1.0
+versie: 1.2.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
 eigenaar: risk-h
-connectors:
-  gcal: rw
-  gdrive: rw
-  slack: rw
-  notion: rw
-  gmail: r
 intern:
   brein: rw
   agentregister: rw
   profielkaarten: rw
   performancedata: r
 geen_toegang: []
-spelregels:
-  - 'gmail: Versturen namens de Raad alleen na goedkeuring'
+spelregels: []
 kenmerken: {}

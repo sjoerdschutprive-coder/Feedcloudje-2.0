@@ -57,6 +57,13 @@ def blok(org: Organisatie) -> str:
     inst = keten.laad_instellingen()
     samen = {"kantine": inst.get("kantine", {}), "overleg": {"mt_dag": (inst.get("overleg") or {}).get("mt_dag", 5)},
              "publiek": sorted(sw.PUBLIEK), "toezicht": sw.TOEZICHT}
+    # Connectors: alleen wat verbonden is; toewijzing per afdeling uit de cultuurkaart, uitzonderingen per agent uit de profielkaart.
+    connectors = [{"id": c["id"], "naam": c["naam"], "mono": c.get("mono", c["id"][:2].upper()), "kleur": c.get("kleur", "#9fb3c8"),
+                   "soort": c.get("soort", ""), **({"gevoelig": c["spelregel"]} if c.get("gevoelig") else {}), "spelregel": c.get("spelregel", "")}
+                  for c in org.connectors.values() if c.get("verbonden")]
+    conn_toegang = {d: org.afdelingsconnectors(d) for d in org.afdelingen}
+    conn_extra = {i: org.agents[i]["mandaat"].get("extra_connectors") for i in ids if org.agents[i]["mandaat"].get("extra_connectors")}
+    conn_versie = org.kaarten[org.register_id]["versie"] + "+" + "+".join(f"{d}{org.afdelingen[d]['versie']}" for d in sorted(org.afdelingen))
     directie = {"directe_lijn": sorted(dr.directe_lijn(org)),
                 "rol": {k: org.rollen[k]["naam"] for k in org.rollen},
                 "assistent_mag": org.rollen["rol-assistent-oppertet"]["mag"] if "rol-assistent-oppertet" in org.rollen else [],
@@ -73,6 +80,10 @@ def blok(org: Organisatie) -> str:
         f"const PROTOCOLS = {J(protocols)};",
         f"const SAMEN = {J(samen)};",
         f"const DIRECTIE = {J(directie)};",
+        f"const CONNECTORS = {J(connectors)};",
+        f"const CONNECTOR_TOEGANG = {J(conn_toegang)};",
+        f"const CONNECTOR_EXTRA = {J(conn_extra)};",
+        f"const CONNECTOR_VERSIE = {J(conn_versie)};",
         "/* @@KAARTEN:END */",
     ]
     return "\n".join(regels)

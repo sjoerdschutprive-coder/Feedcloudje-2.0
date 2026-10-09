@@ -6,7 +6,7 @@
 # Als hij weer op gepland gaat, rapporteren de Hoofdtets rechtstreeks aan de Oppertet en werkt alles zoals daarvoor.
 id: oppertet-a
 type: profielkaart
-versie: 1.1.0
+versie: 1.2.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -68,6 +68,9 @@ mandaat:
   inperkingen:
     - 'agentregister: geen toegang'
     - Geen directe toegang tot klant- of personeelsdata; coördineert via Brein, takenmarkt, overleggen en memo's.
+  # Connectors van een andere afdeling voor alleen deze agent; alleen met akkoord van de Raad.
+  # Vorm: - {connector: gmail, recht: r, reden: '...', goedgekeurd_door: raad}
+  extra_connectors: []
 budget:
   per_cyclus_eur: 15
 kpis:

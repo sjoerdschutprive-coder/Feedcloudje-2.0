@@ -82,8 +82,8 @@ class KaartenTest(unittest.TestCase):
 
 class ToegangTest(unittest.TestCase):
     def test_profiel_perkt_in(self):
-        self.assertEqual(ORG.effectieve_toegang("fin-1").bronnen["exact"], "r")
-        self.assertNotIn("hubspot", ORG.effectieve_toegang("fin-2").bronnen)
+        self.assertEqual(ORG.effectieve_toegang("hr-h").bronnen["gmail"], "r")
+        self.assertNotIn("gmail", ORG.effectieve_toegang("hr-1").bronnen)    # profielkaart perkt in
         self.assertEqual(ORG.effectieve_toegang("ops-2").bronnen["orderbeheer"], "r")
 
     def test_control_tet_alleen_lezen(self):
