@@ -14,6 +14,9 @@ tet-tet/
     rollen/<rol>.yaml            # 4 rolkaarten: wat een rol mag
     toegang/<afdeling>.yaml      # 7 toegangskaarten: tools en data per afdeling
   scripts/valideer_kaarten.py    # controleert schema, verwijzingen en mandaten
+  kantoor/index.html             # het Tet Tet-kantoor (interface-referentie)
+  WHITEPAPER.md                  # de whitepaper als Markdown
+  CLAUDE.md                      # projectbrief en bouwvolgorde voor Claude Code
   ONDERZOEK.md                   # onderbouwing van de 'edge'-kenmerken, met bronnen
 ```
 

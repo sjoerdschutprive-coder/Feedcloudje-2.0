@@ -1,0 +1,1219 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Tet Tet-kantoor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+  /* Layout: één zoombaar isometrisch kantoor; elke afdeling opent een eigen pagina met tegels die doorklikken naar kaarten. */
+  :root {
+    --bg: #14110f;
+    --bg-2: #1c1815;
+    --panel: #221d19;
+    --panel-2: #2b251f;
+    --line: #3a322b;
+    --text: #f2e9df;
+    --muted: #a8998a;
+    --accent: #f0a04b;
+    --accent-2: #e8734a;
+    --busy: #f0a04b;
+    --next: #7fb2e5;
+    --done: #7ccf8a;
+    --idle: #6d625a;
+    --warn: #ef5d5d;
+    --radius: 14px;
+    --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.45 var(--font-body);
+    overflow: hidden;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Kantoor ---------- */
+  #view-office { position: relative; height: 100%; background: radial-gradient(1200px 800px at 50% 50%, #241d17 0%, var(--bg) 65%); }
+  #office { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+  #office.dragging { cursor: grabbing; }
+  .brand { position: absolute; left: 16px; top: 14px; pointer-events: none; }
+  .brand h1 { margin: 0; font: 800 22px/1.1 var(--font-display); letter-spacing: -.2px; }
+  .brand h1 span { color: var(--accent); }
+  .brand p { margin: 3px 0 0; color: var(--muted); font-size: 12px; max-width: 260px; }
+  .zoom { position: absolute; right: 16px; bottom: 16px; display: grid; gap: 6px; }
+  .zoom button, .legend-btn {
+    width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line);
+    background: rgba(34,29,25,.92); font-size: 20px; line-height: 1; display: grid; place-items: center;
+  }
+  .zoom button:hover, .legend-btn:hover { border-color: var(--accent); }
+  .legend-btn { position: absolute; left: 16px; bottom: 16px; font-size: 16px; font-weight: 700; }
+  .legend {
+    position: absolute; left: 16px; bottom: 70px; background: rgba(34,29,25,.96); border: 1px solid var(--line);
+    border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; font-size: 13px; color: var(--muted); max-width: calc(100% - 32px);
+  }
+  .hint-toast {
+    position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: rgba(34,29,25,.94);
+    border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-size: 13px; color: var(--muted);
+    transition: opacity .6s; pointer-events: none; max-width: calc(100% - 140px); text-align: center;
+  }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .dash { display: inline-block; width: 20px; border-top: 2px dashed; margin-right: 6px; vertical-align: middle; }
+
+  /* SVG */
+  .flow { fill: none; stroke-width: 2; stroke-dasharray: 6 10; opacity: .5; animation: flow 1.6s linear infinite; }
+  @keyframes flow { to { stroke-dashoffset: -32; } }
+  .channel { cursor: pointer; }
+  .channel .ch-vis { fill: none; stroke-linecap: round; opacity: .55; }
+  .channel:hover .ch-vis { opacity: 1; }
+  .channel .ch-hit { fill: none; stroke: transparent; stroke-width: 18; pointer-events: stroke; }
+  .island { cursor: pointer; }
+  .island:hover .top-face { filter: brightness(1.15); }
+  .desk { cursor: pointer; }
+  .desk:hover .agent-head { stroke: #fff; stroke-width: 2.5; }
+  .agent-label { display: none; font-size: 7px; fill: var(--text); paint-order: stroke; stroke: rgba(20,17,15,.85); stroke-width: 2.5px; }
+  .lod2 .agent-label { display: block; }
+  .card-bg { fill: rgba(28,24,21,.94); stroke-width: 1.5; }
+  .svg-title { font: 700 13px var(--font-display); fill: var(--text); }
+  .svg-sub { font-size: 10.5px; fill: var(--muted); }
+  .svg-num { font-size: 11px; font-weight: 700; }
+  .board-title { font: 800 17px var(--font-display); fill: var(--text); }
+  .board-kpi { font: 800 19px var(--font-display); }
+  .board { cursor: pointer; }
+  .board:hover .card-bg { stroke-width: 2.5; }
+  .brain-pulse { animation: pulse 2.8s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes pulse { 50% { opacity: .35; transform: scale(1.25); } }
+  .screen-busy { animation: blink 1.2s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .55; } }
+  @media (prefers-reduced-motion: reduce) { .flow, .brain-pulse, .screen-busy { animation: none; } }
+
+  /* ---------- Pagina's ---------- */
+  .page { height: 100%; overflow: auto; -webkit-overflow-scrolling: touch; }
+  .page-head {
+    position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; background: rgba(20,17,15,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+  }
+  .back { border: 1px solid var(--line); background: var(--panel); border-radius: 12px; height: 40px; padding: 0 12px; display: flex; align-items: center; gap: 6px; flex: none; }
+  .back:hover { border-color: var(--accent); }
+  .crumb { min-width: 0; }
+  .crumb small { display: block; color: var(--muted); font-size: 12px; }
+  .crumb h2 { margin: 0; font: 800 22px/1.15 var(--font-display); text-wrap: balance; overflow-wrap: anywhere; }
+  .page-body { max-width: 1040px; margin: 0 auto; padding-block: 18px 40px; padding-inline: 16px; display: grid; gap: 16px; }
+  .lead { color: var(--muted); margin: 0; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .tile {
+    text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px; display: grid; gap: 8px; align-content: start; min-height: 128px; position: relative; min-width: 0;
+  }
+  .tile:hover { border-color: var(--tc, var(--accent)); }
+  .tile .t-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .tile .ico { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--tc, var(--accent)) 18%, transparent); color: var(--tc, var(--accent)); flex: none; }
+  .tile .ico svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .tile h3 { margin: 0; font: 700 16px/1.2 var(--font-display); padding-right: 14px; overflow-wrap: break-word; hyphens: auto; min-width: 0; }
+  .tile .big { font: 800 28px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+  .tile .sub { color: var(--muted); font-size: 13px; }
+  .tile .more { position: absolute; right: 12px; top: 14px; color: var(--muted); font-size: 18px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); }
+  button.chip:hover { border-color: var(--accent); }
+  .avatars { display: flex; flex-wrap: wrap; gap: 6px; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #1a120b; border: 2px solid var(--bg-2); }
+  .bar { height: 7px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 4px; }
+  .linkrow { all: unset; cursor: pointer; display: block; width: 100%; }
+  .linkrow:focus-visible { outline: 2px solid var(--accent); }
+
+  /* Doelstellingenbord (Oppertet-pagina) */
+  .goalboard { background: linear-gradient(160deg, #2b2219, var(--panel)); border: 1px solid #5a4630; border-radius: 18px; padding: 18px; display: grid; gap: 14px; }
+  .goalboard .eyebrow { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  .goalboard h3 { margin: 2px 0 0; font: 800 22px/1.2 var(--font-display); text-wrap: balance; }
+  .goal-progress { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+  .goal-progress .pct { font: 800 34px/1 var(--font-display); color: var(--accent); font-variant-numeric: tabular-nums; }
+  .goal-progress .bar { height: 10px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .kpi { background: rgba(20,17,15,.5); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+  .kpi b { font: 800 24px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 12.5px; color: var(--muted); }
+  .kpi small { font-size: 11.5px; color: var(--muted); }
+  .kpi.ok b { color: var(--done); } .kpi.warn b { color: var(--warn); } .kpi.neutral b { color: var(--text); }
+  .goalboard.dept { background: linear-gradient(160deg, color-mix(in srgb, var(--dc) 14%, var(--panel)), var(--panel)); border-color: color-mix(in srgb, var(--dc) 45%, var(--line)); }
+  .goalboard.dept .eyebrow, .goalboard.dept .pct { color: var(--dc); }
+  .board-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 14px; }
+  .board-cols h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); }
+  .hl { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .hl li { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; background: rgba(20,17,15,.45); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .hl .bar { grid-column: 1 / -1; height: 4px; }
+  .st.open { color: var(--muted); }
+  @media (max-width: 760px) { .board-cols { grid-template-columns: 1fr; } }
+  .tbd { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--panel-2); color: var(--muted); margin-left: 4px; }
+
+  /* ---------- Sheet (kaartdetail) ---------- */
+  .sheet-wrap { position: fixed; inset: 0; background: rgba(10,8,6,.55); z-index: 10; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .sheet {
+    width: min(600px, 100%); max-height: 88%; overflow: auto; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 18px; padding: 18px; box-shadow: 0 30px 60px rgba(0,0,0,.45);
+  }
+  .sheet-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .sheet-head h3 { margin: 0; font: 800 20px var(--font-display); flex: 1; min-width: 0; }
+  .sheet-head .close { border: 1px solid var(--line); background: var(--panel-2); border-radius: 10px; width: 40px; height: 40px; font-size: 18px; flex: none; }
+  .sheet h4 { margin: 14px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .7px; color: var(--accent); }
+  .sheet ul:not(.items) { margin: 0; padding-left: 18px; }
+  .sheet li + li { margin-top: 3px; }
+  .layer { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 10px; background: var(--bg-2); }
+  .layer .lh { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; }
+  .layer .lh small { color: var(--muted); font-weight: 400; }
+  dl.kv { display: grid; grid-template-columns: 130px 1fr; gap: 6px 12px; margin: 0; }
+  dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; min-width: 0; }
+  .perm { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; }
+  .rw { color: var(--done); } .r { color: var(--next); } .no { color: var(--warn); }
+  .perm span:nth-child(even) { font-size: 12.5px; }
+  ul.items { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  ul.items li { background: var(--bg-2); border: 1px solid var(--line); border-left: 4px solid var(--dc, var(--accent)); border-radius: 10px; padding: 9px 10px; margin: 0; }
+  .i-title { font-weight: 600; }
+  .i-meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .i-actions { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; align-items: center; }
+  .st { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid currentColor; background: transparent; }
+  .st.volgende { color: var(--next); } .st.bezig { color: var(--busy); } .st.klaar { color: var(--done); }
+  .st.warn { color: var(--warn); } .st.ok { color: var(--done); } .st.muted { color: var(--muted); }
+  .del { margin-left: auto; border: 0; background: none; color: var(--muted); padding: 2px 6px; }
+  form.f { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .f label { display: grid; gap: 4px; font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .f label.check { display: flex; text-transform: none; letter-spacing: 0; font-size: 13px; gap: 6px; align-items: center; }
+  .f select, .f textarea { width: 100%; background: var(--bg-2); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; font: inherit; text-transform: none; letter-spacing: 0; }
+  .f textarea { min-height: 64px; resize: vertical; }
+  .f input[type=text], .f input[type=date] { width: 100%; background: var(--bg-2); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; font: inherit; color-scheme: dark; }
+  details.edit { border-top: 1px solid var(--line); padding-top: 10px; }
+  details.edit summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 13.5px; }
+  details.edit form.f { border-top: 0; padding-top: 0; }
+  .hl li .hl-act { display: flex; gap: 4px; align-items: center; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #1a120b; border: 0; font-weight: 700; border-radius: 10px; padding: 9px 14px; }
+  .route { font-size: 12.5px; font-weight: 700; }
+  .route.direct { color: var(--done); } .route.oppertet { color: var(--accent); }
+  .label { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--panel-2); color: var(--muted); margin-left: 4px; white-space: nowrap; }
+
+  /* Connectors */
+  .conn-btn {
+    position: absolute; right: 16px; top: 14px; height: 40px; padding: 0 14px; border-radius: 12px;
+    border: 1px solid var(--line); background: rgba(34,29,25,.92); display: flex; align-items: center; gap: 8px; font-weight: 600;
+  }
+  .conn-btn:hover { border-color: var(--accent); }
+  .conn-btn svg { width: 18px; height: 18px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .conn-bar { cursor: pointer; }
+  .conn-bar:hover rect.bar-bg { stroke-width: 2; }
+  .mono { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; font: 800 10.5px var(--font-display); flex: none; border: 2px solid var(--c); }
+  .mono.rw { background: var(--c); color: #1a120b; }
+  .mono.r { background: transparent; color: var(--c); }
+  .mono.off { border-color: var(--line); color: var(--muted); opacity: .6; }
+  .monos { display: flex; flex-wrap: wrap; gap: 5px; }
+  .monos .mono { width: 24px; height: 24px; font-size: 9px; }
+  .conn-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .conn-row:last-of-type { border-bottom: 0; }
+  .conn-row b { display: block; font-weight: 600; }
+  .conn-row small { color: var(--muted); font-size: 12px; }
+  .conn-row .warnnote { color: var(--warn); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { border: 0; background: var(--bg-2); color: var(--muted); padding: 7px 10px; font-size: 12.5px; min-width: 44px; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"].off { background: var(--panel-2); color: var(--text); }
+  .seg button[aria-pressed="true"].r { background: color-mix(in srgb, var(--next) 25%, transparent); color: var(--next); }
+  .seg button[aria-pressed="true"].rw { background: color-mix(in srgb, var(--done) 25%, transparent); color: var(--done); }
+  .matrix-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+  table.matrix { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13px; }
+  .matrix th, .matrix td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: center; }
+  .matrix thead th { font: 700 12.5px var(--font-display); position: sticky; top: 0; background: var(--panel); }
+  .matrix th.cn { text-align: left; padding-left: 12px; white-space: nowrap; }
+  .matrix th.cn span.nm { display: inline-flex; align-items: center; gap: 8px; }
+  .matrix tbody tr:last-child td, .matrix tbody tr:last-child th { border-bottom: 0; }
+  .cell { border: 1px solid var(--line); background: var(--bg-2); border-radius: 8px; padding: 5px 0; width: 74px; font-size: 12px; color: var(--muted); }
+  .cell.r { color: var(--next); border-color: color-mix(in srgb, var(--next) 45%, var(--line)); }
+  .cell.rw { color: var(--done); border-color: color-mix(in srgb, var(--done) 45%, var(--line)); background: color-mix(in srgb, var(--done) 12%, var(--bg-2)); }
+  .cell:hover { border-color: var(--accent); }
+  .tag-warn { font-size: 11px; color: var(--warn); margin-left: 6px; }
+
+  @media (max-width: 600px) {
+    .conn-btn span { display: none; }
+    .conn-btn { padding: 0 11px; }
+    .sheet-wrap { align-items: flex-end; padding: 0; }
+    .sheet { width: 100%; max-height: 90%; border-radius: 18px 18px 0 0; padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+    .tiles { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .tile { min-height: 116px; padding: 12px; }
+    .tile .big { font-size: 24px; }
+    .tile .t-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+    dl.kv { grid-template-columns: 1fr; gap: 2px; }
+    dl.kv dd { margin-bottom: 6px; }
+    .crumb h2 { font-size: 19px; }
+  }
+  @media (max-width: 360px) { .tiles { grid-template-columns: 1fr; } }
+</style>
+<div id="view-office">
+  <svg id="office" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Isometrisch kantoor met zeven afdelingen rond de Oppertet en het Brein"></svg>
+  <div class="brand">
+    <h1>Tet Tet<span>-kantoor</span></h1>
+    <p id="doelLine"></p>
+  </div>
+  <button class="conn-btn" id="connBtn" aria-label="Connectors per afdeling">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0V7zM12 16v5"/></svg><span>Connectors</span>
+  </button>
+  <div class="zoom">
+    <button id="zIn" aria-label="Inzoomen">+</button>
+    <button id="zOut" aria-label="Uitzoomen">−</button>
+    <button id="zFit" aria-label="Hele kantoor tonen" style="font-size:15px">⤢</button>
+  </div>
+  <button class="legend-btn" id="legendBtn" aria-label="Legenda" aria-expanded="false">?</button>
+  <div class="legend" id="legend" hidden>
+    <span><i class="dot" style="background:var(--busy)"></i>bezig</span>
+    <span><i class="dot" style="background:var(--next)"></i>heeft een volgende taak</span>
+    <span><i class="dot" style="background:var(--idle)"></i>vrij</span>
+    <span><i class="dot" style="background:var(--warn)"></i>wacht op goedkeuring van de Raad</span>
+    <span><i class="dash" style="border-color:var(--accent)"></i>lijn naar het Brein</span>
+    <span><i class="dash" style="border-color:var(--done);border-top-style:solid"></i>directe lijn tussen afdelingen</span>
+    <span>Klik op een eiland, bureau of lijn om te openen.</span>
+  </div>
+  <div class="hint-toast" id="hintToast">Knijp of scroll om te zoomen · sleep om te verschuiven</div>
+</div>
+
+<div id="view-page" class="page" hidden></div>
+<div id="sheetWrap" class="sheet-wrap" hidden></div>
+
+<script>
+/* =====================================================================
+   DATA
+   Het kantoor is niet gebonden aan één opdracht. De Raad stelt de doelstelling in
+   op het doelstellingenbord (Oppertet-pagina); afdelingsdoelen en hoofdlijnen
+   worden per afdeling ingesteld. Alles wordt lokaal in de browser bewaard.
+   Agents, cultuur, rollen en toegang volgen de kaarten v1.1.0 in de repository
+   sjoerdschutprive-coder/Feedcloudje-2.0, map tet-tet/kaarten/.
+   ===================================================================== */
+
+/* Lege doelstelling: nader te bepalen door de Raad. */
+const DOEL_LEEG = { naam: "", omschrijving: "", deadline: "" };
+
+/* KPI's op het doelstellingenbord. `waarde` en `stand` rekenen op de actuele stand van het kantoor;
+   "–" betekent: nog geen meting (komt uit het grootboek zodra de agents draaien). */
+const KPIS = [
+  { id: "afdelingen", label: "Afdelingsdoelen klaar", kort: "afdelingen klaar", doel: "7 van 7", waarde: s => `${s.afdelingenKlaar}/7`, stand: s => s.afdelingenKlaar === 7 ? "ok" : "neutral" },
+  { id: "taken", label: "Taken afgerond", doel: "100%", waarde: s => `${s.takenPct}%`, stand: () => "neutral" },
+  { id: "raad", label: "Wacht op de Raad", kort: "wacht op Raad", doel: "0 open", waarde: s => String(s.wachtOpRaad), stand: s => s.wachtOpRaad ? "warn" : "ok" },
+  { id: "kwaliteit", label: "Kwaliteit (Control Tets)", kort: "kwaliteit", doel: "≥ 8,0", waarde: () => "–", stand: () => "neutral" },
+  { id: "dagen", label: "Dagen tot oplevering", doel: "deadline van de doelstelling", waarde: s => s.dagenTotDeadline === null ? "–" : String(s.dagenTotDeadline), stand: s => s.dagenTotDeadline !== null && s.dagenTotDeadline < 14 ? "warn" : "neutral" },
+  { id: "overdrachten", label: "Overdrachten bespaard", doel: "zo hoog mogelijk", waarde: s => String(s.bespaard), stand: () => "ok" }
+];
+const BORD_KPIS = ["afdelingen", "raad", "kwaliteit"]; // de drie KPI's op het bord in het kantoor
+
+/* Cultuurkaart van de hele organisatie (laag 1, kaarten/organisatie/tet-tet.yaml). Bij waarden wint dit niveau. */
+const CULTUUR_ORG = {"waarden": ["Waarde creëren boven werk verzetten", "Direct en kort, uitgebreid op verzoek", "Rebels in denken, netjes in handelen", "Feedback is de motor van verbetering", "Groep en veiligheid boven gemak", "Eerlijk over zekerheid"], "werkwijze": ["Eindig nooit met een beleefdheidsvraag zoals 'Kan ik nog ergens mee helpen?'.", "Stel alleen een vraag als er echt informatie ontbreekt.", "Geen opvulling en geen herhaling.", "Leg elke beslissing met reden en eigenaar vast in het Brein."], "principes": ["Context, geen controle: De Oppertet en Hoofdtets geven bij elke opdracht doel, waarom, grenzen en definitie van klaar. De uitvoerende agent kiest zelf de aanpak.", "Eén eigenaar per besluit: Elke taak en elk besluit heeft precies één eigenaar die de knoop doorhakt, inclusief het besluit dat iets af is.", "Oneens zijn, dan committeren: Bezwaren worden vóór het besluit onderbouwd ingebracht en vastgelegd. Na het besluit voert iedereen het volledig uit.", "Eerst zelf oordelen, dan vergelijken: Bij beoordelingen en discussies vormt elke agent eerst een eigen oordeel voordat hij dat van anderen leest. Een standpunt verandert alleen door nieuw bewijs, niet doordat de meerderheid het anders ziet.", "Verificatie op twee niveaus: Elk resultaat wordt getoetst op de details (bronnen, berekeningen, criteria) én op het doel (lost het de klantvraag op?).", "Bijna-fouten tellen mee: Een bijna-fout of afgekeurde taak krijgt een korte blameless evaluatie: wat gebeurde er, waarom kon het, wat verandert er in het systeem.", "Deskundigheid beslist, niet hiërarchie: Bij een vakinhoudelijke vraag weegt het oordeel van de gespecialiseerde Tet zwaarder dan dat van een hogere rol. Hogere rollen beslissen over prioriteit en budget.", "Leren na elke taak: Na elke afgeronde taak schrijft de agent één concrete les in het Brein. Agents lezen relevante lessen voordat ze starten."], "rode_lijnen": ["Geen verzonnen cijfers, bronnen of citaten.", "Geen externe communicatie zonder akkoord van de Raad.", "Geen handelingen buiten rol, afdelingstoegang of mandaat.", "Klant- en persoonsgegevens blijven binnen de organisatie (AVG).", "Geen betalingen."]};
+
+/* Rolkaarten (wat mag een rol en hoe ver reikt hij). */
+const ROLKAARTEN = {
+  oppertet:   { titel: "Oppertet",    bereik: "Hele organisatie", autonomie: "Niveau 3: Zelfstandig", handelingen: ["Opdrachten van de Raad vertalen naar taken", "Taken verdelen over afdelingen", "Prioriteiten bepalen", "Escalaties van directe lijnen beslechten", "Brein lezen en schrijven"] },
+  hoofdtet:   { titel: "Hoofdtet",    bereik: "Eigen afdeling",   autonomie: "Niveau 3: Zelfstandig", handelingen: ["Taken verdelen binnen de afdeling", "Output van Tets accorderen", "Verzoeken via directe lijnen accepteren of escaleren", "Rapporteren aan de Oppertet"] },
+  tet:        { titel: "Tet",         bereik: "Eigen taak",       autonomie: "Niveau 2: Uitvoerend",  handelingen: ["Taak uitvoeren met afdelingstools", "Vragen stellen via directe lijnen", "Concepten opleveren aan de Hoofdtet", "Brein lezen"] },
+  controltet: { titel: "Control Tet", bereik: "Hele organisatie (alleen lezen)", autonomie: "Niveau 2: Uitvoerend", handelingen: ["Output van alle afdelingen toetsen", "Meelezen op alle lijnen", "Bevindingen melden aan de Raad", "Taken blokkeren bij risico"] }
+};
+
+/* Afdelingen met missie en cultuurkaart (laag 2, kaarten/afdelingen/) en toegangskaart. */
+const DEPTS = [
+  { id: "ops", naam: "Operations", kleur: "#e8a33d", missie: "Het systeem draait altijd en elke order wordt geleverd.",
+    cultuur: {"waarden": ["Het systeem moet altijd draaien."], "werkwijze": ["Eerst meten, dan verbeteren.", "Elke wijziging is terug te draaien.", "Elke order heeft op elk moment één eigenaar en een status."], "principes": ["Gevoelig voor de operatie: Houd gezondheid, kosten en wachtrijen van agents continu in beeld en meld afwijkingen vóór ze incidenten worden.", "Blameless incidentevaluatie: Na elke storing of mislukte order binnen 24 uur een korte evaluatie met oorzaak in het systeem en één concrete verbetering.", "Tools als gebruikersinterface ontwerpen: Elke tool die Operations voor agents bouwt of onderhoudt, krijgt een heldere beschrijving, voorbeelden en randgevallen."]},
+    toegang: [["Brein", "rw"], ["Takensysteem", "rw"], ["Codebase agents", "rw"], ["Orderbeheer", "rw"], ["Boekhouding", "r"]] },
+  { id: "fin", naam: "Finance", kleur: "#5fbf8f", missie: "Elke euro is verantwoord, elke prijs onderbouwd.",
+    cultuur: {"waarden": ["Elke euro verantwoord."], "werkwijze": ["Aannames expliciet.", "Altijd een basis-, laag- en hoogscenario.", "Elke berekening is reproduceerbaar uit de brondata."], "principes": ["Bandbreedtes in plaats van schijnprecisie: Elk financieel kerngetal krijgt een bandbreedte en een zekerheidslabel.", "Stuur op inputs die je beïnvloedt: Naast omzet en marge altijd de stuurbare inputs tonen (bijvoorbeeld volume, prijs per eenheid, kosten per eenheid).", "Vier-ogen bij cijfers: Elk cijfer in een eindproduct is nagerekend door een tweede agent of Control Tet Feiten."]},
+    toegang: [["Brein", "rw"], ["Boekhouding", "rw"], ["Rekenmodellen", "rw"], ["Marktdata", "r"], ["Betalingen", "no"]] },
+  { id: "mkt", naam: "Marketing", kleur: "#e86a8a", missie: "We begrijpen de klant en de markt beter dan de klant zelf.",
+    cultuur: {"waarden": ["De klant centraal."], "werkwijze": ["Elke claim onderbouwd.", "Testen boven meningen.", "Geen superlatieven zonder bewijs."], "principes": ["Breed beginnen, dan versmallen: Onderzoek start met een brede verkenning van markt en bronnen en wordt daarna stap voor stap specifieker.", "Bronkwaliteit boven bronaantal: Gezaghebbende bronnen en eigen data gaan voor contentfarms en SEO-teksten; bronkeuze wordt vermeld.", "Werk terug vanaf de klant: Elke positionering begint met de klantervaring die we willen bereiken, en werkt van daaruit terug naar boodschap en kanaal."]},
+    toegang: [["Brein", "rw"], ["Webonderzoek", "r"], ["Reviewdata", "r"], ["Contentbibliotheek", "rw"], ["Externe publicatie", "no"]] },
+  { id: "rnd", naam: "R&D", kleur: "#7f8fe8", missie: "Morgen werken we beter dan vandaag, met wat aantoonbaar werkt.",
+    cultuur: {"waarden": ["Nieuwsgierig, kritisch op hype."], "werkwijze": ["Alleen wat aantoonbaar werkt.", "Snelle experimenten met begrensd risico.", "Mislukte experimenten worden vastgelegd, niet weggegooid."], "principes": ["Eenvoudigste oplossing eerst: Complexiteit (meer agents, meer stappen) wordt alleen toegevoegd als een meting laat zien dat het beter werkt.", "Klein en vroeg evalueren: Nieuwe methodes eerst testen op een kleine set (rond de twintig gevallen) in de sandbox, met een vergelijking met de oude aanpak.", "Faalwijzen meten: Houd bij welke faalwijzen uit de MAST-indeling in Tet Tet voorkomen en richt experimenten op de grootste."]},
+    toegang: [["Brein", "rw"], ["Webonderzoek", "r"], ["Sandbox", "rw"], ["Marktdata", "r"]] },
+  { id: "hr", naam: "HR", kleur: "#c98be0", missie: "De juiste agent op de juiste plek, met de juiste kaart.",
+    cultuur: {"waarden": ["Goede agents verdienen goede inzet."], "werkwijze": ["Rollen en mandaten altijd actueel.", "Performance als input, niet als oordeel.", "Autonomie stijgt alleen op basis van trackrecord."], "principes": ["Duidelijke rollen en structuur: Elke profielkaart heeft een eenduidige rol, rapportagelijn en definitie van klaar; overlap tussen agents wordt opgeheven.", "Betrouwbaarheid zichtbaar maken: Houd per agent een stabiliteitsscore bij (hoe vaak hij een juist standpunt opgeeft onder druk) en deel die met beoordelaars.", "Veilig om te melden: Agents die fouten zelf melden, verliezen daardoor geen reputatie; verzwegen fouten wel."]},
+    toegang: [["Brein", "rw"], ["Agentregister", "rw"], ["Profielkaarten", "rw"], ["Performancedata", "r"]] },
+  { id: "risk", naam: "Risk & Safety", kleur: "#ef6b5b", missie: "Niets verlaat de organisatie dat we niet kunnen verantwoorden.",
+    cultuur: {"waarden": ["Veiligheid gaat voor snelheid."], "werkwijze": ["Toetsen tegen wet en regels.", "Melden zonder omwegen.", "Afkeuren altijd met bevinding, reden en verbeterpunt."], "principes": ["Onafhankelijk eerst: Control Tets beoordelen een resultaat voordat ze andermans oordeel of de reputatie van de maker zien.", "Toetsen op detail én doel: Naast bronnen en berekeningen toetst een Control Tet altijd of het resultaat de klantvraag beantwoordt.", "Niet vereenvoudigen: Bij een incident geen snelle verklaring accepteren; zoek de oorzaak in het systeem.", "Onzekerheid is een signaal: Kernclaims met een laag zekerheidslabel worden apart gemarkeerd of teruggestuurd."]},
+    toegang: [["Brein", "r"], ["Alle afdelingsoutput", "r"], ["Auditlog", "rw"], ["Tool-scanner", "rw"]] },
+  { id: "prod", naam: "Product", kleur: "#4fbfd0", missie: "Wat we maken klopt voor de klant en is af, samenhangend en bruikbaar.",
+    cultuur: {"waarden": ["Wat we maken moet kloppen voor de klant."], "werkwijze": ["Van klantreis naar propositie.", "Klein beginnen, snel bijsturen.", "Eén stem in elk eindproduct."], "principes": ["Werk terug vanaf het eindresultaat: Elke propositie begint met een korte 'persbericht en FAQ' vanuit de klant, vóórdat het uitgewerkt wordt.", "Vooraf vastgestelde definitie van klaar: Elk product heeft vooraf acceptatiecriteria en een stopconditie; geen eindeloos polijsten.", "Eén verantwoordelijke per product: Elk product heeft één eigenaar die alle input samenbrengt en de knoop doorhakt."]},
+    toegang: [["Brein", "rw"], ["Reviewdata", "r"], ["Ontwerpbord", "rw"], ["Takensysteem", "rw"]] }
+];
+
+/* Kanaalkaarten: directe lijnen (zie ANALYSE-afdelingscommunicatie.md).
+   Niet genoemde paren lopen via de Oppertet; Risk & Safety heeft een controlelijn naar iedereen. */
+const KANALEN = [
+  { a: "fin", b: "prod", doel: "Prijs en business case van elke propositie", voorbeelden: ["Marge-check op een nieuw voorstel", "Kostprijs van een verbetering in de klantreis"] },
+  { a: "fin", b: "mkt",  doel: "Prijsstrategie en positionering als één verhaal", voorbeelden: ["Prijsniveau per doelgroep", "Campagnebudget binnen de begroting"] },
+  { a: "mkt", b: "prod", doel: "Klantinzichten en reviews naar de propositie", voorbeelden: ["Top-5 klachten per segment", "Welke doelgroep past bij welk concept"] },
+  { a: "ops", b: "prod", doel: "Toetsen of een concept in de praktijk uitvoerbaar is", voorbeelden: ["Kan de huidige operatie dit aan?", "Benodigde processen voor een nieuwe dienst"] },
+  { a: "ops", b: "hr",   doel: "Bezetting, roosters, onderhoud van agents en agentregister", voorbeelden: ["Capaciteit voor een nieuw proces", "Nieuwe Tet registreren na onderhoud"] },
+  { a: "rnd", b: "prod", doel: "Trends en technologie naar concepten", voorbeelden: ["Een trend vertalen naar een propositie", "Nieuwe technologie als onderdeel van de klantreis"] },
+  { a: "ops", b: "fin",  doel: "Proceskosten en orderfulfilment raken de boekhouding", voorbeelden: ["Kosten per proces of order", "Orderdata naar de boekhouding"] },
+  { a: "rnd", b: "ops",  doel: "Implementatie van nieuwe technologie en tools", voorbeelden: ["Proef met een nieuwe tool in de operatie", "Impact van nieuwe tooling op processen"] }
+];
+const CONTROLELIJN = "risk";
+
+/* Connectors en extensions die agents kunnen gebruiken. `gevoelig`: extra spelregel bij schrijfrecht.
+   Toegang per afdeling: "rw" = lezen + schrijven, "r" = alleen lezen, niet genoemd = uit.
+   Elke agent in een afdeling krijgt deze toegang, tenzij zijn profielkaart het inperkt. */
+const CONNECTORS = [
+  { id: "gmail",   naam: "Gmail",            mono: "GM", kleur: "#e7766a", soort: "E-mail", gevoelig: "Versturen namens de Raad alleen na goedkeuring" },
+  { id: "gcal",    naam: "Google Agenda",    mono: "GA", kleur: "#6fa8f0", soort: "Agenda" },
+  { id: "gdrive",  naam: "Google Drive",     mono: "GD", kleur: "#f2c14e", soort: "Bestanden" },
+  { id: "slack",   naam: "Slack",            mono: "SL", kleur: "#c084fc", soort: "Chat" },
+  { id: "notion",  naam: "Notion",           mono: "NO", kleur: "#d6cfc6", soort: "Kennisbank" },
+  { id: "hubspot", naam: "HubSpot",          mono: "HS", kleur: "#ff8a5b", soort: "CRM" },
+  { id: "exact",   naam: "Exact Online",     mono: "EX", kleur: "#5fbf8f", soort: "Boekhouding", gevoelig: "Geen betalingen; boekingen alleen als concept" },
+  { id: "klantsysteem", naam: "Klantsysteem", mono: "KS", kleur: "#4fbfd0", soort: "Kernsysteem van de opdrachtgever (CRM, ERP of reserveringen)", gevoelig: "Bevat persoonsgegevens (AVG)" },
+  { id: "reviews", naam: "Reviewplatforms",  mono: "RV", kleur: "#e86a8a", soort: "Online reviews" },
+  { id: "web",     naam: "Webzoeken",        mono: "WZ", kleur: "#9fb3c8", soort: "Onderzoek" },
+  { id: "canva",   naam: "Canva",            mono: "CA", kleur: "#7fd1c7", soort: "Ontwerp" },
+  { id: "github",  naam: "GitHub",           mono: "GH", kleur: "#b7a6f5", soort: "Code van de agents" }
+];
+/* Voortgangsbord per afdeling. Doel, deadline en hoofdlijnen stelt de afdeling in zodra er een doelstelling is;
+   ze worden lokaal bewaard (zie deptDoelen). De voortgang volgt uit de hoofdlijnen (klaar = 1, bezig = ½, open = 0).
+   KPI-labels komen uit de cultuurkaart van de afdeling; waarden volgen uit het grootboek zodra de agents draaien. */
+const AFDELING_KAART_KPIS = {"ops": ["Uptime agents", "Open onderhoudstickets", "Doorlooptijd orders", "Incidenten met evaluatie"], "fin": ["Prijsscenario's", "Kostenposten in kaart", "Verwachte marge-impact", "Afwijkingen budget"], "mkt": ["Doelgroepen uitgewerkt", "Reviews geanalyseerd", "Gemiddelde reviewscore", "Claims met bron"], "rnd": ["Trends getoetst", "Tech-opties vergeleken", "Lopende experimenten", "Verbeteringen ingevoerd"], "hr": ["Agents met profielkaart", "Bezettingsgat in kaart", "Performance-reviews"], "risk": ["Open risico's", "Output getoetst", "Tools gescand", "Terechte afkeuringen"], "prod": ["Concepten uitgewerkt", "Klantreizen getekend", "Getoetst door Finance"]};
+/* KPI's die op elk afdelingsbord staan en meerekenen met de stand van het kantoor. */
+const AFDELING_KPIS = [
+  { label: "Taken afgerond", waarde: (dt) => `${dt.length ? Math.round(dt.filter(t => t.status === "klaar").length / dt.length * 100) : 0}%`, doel: "100%" },
+  { label: "Wacht op de Raad", waarde: (dt) => String(dt.filter(t => t.approval && t.status !== "klaar").length), doel: "0", stand: (dt) => dt.some(t => t.approval && t.status !== "klaar") ? "warn" : "ok" },
+  { label: "Open verzoeken via lijnen", waarde: (dt) => String(dt.filter(t => t.via && t.status !== "klaar").length), doel: "≤ 2", stand: (dt) => dt.filter(t => t.via && t.status !== "klaar").length > 2 ? "warn" : "ok" }
+];
+
+const CONNECTOR_TOEGANG = {
+  ops:  { gdrive: "rw", slack: "rw", notion: "rw", github: "rw", klantsysteem: "r", gcal: "r", web: "r" },
+  fin:  { exact: "rw", gdrive: "rw", slack: "rw", klantsysteem: "r", hubspot: "r", web: "r" },
+  mkt:  { hubspot: "rw", canva: "rw", gdrive: "rw", slack: "rw", reviews: "r", web: "r" },
+  rnd:  { web: "r", gdrive: "rw", notion: "rw", slack: "rw", github: "r" },
+  hr:   { gcal: "rw", gdrive: "rw", slack: "rw", notion: "rw", gmail: "r" },
+  risk: { gmail: "r", gdrive: "r", slack: "r", notion: "r", hubspot: "r", exact: "r", klantsysteem: "r", reviews: "r", web: "r", github: "r" },
+  prod: { notion: "rw", gdrive: "rw", canva: "rw", slack: "rw", reviews: "r", klantsysteem: "r", web: "r" }
+};
+const SPELREGELS = [
+  "Alleen informatie, afstemming en kleine verzoeken; een verzoek levert hooguit één taak op.",
+  "De Hoofdtet van de ontvanger accepteert het verzoek of escaleert het.",
+  "Elk bericht wordt gelogd in het Brein; de Oppertet leest mee.",
+  "Escaleren naar de Oppertet bij conflict over prioriteit, weigering of impact op de deadline.",
+  "Toegang blijft per afdeling: de ontvanger voert uit met de eigen tools.",
+  "Risk & Safety leest mee op alle lijnen."
+];
+
+/* Agents met profielkaart (laag 3, kaarten/agents/). Een profielkaart kan rechten alleen inperken. */
+const AGENTS = [
+  {"id": "oppertet", "naam": "Oppertet", "rol": "oppertet", "dept": null, "specialisme": "Orchestratie", "missie": "Vertaal de koers en informatie van de Raad naar doelen, prioriteiten en budget per afdeling.", "expertise": ["prioriteren", "planning", "budgetverdeling", "organisatieontwerp"], "kenmerken": ["kalm, besluitvaardig, beknopt", "Sterk in overzicht houden en keuzes maken", "Valkuil: te snel zelf ingrijpen in afdelingswerk", "Valkuil: te veel afdelingen tegelijk inzetten voor een kleine vraag"]},
+  {"id": "ops-h", "naam": "Hoofdtet Operations", "rol": "hoofdtet", "dept": "ops", "specialisme": "Bedrijfsvoering", "missie": "Houd de organisatie draaiende en lever uitvoerbare verbeteringen in de bedrijfsvoering.", "expertise": ["operations management", "procesverbetering", "lean", "incidentbeheer"], "kenmerken": ["procesmatig, betrouwbaar, nuchter", "Sterk in ritme en overzicht in de uitvoering", "Valkuil: perfectie in processen boven snelheid van levering"]},
+  {"id": "ops-1", "naam": "Proces-Tet", "rol": "tet", "dept": "ops", "specialisme": "Procesanalyse", "missie": "Breng processen in kaart en vind waar tijd, geld of klanttevredenheid weglekt.", "expertise": ["procesanalyse", "procesmodellering", "lean", "capaciteitsplanning"], "kenmerken": ["praktisch, nauwkeurig", "Sterk in knelpunten vinden en meetbaar maken", "Valkuil: te veel detail per proces", "Valkuil: aannemen dat vergelijkbare locaties of teams hetzelfde werken"]},
+  {"id": "ops-2", "naam": "Onderhouds-Tet", "rol": "tet", "dept": "ops", "specialisme": "Onderhoud agents & code", "missie": "Houd agents, kaarten en code gezond, en maak elke wijziging veilig en terug te draaien.", "expertise": ["agentconfiguratie", "versiebeheer", "monitoring", "toolontwerp"], "kenmerken": ["voorzichtig, systematisch", "Sterk in storingen voorkomen", "Valkuil: te grote wijzigingen in één keer"], "inperking": ["orderbeheer: geen schrijfrecht", "klantsysteem: geen toegang", "codewijzigingen alleen als wijzigingsvoorstel"]},
+  {"id": "fin-h", "naam": "Hoofdtet Finance", "rol": "hoofdtet", "dept": "fin", "specialisme": "Financiële sturing", "missie": "Bewaak elke euro van de organisatie en lever financiële onderbouwing die iedereen kan narekenen.", "expertise": ["financiële analyse", "budgettering", "business cases", "financiële modellen"], "kenmerken": ["kritisch, cijfermatig", "Sterk in doorvragen tot de aanname zichtbaar is", "Valkuil: te voorzichtig bij onzekere maar kansrijke cases"]},
+  {"id": "fin-1", "naam": "Prijs-Tet", "rol": "tet", "dept": "fin", "specialisme": "Prijsstrategie & omzet", "missie": "Vind de omzetkansen in prijs, volume en mix.", "expertise": ["prijsstrategie", "revenue management", "elasticiteit", "dynamische prijzen", "seizoenspatronen"], "kenmerken": ["analytisch, nuchter", "Sterk in scenario's doorrekenen", "Valkuil: conclusie te laat", "Valkuil: schijnprecisie"], "inperking": ["exact: alleen lezen"]},
+  {"id": "fin-2", "naam": "Kosten-Tet", "rol": "tet", "dept": "fin", "specialisme": "Kostenanalyse & benchmarks", "missie": "Maak kostenstructuren transparant en vergelijkbaar.", "expertise": ["kostprijsanalyse", "benchmarking", "marge-analyse"], "kenmerken": ["precies, zuinig", "Sterk in verborgen kosten vinden", "Valkuil: alleen besparen, geen investering zien"], "inperking": ["hubspot: geen toegang"]},
+  {"id": "mkt-h", "naam": "Hoofdtet Marketing", "rol": "hoofdtet", "dept": "mkt", "specialisme": "Merk & positionering", "missie": "Geef het aanbod een scherpe positie bij de juiste klant, onderbouwd met data.", "expertise": ["merkstrategie", "positionering", "campagneplanning"], "kenmerken": ["creatief maar onderbouwd, verbindend", "Sterk in één helder verhaal maken uit veel data", "Valkuil: mooie woorden zonder bewijs"]},
+  {"id": "mkt-1", "naam": "Doelgroep-Tet", "rol": "tet", "dept": "mkt", "specialisme": "Doelgroepen & personas", "missie": "Begrijp wie de klanten zijn en wie ze zouden moeten zijn.", "expertise": ["marktonderzoek", "segmentatie", "personas", "concurrentieanalyse"], "kenmerken": ["nieuwsgierig, grondig", "Sterk in patronen in klantgedrag zien", "Valkuil: stereotiepe personas", "Valkuil: te veel bronnen, te weinig keuze"]},
+  {"id": "mkt-2", "naam": "Review-Tet", "rol": "tet", "dept": "mkt", "specialisme": "Reviews & reputatie", "missie": "Haal uit klantfeedback en reviews wat klanten echt vinden.", "expertise": ["sentimentanalyse", "reputatiemanagement", "reviewplatforms"], "kenmerken": ["nauwkeurig, eerlijk", "Sterk in signaal van ruis scheiden", "Valkuil: één harde review te zwaar laten wegen"], "inperking": ["canva: geen toegang", "hubspot: alleen lezen"]},
+  {"id": "rnd-h", "naam": "Hoofdtet R&D", "rol": "hoofdtet", "dept": "rnd", "specialisme": "Innovatieportfolio", "missie": "Maak Tet Tet en zijn opdrachtgevers beter met alleen wat aantoonbaar werkt.", "expertise": ["innovatiemanagement", "experimentontwerp", "AI-agents"], "kenmerken": ["experimenteel, systematisch", "Sterk in hype van waarde scheiden", "Valkuil: te veel experimenten tegelijk"]},
+  {"id": "rnd-1", "naam": "Trend-Tet", "rol": "tet", "dept": "rnd", "specialisme": "Trends & ontwikkelingen", "missie": "Vind de trends die over twee jaar het verschil maken binnen de doelstelling.", "expertise": ["trendonderzoek", "scenarioplanning", "klantgedrag"], "kenmerken": ["nieuwsgierig, kritisch", "Sterk in breed zoeken en dan versmallen", "Valkuil: modewoorden overnemen zonder bewijs"]},
+  {"id": "rnd-2", "naam": "Tech-Tet", "rol": "tet", "dept": "rnd", "specialisme": "Technologie & tools", "missie": "Vergelijk technologie op wat het oplevert, niet op wat het belooft.", "expertise": ["software-selectie", "integraties", "AI-tools", "automatisering"], "kenmerken": ["technisch, nuchter", "Sterk in kosten, baten en risico naast elkaar zetten", "Valkuil: nieuwste boven beste kiezen"]},
+  {"id": "hr-h", "naam": "Hoofdtet HR", "rol": "hoofdtet", "dept": "hr", "specialisme": "Organisatie & mensen", "missie": "Zet de juiste agent op de juiste plek en lever haalbaar advies over mensen en organisatie.", "expertise": ["organisatieontwerp", "HR-advies", "agentbeheer"], "kenmerken": ["mensgericht, consequent", "Sterk in rollen en mandaten helder maken", "Valkuil: autonomie te snel verhogen"]},
+  {"id": "hr-1", "naam": "Personeels-Tet", "rol": "tet", "dept": "hr", "specialisme": "Bezetting & arbeidsmarkt", "missie": "Laat zien hoeveel mensen nodig zijn, met welke vaardigheden, en waar ze vandaan komen.", "expertise": ["personeelsplanning", "cao's en arbeidsvoorwaarden", "arbeidsmarkt", "roosteren"], "kenmerken": ["realistisch, praktisch", "Sterk in piekmomenten en roosters doorrekenen", "Valkuil: ideale bezetting boven betaalbare bezetting"], "inperking": ["gmail: geen toegang"]},
+  {"id": "risk-h", "naam": "Hoofdtet Risk & Safety", "rol": "hoofdtet", "dept": "risk", "specialisme": "Risicomanagement", "missie": "Zorg dat niets de organisatie verlaat dat we niet kunnen verantwoorden.", "expertise": ["risicomanagement", "governance", "AI-veiligheid", "incidentevaluatie"], "kenmerken": ["onafhankelijk, principieel, rustig", "Sterk in zwakke plekken zien vóór ze schade doen", "Valkuil: alles blokkeren uit voorzichtigheid"]},
+  {"id": "risk-1", "naam": "Compliance-Tet", "rol": "tet", "dept": "risk", "specialisme": "Wet- en regelgeving", "missie": "Toets elke output en elke tool aan wet en regels.", "expertise": ["AVG", "sectorregelgeving", "arbeidsrecht basis", "toolscans"], "kenmerken": ["precies, onverstoorbaar", "Sterk in regels vertalen naar concrete do's en don'ts", "Valkuil: juridisch jargon"]},
+  {"id": "risk-c1", "naam": "Control Tet Kwaliteit", "rol": "controltet", "dept": "risk", "specialisme": "Kwaliteit van de output", "missie": "Laat alleen werk door dat voldoet aan de criteria, de doelstelling en onze waarden.", "expertise": ["kwaliteitstoetsing", "redactie", "consistentiecontrole"], "kenmerken": ["streng, eerlijk, constructief", "Sterk in zwakke plekken vinden", "Valkuil: te veel kleine opmerkingen", "Valkuil: meebuigen met de reputatie van de maker"]},
+  {"id": "risk-c2", "naam": "Control Tet Feiten", "rol": "controltet", "dept": "risk", "specialisme": "Feiten- en bronnencheck", "missie": "Elk cijfer, elke bron en elke bewering in de output klopt of is gemarkeerd.", "expertise": ["factchecking", "bronkritiek", "rekenkundige controle"], "kenmerken": ["nauwgezet, onafhankelijk", "Sterk in fouten in cijfers en bronnen vinden", "Valkuil: alleen details toetsen, het doel uit het oog verliezen"]},
+  {"id": "prod-h", "naam": "Hoofdtet Product", "rol": "hoofdtet", "dept": "prod", "specialisme": "Propositie", "missie": "Lever proposities en eindproducten die kloppen voor de klant en samenhangen als één geheel.", "expertise": ["productmanagement", "propositieontwikkeling", "eindredactie"], "kenmerken": ["scherp op samenhang, besluitvaardig", "Sterk in veel input tot één product brengen", "Valkuil: te veel ideeën tegelijk"]},
+  {"id": "prod-1", "naam": "Klantreis-Tet", "rol": "tet", "dept": "prod", "specialisme": "Klantreis & beleving", "missie": "Teken de reis van de klant zo dat elke stap beter wordt.", "expertise": ["service design", "klantbeleving", "customer journey mapping"], "kenmerken": ["empathisch, visueel", "Sterk in vanuit de klant denken", "Valkuil: ideale klantreis zonder haalbaarheidscheck"]}
+];
+
+const SEED_TASKS = [
+  { dept: "ops",  agent: "ops-2",  title: "Kaarten v1.1.0 koppelen aan het agentregister", status: "klaar" },
+  { dept: "hr",   agent: "hr-h",   title: "Profielkaarten controleren en goedkeuring voorbereiden", status: "volgende", approval: true },
+  { dept: "risk", agent: "risk-1", title: "Connectors scannen vóór de eerste doelstelling", status: "volgende" },
+  { dept: "rnd",  agent: "rnd-h",  title: "Faalwijzen meetbaar maken in het grootboek", status: "volgende" }
+];
+const SEED_MESSAGES = [];
+const HISTORY = {
+  "oppertet": ["Wacht op een doelstelling van de Raad"],
+  "hr-h":     ["Alle 21 agents geregistreerd met profielkaart v1.1.0"]
+};
+
+/* =====================================================================
+   STATE (taken en berichten worden lokaal in de browser bewaard)
+   ===================================================================== */
+const KEYS = { tasks: "tettet-office-v2", msgs: "tettet-messages-v2", conn: "tettet-connectors-v2", doel: "tettet-doel-v2", dd: "tettet-afdelingsdoelen-v2" };
+const deptById = Object.fromEntries(DEPTS.map(d => [d.id, d]));
+const agentById = Object.fromEntries(AGENTS.map(a => [a.id, a]));
+const now = Date.now();
+let tasks = load(KEYS.tasks, () => SEED_TASKS.map((t, i) => ({ id: "t" + (i + 1), approval: false, ...t, created: now - (SEED_TASKS.length - i) * 3600e3 })));
+let messages = load(KEYS.msgs, () => SEED_MESSAGES.map((m, i) => ({ id: "m" + (i + 1), ...m, created: now - (3 - i) * 1800e3 })));
+let connAccess = load(KEYS.conn, () => JSON.parse(JSON.stringify(CONNECTOR_TOEGANG)));
+let doel = load(KEYS.doel, () => ({ ...DOEL_LEEG }));
+let deptDoelen = load(KEYS.dd, () => ({}));
+DEPTS.forEach(d => { connAccess[d.id] = connAccess[d.id] || {}; });
+
+function load(key, seed) {
+  try { const raw = localStorage.getItem(key); if (raw) return JSON.parse(raw); } catch (e) {}
+  return seed();
+}
+function save() {
+  try { localStorage.setItem(KEYS.tasks, JSON.stringify(tasks)); localStorage.setItem(KEYS.msgs, JSON.stringify(messages)); localStorage.setItem(KEYS.conn, JSON.stringify(connAccess)); localStorage.setItem(KEYS.doel, JSON.stringify(doel)); localStorage.setItem(KEYS.dd, JSON.stringify(deptDoelen)); } catch (e) {}
+}
+
+function agentStatus(id) {
+  const mine = tasks.filter(t => t.agent === id);
+  if (mine.some(t => t.status === "bezig")) return "bezig";
+  if (mine.some(t => t.status === "volgende")) return "volgende";
+  return "vrij";
+}
+const STATUS_COLOR = { bezig: "var(--busy)", volgende: "var(--next)", vrij: "var(--idle)", klaar: "var(--done)" };
+const HL_WAARDE = { klaar: 1, bezig: .5, open: 0 };
+const deptDoel = id => (deptDoelen[id] = deptDoelen[id] || { doel: "", deadline: "", hoofdlijnen: [] });
+const hlOf = id => deptDoel(id).hoofdlijnen;
+function dagenTot(iso) {
+  if (!iso) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.ceil((new Date(iso + "T00:00:00") - today) / 864e5));
+}
+const deptProgress = id => { const hl = hlOf(id); return hl.length ? hl.reduce((a, h) => a + HL_WAARDE[h.status], 0) / hl.length : 0; };
+
+const chKey = (a, b) => [a, b].sort().join("-");
+const kanaalByKey = Object.fromEntries(KANALEN.map(k => [chKey(k.a, k.b), k]));
+function routeFor(a, b) {
+  if (a === b) return null;
+  if (kanaalByKey[chKey(a, b)]) return "direct";
+  if (a === CONTROLELIJN || b === CONTROLELIJN) return "controle";
+  return "oppertet";
+}
+const isDirect = r => r === "direct" || r === "controle";
+const savedHandoffs = () => messages.filter(m => m.route === "direct" && m.status !== "geëscaleerd").length * 2;
+const channelsOf = id => KANALEN.filter(k => k.a === id || k.b === id).map(k => k.a === id ? k.b : k.a);
+
+/* Stand van het project voor het doelstellingenbord. */
+function projectStand() {
+  const prog = DEPTS.map(d => deptProgress(d.id));
+  const klaar = tasks.filter(t => t.status === "klaar").length;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return {
+    voortgang: Math.round(prog.reduce((a, b) => a + b, 0) / prog.length * 100),
+    afdelingenKlaar: prog.filter(p => p === 1).length,
+    takenPct: tasks.length ? Math.round(klaar / tasks.length * 100) : 0,
+    wachtOpRaad: tasks.filter(t => t.approval && t.status !== "klaar").length,
+    dagenTotDeadline: dagenTot(doel.deadline),
+    bespaard: savedHandoffs()
+  };
+}
+const kpiById = Object.fromEntries(KPIS.map(k => [k.id, k]));
+const fmtDate = iso => iso.split("-").reverse().join("-");
+
+/* =====================================================================
+   KANTOOR TEKENEN (isometrisch)
+   ===================================================================== */
+const NS = "http://www.w3.org/2000/svg";
+const S = 26, COS = 0.866, SIN = 0.5;
+const svg = document.getElementById("office");
+
+function el(tag, attrs = {}, parent) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+const iso = (x, y) => [(x - y) * COS * S, (x + y) * SIN * S];
+const pts = arr => arr.map(p => p.join(",")).join(" ");
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.max(0, Math.min(255, Math.round(v * f))));
+  return "rgb(" + c.join(",") + ")";
+}
+function box(g, x, y, w, d, h, color, cls) {
+  const p = (a, b, up = 0) => { const [sx, sy] = iso(a, b); return [sx, sy - up]; };
+  el("polygon", { points: pts([p(x, y + d, h), p(x + w, y + d, h), p(x + w, y + d), p(x, y + d)]), fill: shade(color, .62) }, g);
+  el("polygon", { points: pts([p(x + w, y, h), p(x + w, y + d, h), p(x + w, y + d), p(x + w, y)]), fill: shade(color, .78) }, g);
+  el("polygon", { points: pts([p(x, y, h), p(x + w, y, h), p(x + w, y + d, h), p(x, y + d, h)]), fill: color, class: cls || "" }, g);
+}
+function svgText(g, x, y, str, cls, anchor = "middle", fill) {
+  const t = el("text", { x, y, class: cls, "text-anchor": anchor }, g);
+  if (fill) t.setAttribute("fill", fill);
+  t.textContent = str;
+  return t;
+}
+function onActivate(node, fn) {
+  node.addEventListener("click", e => { e.stopPropagation(); fn(); });
+  node.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } });
+}
+
+function desk(g, a, x, y, color, big) {
+  const dg = el("g", { class: "desk", tabindex: 0, role: "link", "aria-label": a.naam }, g);
+  const st = agentStatus(a.id);
+  const w = big ? 1.3 : 1.0, d = .55;
+  const [ax, ay] = iso(x + w / 2, y - .25);
+  el("ellipse", { cx: ax, cy: ay - 6, rx: 7.5, ry: 9, fill: shade(color, .5) }, dg);
+  el("circle", { cx: ax, cy: ay - 19, r: 6.5, fill: "#e9d6c3", stroke: STATUS_COLOR[st], "stroke-width": 2.5, class: "agent-head" }, dg);
+  if (a.rol === "hoofdtet") el("path", { d: `M${ax - 6} ${ay - 25} l3 -6 l3 4 l3 -4 l3 6 z`, fill: "#f6c75a" }, dg);
+  if (a.rol === "controltet") el("circle", { cx: ax, cy: ay - 19, r: 10, fill: "none", stroke: "#ef6b5b", "stroke-dasharray": "2 3" }, dg);
+  box(dg, x, y, w, d, 9, "#5a4a3d");
+  const [mx, my] = iso(x + w / 2, y + .1);
+  el("rect", { x: mx - 7, y: my - 21, width: 14, height: 9, rx: 1.5, fill: st === "bezig" ? "#ffd38a" : "#2b3440", class: st === "bezig" ? "screen-busy" : "" }, dg);
+  if (tasks.some(t => t.agent === a.id && t.approval && t.status !== "klaar")) {
+    el("circle", { cx: ax + 9, cy: ay - 27, r: 5, fill: "var(--warn)" }, dg);
+    svgText(dg, ax + 9, ay - 24.5, "!", "svg-num", "middle", "#fff").setAttribute("font-size", "8");
+  }
+  const [lx, ly] = iso(x + w / 2, y + d);
+  svgText(dg, lx, ly + 9, a.naam, "agent-label");
+  const title = el("title", {}, dg); title.textContent = `${a.naam} · ${st}`;
+  onActivate(dg, () => go("agent-" + a.id));
+}
+
+const CENTER = [600, 500];
+const SLOTS = [[-1.9, -1.35], [0.25, -1.35], [-1.9, 0.45], [0.25, 0.45]];
+const POS = Object.fromEntries(DEPTS.map((d, i) => {
+  const ang = -Math.PI / 2 + i * 2 * Math.PI / DEPTS.length;
+  return [d.id, [CENTER[0] + 440 * Math.cos(ang), CENTER[1] + 310 * Math.sin(ang)]];
+}));
+function channelPath(a, b) {
+  const [x1, y1] = POS[a], [x2, y2] = POS[b];
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  let dx = mx - CENTER[0], dy = my - CENTER[1];
+  if (Math.hypot(dx, dy) < 40) { dx = -(y2 - y1); dy = x2 - x1; }
+  const n = Math.hypot(dx, dy) || 1;
+  const bend = Math.min(150, 40 + Math.hypot(x2 - x1, y2 - y1) * .12);
+  return `M${x1} ${y1} Q${mx + dx / n * bend} ${my + dy / n * bend} ${x2} ${y2}`;
+}
+
+function renderOffice() {
+  svg.querySelectorAll(":scope > g, :scope > defs").forEach(n => n.remove());
+  const defs = el("defs", {}, svg);
+  const rg = el("radialGradient", { id: "brainGlow" }, defs);
+  el("stop", { offset: "0%", "stop-color": "#ffd28a", "stop-opacity": ".95" }, rg);
+  el("stop", { offset: "60%", "stop-color": "#f0a04b", "stop-opacity": ".35" }, rg);
+  el("stop", { offset: "100%", "stop-color": "#f0a04b", "stop-opacity": "0" }, rg);
+
+  const world = el("g", {}, svg);
+  const layerChannels = el("g", {}, world), layerFlow = el("g", {}, world), layerIslands = el("g", {}, world), layerCards = el("g", {}, world);
+
+  KANALEN.forEach(k => {
+    const key = chKey(k.a, k.b);
+    const traffic = messages.filter(m => chKey(m.from, m.to) === key).length;
+    const w = 2.5 + Math.min(3, traffic * .8), d = channelPath(k.a, k.b);
+    const g = el("g", { class: "channel", tabindex: 0, role: "link", "aria-label": `Directe lijn ${deptById[k.a].naam} en ${deptById[k.b].naam}` }, layerChannels);
+    el("path", { d, class: "ch-vis", stroke: deptById[k.a].kleur, "stroke-width": w, "stroke-dasharray": "14 14" }, g);
+    el("path", { d, class: "ch-vis", stroke: deptById[k.b].kleur, "stroke-width": w, "stroke-dasharray": "14 14", "stroke-dashoffset": 14 }, g);
+    el("path", { d, class: "ch-hit" }, g);
+    const t = el("title", {}, g); t.textContent = `${deptById[k.a].naam} ↔ ${deptById[k.b].naam}`;
+    onActivate(g, () => go("lijn-" + key));
+  });
+
+  DEPTS.forEach(dp => {
+    const [x, y] = POS[dp.id];
+    el("path", { d: `M${CENTER[0]} ${CENTER[1] - 30} Q${(x + CENTER[0]) / 2} ${(y + CENTER[1]) / 2 + 30} ${x} ${y}`, class: "flow", stroke: dp.kleur }, layerFlow);
+  });
+
+  // centraal platform: Oppertet + Brein
+  const cg = el("g", { transform: `translate(${CENTER[0]},${CENTER[1]})`, class: "island", tabindex: 0, role: "link", "aria-label": "Oppertet en Brein" }, layerIslands);
+  box(cg, -2.6, -2.6, 5.2, 5.2, 14, "#3b3029", "top-face");
+  el("circle", { cx: 0, cy: -48, r: 46, fill: "url(#brainGlow)", class: "brain-pulse" }, cg);
+  el("circle", { cx: 0, cy: -48, r: 20, fill: "#f6b25e", stroke: "#ffe2b0", "stroke-width": 2 }, cg);
+  el("path", { d: "M-10 -50 q5 -10 10 0 q5 -10 10 0 M-12 -42 q6 6 12 0 q6 6 12 0 M0 -62 v28", stroke: "#7a4a1c", "stroke-width": 2, fill: "none", "stroke-linecap": "round" }, cg);
+  desk(cg, agentById.oppertet, -.65, 1.0, "#f0a04b", true);
+  onActivate(cg, () => go("oppertet"));
+
+  // doelstellingenbord op palen achter het Brein
+  const s = projectStand();
+  const bw = 330, bh = 140, bx = CENTER[0] - bw / 2, by = CENTER[1] - 220;
+  const board = el("g", { class: "board", tabindex: 0, role: "link", "aria-label": `Doelstellingenbord: ${s.voortgang}% voortgang` }, layerCards);
+  [bx + 60, bx + bw - 60].forEach(px => el("rect", { x: px - 3, y: by + bh, width: 6, height: 14, fill: "#5a4a3d" }, board));
+  el("rect", { x: bx, y: by, width: bw, height: bh, rx: 12, class: "card-bg", stroke: "#f0a04b" }, board);
+  svgText(board, bx + 16, by + 22, "DOELSTELLING", "svg-sub", "start", "#f0a04b").setAttribute("letter-spacing", "1.2");
+  svgText(board, bx + bw - 16, by + 22, s.dagenTotDeadline === null ? "geen deadline" : `nog ${s.dagenTotDeadline} dagen`, "svg-sub", "end");
+  const titel = doel.naam || "Nog in te stellen door de Raad";
+  svgText(board, bx + 16, by + 44, titel.length > 30 ? titel.slice(0, 29) + "…" : titel, "board-title", "start", doel.naam ? null : "#a8998a");
+  document.getElementById("doelLine").textContent = doel.naam ? `Doelstelling: ${doel.naam}` : "Doelstelling nog niet ingesteld · klik op het bord";
+  el("rect", { x: bx + 16, y: by + 56, width: bw - 82, height: 9, rx: 4.5, fill: "#3a322b" }, board);
+  el("rect", { x: bx + 16, y: by + 56, width: Math.max(4, (bw - 82) * s.voortgang / 100), height: 9, rx: 4.5, fill: "#f0a04b" }, board);
+  svgText(board, bx + bw - 16, by + 66, `${s.voortgang}%`, "board-kpi", "end", "#f0a04b");
+  BORD_KPIS.map(id => kpiById[id]).forEach((k, i) => {
+    const cx = bx + 16 + i * ((bw - 32) / 3);
+    const color = { ok: "#7ccf8a", warn: "#ef5d5d", neutral: "#f2e9df" }[k.stand(s)];
+    svgText(board, cx, by + 98, k.waarde(s), "board-kpi", "start", color);
+    svgText(board, cx, by + 114, k.kort || k.label, "svg-sub", "start");
+  });
+  svgText(board, bx + 16, by + 131, doel.naam ? "Klik voor alle KPI's" : "Klik om de doelstelling in te stellen", "svg-sub", "start").setAttribute("font-size", "9.5");
+  onActivate(board, () => go("oppertet"));
+
+  // afdelingseilanden met compacte statuskaart
+  DEPTS.forEach(d => {
+    const [x, y] = POS[d.id];
+    const g = el("g", { transform: `translate(${x},${y})`, class: "island", tabindex: 0, role: "link", "aria-label": d.naam }, layerIslands);
+    box(g, -2.3, -1.9, 4.6, 3.8, 12, shade(d.kleur, .55), "top-face");
+    const rim = [iso(-2.3, -1.9), iso(2.3, -1.9), iso(2.3, 1.9), iso(-2.3, 1.9)].map(([a, b]) => [a, b - 12]);
+    el("polygon", { points: pts(rim), fill: "none", stroke: d.kleur, "stroke-width": 2 }, g);
+    if (d.id === CONTROLELIJN) el("polygon", { points: pts(rim.map(([a, b]) => [a * 1.12, b * 1.12 - 1])), fill: "none", stroke: d.kleur, "stroke-width": 1.2, "stroke-dasharray": "3 5", opacity: .8 }, g);
+    onActivate(g, () => go(d.id));
+    const team = AGENTS.filter(a => a.dept === d.id);
+    const og = el("g", { transform: "translate(0,-12)" }, g);
+    team.forEach((a, j) => { const [sx, sy] = SLOTS[j] || [0, 0]; desk(og, a, sx, sy, d.kleur, a.rol === "hoofdtet"); });
+
+    const dt = tasks.filter(t => t.dept === d.id);
+    const n = st => dt.filter(t => t.status === st).length;
+    const pend = dt.filter(t => t.approval && t.status !== "klaar").length;
+    const prog = deptProgress(d.id);
+    const top = iso(-2.3, -1.9)[1] - 12;
+    const k = el("g", { transform: `translate(${x - 78},${y + top - 76})`, style: "cursor:pointer", tabindex: -1 }, layerCards);
+    el("rect", { width: 156, height: 62, rx: 10, class: "card-bg", stroke: d.kleur }, k);
+    svgText(k, 12, 20, d.naam, "svg-title", "start");
+    svgText(k, 144, 20, `${team.length} agents`, "svg-sub", "end");
+    [[n("bezig"), "var(--busy)"], [n("volgende"), "var(--next)"], [n("klaar"), "var(--done)"]].forEach(([v, c], j) => {
+      el("circle", { cx: 16 + j * 30, cy: 35, r: 4, fill: c }, k);
+      svgText(k, 24 + j * 30, 39, String(v), "svg-num", "start", "var(--text)");
+    });
+    svgText(k, 144, 39, `${Math.round(prog * 100)}%`, "svg-num", "end", d.kleur);
+    el("rect", { x: 12, y: 47, width: 132, height: 5, rx: 2.5, fill: "#3a322b" }, k);
+    el("rect", { x: 12, y: 47, width: Math.max(2, 132 * prog), height: 5, rx: 2.5, fill: d.kleur }, k);
+    if (pend) { el("circle", { cx: 152, cy: 4, r: 10, fill: "var(--warn)" }, k); svgText(k, 152, 8, String(pend), "svg-num", "middle", "#fff"); }
+    el("line", { x1: 78, y1: 62, x2: 78, y2: 76, stroke: d.kleur, "stroke-dasharray": "2 3" }, k);
+    onActivate(k, () => go(d.id));
+
+    // connectorbalk onder het eiland
+    const aan = CONNECTORS.filter(c => connAccess[d.id][c.id]);
+    const step = 17, barW = Math.max(96, aan.length * step + 14), barY = y + iso(2.3, 1.9)[1] + 8;
+    const cb = el("g", { class: "conn-bar", transform: `translate(${x - barW / 2},${barY})`, tabindex: 0, role: "button", "aria-label": `Connectors ${d.naam}: ${aan.length} aan` }, layerCards);
+    el("rect", { class: "bar-bg card-bg", width: barW, height: 22, rx: 11, stroke: d.kleur, "stroke-opacity": .7 }, cb);
+    if (!aan.length) svgText(cb, barW / 2, 15, "geen connectors", "svg-sub", "middle");
+    aan.forEach((c, i) => {
+      const lvl = connAccess[d.id][c.id], cx = 14 + i * step;
+      el("circle", { cx, cy: 11, r: 7, fill: lvl === "rw" ? c.kleur : "rgba(20,17,15,.9)", stroke: c.kleur, "stroke-width": 1.5 }, cb);
+      const t = svgText(cb, cx, 13.5, c.mono, "svg-num", "middle", lvl === "rw" ? "#1a120b" : c.kleur);
+      t.setAttribute("style", "font-size:6.5px;font-weight:800");
+    });
+    const ct = el("title", {}, cb);
+    ct.textContent = aan.length ? `${d.naam}: ` + aan.map(c => `${c.naam} (${connAccess[d.id][c.id] === "rw" ? "schrijven" : "lezen"})`).join(", ") : `${d.naam}: geen connectors`;
+    currentTiles["conn-" + d.id] = connTile(d.id);
+    onActivate(cb, () => openSheet("conn-" + d.id));
+  });
+}
+
+/* =====================================================================
+   ZOOMEN EN VERSCHUIVEN (muiswiel, slepen, knijpen, knoppen)
+   ===================================================================== */
+const HOME = { x: 40, y: 40, w: 1120, h: 860 };
+let vb = { ...HOME };
+const MIN_W = 220, MAX_W = 2000;
+function applyVB() {
+  svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  svg.classList.toggle("lod2", HOME.w / vb.w > 1.7);
+}
+function svgPoint(cx, cy) {
+  const r = svg.getBoundingClientRect();
+  const s = Math.max(vb.w / r.width, vb.h / r.height);
+  const ox = (r.width - vb.w / s) / 2, oy = (r.height - vb.h / s) / 2;
+  return { x: vb.x + (cx - r.left - ox) * s, y: vb.y + (cy - r.top - oy) * s, s };
+}
+function clampVB() {
+  const cx = Math.min(1350, Math.max(-150, vb.x + vb.w / 2)), cy = Math.min(1050, Math.max(-150, vb.y + vb.h / 2));
+  vb.x = cx - vb.w / 2; vb.y = cy - vb.h / 2;
+}
+function zoomAt(p, f) {
+  const nw = Math.min(MAX_W, Math.max(MIN_W, vb.w * f));
+  f = nw / vb.w;
+  vb.x = p.x - (p.x - vb.x) * f; vb.y = p.y - (p.y - vb.y) * f;
+  vb.w *= f; vb.h *= f;
+  clampVB(); applyVB();
+}
+function animateTo(target, ms = 260) {
+  const from = { ...vb }, t0 = performance.now();
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const step = t => {
+    const k = reduce ? 1 : Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+    for (const key of ["x", "y", "w", "h"]) vb[key] = from[key] + (target[key] - from[key]) * e;
+    applyVB();
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function zoomCenter(f) {
+  const nw = Math.min(MAX_W, Math.max(MIN_W, vb.w * f)), k = nw / vb.w;
+  const cx = vb.x + vb.w / 2, cy = vb.y + vb.h / 2;
+  animateTo({ x: cx - vb.w * k / 2, y: cy - vb.h * k / 2, w: vb.w * k, h: vb.h * k });
+  hideHint();
+}
+svg.addEventListener("wheel", e => {
+  e.preventDefault();
+  zoomAt(svgPoint(e.clientX, e.clientY), Math.exp(e.deltaY * (e.ctrlKey ? .01 : .0015)));
+  hideHint();
+}, { passive: false });
+
+const pointers = new Map();
+let dragDist = 0, pinchDist = 0;
+svg.addEventListener("pointerdown", e => {
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 1) dragDist = 0;
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinchDist = Math.hypot(a.x - b.x, a.y - b.y); }
+});
+window.addEventListener("pointermove", e => {
+  if (!pointers.has(e.pointerId)) return;
+  const prev = pointers.get(e.pointerId), cur = { x: e.clientX, y: e.clientY };
+  pointers.set(e.pointerId, cur);
+  if (pointers.size === 1) {
+    const dx = cur.x - prev.x, dy = cur.y - prev.y;
+    dragDist += Math.abs(dx) + Math.abs(dy);
+    if (dragDist > 6) {
+      svg.classList.add("dragging");
+      const s = svgPoint(0, 0).s;
+      vb.x -= dx * s; vb.y -= dy * s; clampVB(); applyVB(); hideHint();
+    }
+  } else if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    if (pinchDist) zoomAt(svgPoint((a.x + b.x) / 2, (a.y + b.y) / 2), pinchDist / dist);
+    pinchDist = dist; dragDist = 99; hideHint();
+  }
+});
+function endPointer(e) {
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinchDist = 0;
+  if (!pointers.size) { svg.classList.remove("dragging"); setTimeout(() => { if (!pointers.size) dragDist = 0; }, 0); }
+}
+window.addEventListener("pointerup", endPointer);
+window.addEventListener("pointercancel", endPointer);
+// een sleep- of knijpbeweging mag geen klik op een eiland worden
+svg.addEventListener("click", e => { if (dragDist > 6) { e.stopPropagation(); e.preventDefault(); } }, true);
+
+document.getElementById("zIn").onclick = () => zoomCenter(1 / 1.5);
+document.getElementById("zOut").onclick = () => zoomCenter(1.5);
+document.getElementById("zFit").onclick = () => animateTo({ ...HOME });
+document.getElementById("connBtn").onclick = () => go("connectors");
+const legendBtn = document.getElementById("legendBtn"), legend = document.getElementById("legend");
+legendBtn.onclick = () => { legend.hidden = !legend.hidden; legendBtn.setAttribute("aria-expanded", String(!legend.hidden)); };
+const hintToast = document.getElementById("hintToast");
+function hideHint() { hintToast.style.opacity = "0"; }
+setTimeout(hideHint, 5000);
+
+/* =====================================================================
+   PAGINA'S: afdeling, agent, Oppertet en directe lijn
+   Elke pagina toont tegels; een tegel opent de volledige kaart.
+   ===================================================================== */
+const ICONS = {
+  team: '<path d="M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1"/><circle cx="9" cy="7" r="3.5"/><path d="M22 19v-1a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+  cultuur: '<path d="M12 21s-7-4.4-9.3-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 9.3 6c-2.3 4.6-9.3 9-9.3 9z"/>',
+  toegang: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>',
+  rol: '<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  profiel: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="11" r="2.5"/><path d="M5.5 17a3.5 3.5 0 0 1 7 0M15 9h3M15 13h3"/>',
+  taken: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5"/>',
+  berichten: '<path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/>',
+  lijnen: '<circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="5" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M7.3 11l9.4-4.8M7.3 13l9.4 4.8"/>',
+  doel: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+  geschiedenis: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
+  regels: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/>'
+};
+const icon = k => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>`;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const list = arr => arr.length ? `<ul>${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : `<span class="i-meta">Nog niets.</span>`;
+const initials = a => a.naam.replace(/^(Hoofdtet|Control Tet)\s*/, "").replace(/-Tet$/, "").slice(0, 2);
+const PERM = { rw: ["lezen + schrijven", "rw"], r: ["alleen lezen", "r"], no: ["geen toegang", "no"] };
+
+const viewOffice = document.getElementById("view-office"), viewPage = document.getElementById("view-page"), sheetWrap = document.getElementById("sheetWrap");
+let currentTiles = {}, openTileKey = null, lastFocus = null;
+
+function go(hash) { if (location.hash.slice(1) === hash) route(); else location.hash = hash; }
+function route() {
+  closeSheet(true);
+  const h = decodeURIComponent(location.hash.slice(1));
+  currentTiles = {};
+  if (!h || h === "kantoor") { viewPage.hidden = true; viewOffice.hidden = false; renderOffice(); return; }
+  let page = null;
+  if (deptById[h]) page = deptPage(h);
+  else if (h === "oppertet" || h === "agent-oppertet") page = oppertetPage();
+  else if (h.startsWith("agent-") && agentById[h.slice(6)]) page = agentPage(h.slice(6));
+  else if (h.startsWith("lijn-") && kanaalByKey[h.slice(5)]) page = lijnPage(h.slice(5));
+  else if (h === "connectors") page = connectorsPage();
+  if (!page) { go("kantoor"); return; }
+  viewOffice.hidden = true; viewPage.hidden = false;
+  renderPage(page);
+}
+function renderPage(p) {
+  const scroll = viewPage.dataset.page === location.hash ? viewPage.scrollTop : 0;
+  viewPage.dataset.page = location.hash;
+  currentTiles = Object.fromEntries(p.tiles.map(t => [t.key, t]));
+  viewPage.innerHTML = `<header class="page-head">
+      <button class="back" id="backBtn"><span aria-hidden="true">←</span> ${esc(p.back ? p.back.label : "Kantoor")}</button>
+      <div class="crumb"><small>${esc(p.eyebrow)}</small><h2 style="color:${p.kleur || "var(--text)"}">${esc(p.titel)}</h2></div>
+    </header>
+    <div class="page-body">
+      ${p.top || ""}
+      <div class="tiles">${p.tiles.map(t => `<button class="tile" data-tile="${t.key}" style="--tc:${t.kleur || p.kleur || "var(--accent)"}">
+          <span class="more" aria-hidden="true">›</span>
+          <span class="t-head"><span class="ico">${icon(t.icon)}</span><h3>${esc(t.titel)}</h3></span>
+          ${t.preview}
+        </button>`).join("")}</div>
+    </div>`;
+  viewPage.scrollTop = scroll;
+  document.getElementById("backBtn").onclick = () => go(p.back ? p.back.hash : "kantoor");
+  viewPage.querySelectorAll("[data-tile]").forEach(b => b.onclick = () => openSheet(b.dataset.tile));
+  viewPage.querySelectorAll(".page-body [data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+  if (p.wire) p.wire(viewPage);
+}
+/* Na een wijziging: pagina en open kaart opnieuw tekenen. */
+function refresh() {
+  const key = openTileKey;
+  route();
+  if (key && currentTiles[key]) openSheet(key);
+}
+
+/* Sheet met de volledige kaart */
+function openSheet(key) {
+  const t = currentTiles[key];
+  if (!t) return;
+  if (!openTileKey) lastFocus = document.activeElement;
+  openTileKey = key;
+  sheetWrap.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(t.titel)}">
+      <div class="sheet-head"><h3>${esc(t.titel)}</h3><button class="close" aria-label="Sluiten">✕</button></div>
+      ${t.sheet()}
+    </div>`;
+  sheetWrap.hidden = false;
+  sheetWrap.querySelector(".close").onclick = () => closeSheet();
+  sheetWrap.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+  if (t.wire) t.wire(sheetWrap);
+  sheetWrap.querySelector(".close").focus();
+}
+function closeSheet(silent) {
+  if (sheetWrap.hidden) return;
+  sheetWrap.hidden = true; sheetWrap.innerHTML = ""; openTileKey = null;
+  if (!silent && lastFocus && document.contains(lastFocus)) lastFocus.focus();
+}
+sheetWrap.addEventListener("click", e => { if (e.target === sheetWrap) closeSheet(); });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (!sheetWrap.hidden) closeSheet(); else if (!viewPage.hidden) document.getElementById("backBtn").click();
+});
+
+/* ---------- Bouwstenen voor kaarten ---------- */
+function cultuurSheet(d) {
+  return `<p class="lead">Elke laag erft van de laag erboven. Bij waarden wint het hogere niveau, bij werkwijze het lagere.</p>
+    <div class="layer"><div class="lh">Organisatie <small>laag 1</small></div><h4>Waarden</h4>${list(CULTUUR_ORG.waarden)}<h4>Werkwijze</h4>${list(CULTUUR_ORG.werkwijze)}<h4>Principes</h4>${list(CULTUUR_ORG.principes)}<h4>Rode lijnen</h4>${list(CULTUUR_ORG.rode_lijnen)}</div>
+    ${d ? `<div class="layer" style="border-color:${d.kleur}"><div class="lh">${esc(d.naam)} <small>laag 2</small></div><h4>Waarden</h4>${list(d.cultuur.waarden)}<h4>Werkwijze</h4>${list(d.cultuur.werkwijze)}<h4>Principes</h4>${list(d.cultuur.principes)}</div>` : ""}`;
+}
+function toegangSheet(d, inperking) {
+  if (!d) return `<div class="perm"><span>Brein</span><span class="rw">lezen + schrijven</span><span>Takensysteem (alle afdelingen)</span><span class="rw">lezen + schrijven</span><span>Afdelingstools</span><span class="r">via Hoofdtets</span></div>`;
+  const aan = CONNECTORS.filter(c => connAccess[d.id][c.id]);
+  return `<h4 style="margin-top:0">Interne systemen</h4><div class="perm">${d.toegang.map(([tool, p]) => `<span>${esc(tool)}</span><span class="${PERM[p][1]}">${PERM[p][0]}</span>`).join("")}</div>
+    <h4>Connectors</h4>${aan.length ? `<div class="perm">${aan.map(c => `<span>${esc(c.naam)}</span><span class="${connAccess[d.id][c.id]}">${PERM[connAccess[d.id][c.id]][0]}</span>`).join("")}</div>` : `<span class="i-meta">Geen connectors.</span>`}
+    <div class="row" style="margin-top:10px"><button class="chip" data-go="connectors">Connectors wijzigen ›</button></div>
+    ${inperking ? `<h4>Ingeperkt door profielkaart</h4>${list(inperking)}` : ""}
+    <p class="i-meta" style="margin-top:12px">Een agent mag alleen wat in álle lagen is toegestaan. Een profielkaart kan rechten inperken, nooit uitbreiden.</p>`;
+}
+function rolSheet(rolId) {
+  const r = ROLKAARTEN[rolId];
+  return `<dl class="kv"><dt>Bereik</dt><dd>${esc(r.bereik)}</dd><dt>Autonomie</dt><dd>${esc(r.autonomie)}</dd></dl><h4>Mag</h4>${list(r.handelingen)}`;
+}
+const permSummary = d => `${d.toegang.filter(t => t[1] === "rw").length} schrijven · ${d.toegang.filter(t => t[1] === "r").length} lezen`;
+const statusChips = dt => `<div class="chips">${[["bezig", "var(--busy)"], ["volgende", "var(--next)"], ["klaar", "var(--done)"]].map(([s, c]) => `<span class="chip"><i class="dot" style="background:${c}"></i>${dt.filter(t => t.status === s).length} ${s}</span>`).join("")}</div>`;
+
+/* ---------- Connectors ---------- */
+const LVL = [["off", "Uit"], ["r", "Lezen"], ["rw", "Schrijven"]];
+const connMonos = id => {
+  const aan = CONNECTORS.filter(c => connAccess[id][c.id]);
+  return aan.length ? `<div class="monos">${aan.map(c => `<span class="mono ${connAccess[id][c.id]}" style="--c:${c.kleur}" title="${esc(c.naam)}">${c.mono}</span>`).join("")}</div>` : `<span class="sub">Geen connectors</span>`;
+};
+function setConn(dept, conn, lvl) {
+  if (lvl === "off") delete connAccess[dept][conn]; else connAccess[dept][conn] = lvl;
+  save(); refresh();
+}
+/* Tegel + kaart om per connector toegang te geven of in te trekken voor één afdeling. */
+function connTile(id) {
+  const d = deptById[id];
+  return {
+    key: "conn-" + id, icon: "toegang", titel: `Connectors ${d.naam}`, kleur: d.kleur,
+    preview: connMonos(id),
+    sheet: () => `<p class="lead" style="margin-top:0">Alle agents van ${esc(d.naam)} krijgen deze toegang, tenzij hun profielkaart het inperkt.</p>
+      ${CONNECTORS.map(c => {
+        const cur = connAccess[id][c.id] || "off";
+        return `<div class="conn-row"><span class="mono ${cur}" style="--c:${c.kleur}">${c.mono}</span>
+          <div><b>${esc(c.naam)}</b><small>${esc(c.soort)}${c.gevoelig ? `<br><span class="warnnote">${esc(c.gevoelig)}</span>` : ""}</small></div>
+          <div class="seg" role="group" aria-label="Toegang ${esc(c.naam)}">${LVL.map(([v, l]) => `<button class="${v}" data-conn="${c.id}" data-lvl="${v}" aria-pressed="${cur === v}">${l}</button>`).join("")}</div></div>`;
+      }).join("")}
+      <div class="row" style="margin-top:12px"><button class="chip" data-go="connectors">Overzicht alle afdelingen ›</button></div>`,
+    wire: root => root.querySelectorAll("[data-conn]").forEach(b => b.onclick = () => setConn(id, b.dataset.conn, b.dataset.lvl))
+  };
+}
+function connectorsPage() {
+  const next = { off: "r", r: "rw", rw: "off" };
+  const label = { off: "—", r: "lezen", rw: "schrijven" };
+  return {
+    eyebrow: "Toegang per afdeling", titel: "Connectors", kleur: "var(--accent)",
+    top: `<p class="lead">Tik op een cel om de toegang te wijzigen: uit → lezen → schrijven. Wijzigingen zie je direct in de balk onder het eiland in het kantoor.</p>
+      <div class="matrix-wrap"><table class="matrix">
+        <thead><tr><th class="cn">Connector</th>${DEPTS.map(d => `<th><button class="linkrow" data-go="${d.id}" style="color:${d.kleur}">${esc(d.naam)}</button></th>`).join("")}</tr></thead>
+        <tbody>${CONNECTORS.map(c => `<tr><th class="cn"><span class="nm"><span class="mono rw" style="--c:${c.kleur};width:24px;height:24px;font-size:9px">${c.mono}</span>${esc(c.naam)}</span>${c.gevoelig ? `<span class="tag-warn" title="${esc(c.gevoelig)}">⚠</span>` : ""}</th>
+          ${DEPTS.map(d => { const v = connAccess[d.id][c.id] || "off"; return `<td><button class="cell ${v}" data-cell="${d.id}|${c.id}" data-next="${next[v]}" aria-label="${esc(c.naam)} voor ${esc(d.naam)}: ${label[v] === "—" ? "uit" : label[v]}">${label[v]}</button></td>`; }).join("")}</tr>`).join("")}
+        </tbody></table></div>
+      <p class="i-meta" style="margin:0">⚠ = gevoelige connector; de spelregel staat in de kaart per afdeling. Nieuwe connectors laat je eerst scannen door Risk & Safety. Een profielkaart kan de toegang van een agent alleen verder inperken.</p>`,
+    tiles: DEPTS.map(d => connTile(d.id)),
+    wire: root => root.querySelectorAll("[data-cell]").forEach(b => b.onclick = () => { const [dd, cc] = b.dataset.cell.split("|"); setConn(dd, cc, b.dataset.next); })
+  };
+}
+
+/* Takenlijst met acties en formulier */
+function tasksSheet(filterFn, opts = {}) {
+  const items = tasks.filter(filterFn);
+  const deptOpts = DEPTS.map(d => `<option value="${d.id}" ${d.id === opts.dept ? "selected" : ""}>${esc(d.naam)}</option>`).join("");
+  return `<ul class="items">${items.length ? items.map(t => {
+      const d = deptById[t.dept], a = t.agent ? agentById[t.agent] : null;
+      return `<li style="--dc:${d.kleur}"><div class="i-title">${esc(t.title)}</div>
+        <div class="i-meta">${opts.showDept ? esc(d.naam) + " · " : ""}${a ? esc(a.naam) : "Hoofdtet verdeelt"}${t.via ? `<span class="label">via ${esc(deptById[t.via].naam)}</span>` : ""}</div>
+        <div class="i-actions"><button class="st ${t.status}" data-adv="${t.id}" title="Klik om de status te wijzigen">${t.status}</button>
+        ${t.approval && t.status !== "klaar" ? `<button class="st warn" data-ok="${t.id}">goedkeuren</button>` : ""}
+        <button class="del" data-del="${t.id}" aria-label="Taak verwijderen">✕</button></div></li>`;
+    }).join("") : `<li style="--dc:var(--line)"><span class="i-meta">Geen taken.</span></li>`}</ul>
+    <form class="f" id="taskForm">
+      <strong>Nieuwe taak</strong>
+      ${opts.dept && !opts.chooseDept ? `<input type="hidden" id="tDept" value="${opts.dept}">` : `<label>Afdeling <select id="tDept">${deptOpts}</select></label>`}
+      <label>Toewijzen aan <select id="tAgent"></select></label>
+      <label>Taak <textarea id="tTitle" required placeholder="Bijv. Concurrentieanalyse voor de doelstelling"></textarea></label>
+      <div class="row"><label class="check"><input type="checkbox" id="tAppr"> Goedkeuring van de Raad nodig</label>
+      <button class="primary" type="submit" style="margin-left:auto">Toevoegen</button></div>
+    </form>`;
+}
+const NEXT = { volgende: "bezig", bezig: "klaar", klaar: "volgende" };
+function wireTasks(root, fixedAgent) {
+  root.querySelectorAll("[data-adv]").forEach(b => b.onclick = () => { const t = tasks.find(x => x.id === b.dataset.adv); t.status = NEXT[t.status]; save(); refresh(); });
+  root.querySelectorAll("[data-ok]").forEach(b => b.onclick = () => { tasks.find(x => x.id === b.dataset.ok).approval = false; save(); refresh(); });
+  root.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { tasks = tasks.filter(x => x.id !== b.dataset.del); save(); refresh(); });
+  const dSel = root.querySelector("#tDept"), aSel = root.querySelector("#tAgent");
+  const fill = () => {
+    aSel.innerHTML = `<option value="">Hoofdtet verdeelt</option>` + AGENTS.filter(a => a.dept === dSel.value).map(a => `<option value="${a.id}" ${a.id === fixedAgent ? "selected" : ""}>${esc(a.naam)}</option>`).join("");
+  };
+  if (dSel.tagName === "SELECT") dSel.onchange = fill;
+  fill();
+  root.querySelector("#taskForm").onsubmit = e => {
+    e.preventDefault();
+    const title = root.querySelector("#tTitle").value.trim();
+    if (!title) return;
+    tasks.unshift({ id: "t" + Date.now(), dept: dSel.value, agent: aSel.value || null, title, status: "volgende", approval: root.querySelector("#tAppr").checked, created: Date.now() });
+    save(); refresh();
+  };
+}
+
+/* Berichtenlijst met acties en formulier */
+function msgsSheet(filterFn, opts = {}) {
+  const items = messages.filter(filterFn);
+  const opt = sel => DEPTS.map(d => `<option value="${d.id}" ${d.id === sel ? "selected" : ""}>${esc(d.naam)}</option>`).join("");
+  return `<ul class="items">${items.length ? items.map(m => {
+      const st = m.status === "afgeleverd" ? "ok" : m.status === "tegengehouden" ? "muted" : "warn";
+      return `<li style="--dc:${deptById[m.from].kleur}">
+        <div class="i-meta"><b style="color:${deptById[m.from].kleur}">${esc(deptById[m.from].naam)}</b> → <b style="color:${deptById[m.to].kleur}">${esc(deptById[m.to].naam)}</b> · ${esc(m.soort)} · <span class="route ${m.route}">${m.route === "direct" ? "direct" : "via Oppertet"}</span></div>
+        <div class="i-title" style="font-weight:500;margin-top:3px">${esc(m.text)}</div>
+        <div class="i-actions"><span class="st ${st}">${esc(m.status)}</span>
+          ${m.status === "bij Oppertet" || m.status === "geëscaleerd" ? `<button class="st ok" data-door="${m.id}">doorzetten</button><button class="st muted" data-stop="${m.id}">tegenhouden</button>` : ""}
+          ${m.route === "direct" && m.status === "afgeleverd" ? `<button class="st warn" data-esc="${m.id}">escaleren</button>` : ""}
+          <button class="del" data-mdel="${m.id}" aria-label="Bericht verwijderen">✕</button></div></li>`;
+    }).join("") : `<li style="--dc:var(--line)"><span class="i-meta">Nog geen berichten.</span></li>`}</ul>
+    ${opts.noForm ? "" : `<form class="f" id="msgForm">
+      <strong>Nieuw bericht</strong>
+      <div class="grid2"><label>Van <select id="mFrom">${opt(opts.from)}</select></label><label>Naar <select id="mTo">${opt(opts.to)}</select></label></div>
+      <label>Soort <select id="mType"><option value="vraag">Vraag</option><option value="info">Informatie</option><option value="verzoek">Verzoek (wordt een taak)</option></select></label>
+      <label>Bericht <textarea id="mText" required></textarea></label>
+      <div class="row"><span id="mRoute" class="i-meta"></span><button class="primary" type="submit" style="margin-left:auto">Versturen</button></div>
+    </form>`}`;
+}
+function deliver(m) {
+  m.status = "afgeleverd";
+  if (m.soort === "verzoek" && !m.taskId) {
+    const t = { id: "t" + Date.now(), dept: m.to, agent: null, title: m.text.length > 120 ? m.text.slice(0, 117) + "…" : m.text, status: "volgende", approval: false, created: Date.now(), via: m.from };
+    tasks.unshift(t); m.taskId = t.id;
+  }
+}
+function wireMsgs(root) {
+  const find = id => messages.find(m => m.id === id);
+  root.querySelectorAll("[data-door]").forEach(b => b.onclick = () => { deliver(find(b.dataset.door)); save(); refresh(); });
+  root.querySelectorAll("[data-stop]").forEach(b => b.onclick = () => { find(b.dataset.stop).status = "tegengehouden"; save(); refresh(); });
+  root.querySelectorAll("[data-esc]").forEach(b => b.onclick = () => { find(b.dataset.esc).status = "geëscaleerd"; save(); refresh(); });
+  root.querySelectorAll("[data-mdel]").forEach(b => b.onclick = () => { messages = messages.filter(m => m.id !== b.dataset.mdel); save(); refresh(); });
+  const form = root.querySelector("#msgForm");
+  if (!form) return;
+  const f = root.querySelector("#mFrom"), to = root.querySelector("#mTo"), hint = root.querySelector("#mRoute");
+  const upd = () => {
+    const r = routeFor(f.value, to.value);
+    hint.innerHTML = !r ? "Kies twee verschillende afdelingen" : r === "direct" ? '<span class="route direct">Directe lijn</span>' : r === "controle" ? '<span class="route direct">Controlelijn</span>' : '<span class="route oppertet">Via Oppertet</span>';
+  };
+  f.onchange = to.onchange = upd; upd();
+  form.onsubmit = e => {
+    e.preventDefault();
+    const text = root.querySelector("#mText").value.trim();
+    if (!text || f.value === to.value) return;
+    const r = routeFor(f.value, to.value);
+    const m = { id: "m" + Date.now(), from: f.value, to: to.value, soort: root.querySelector("#mType").value, text, route: isDirect(r) ? "direct" : "oppertet", created: Date.now(), status: "bij Oppertet" };
+    if (isDirect(r)) deliver(m);
+    messages.unshift(m); save(); refresh();
+  };
+}
+
+/* ---------- Afdelingspagina ---------- */
+function deptBoard(id) {
+  const d = deptById[id], b = deptDoel(id), dt = tasks.filter(t => t.dept === id), hl = hlOf(id);
+  const prog = Math.round(deptProgress(id) * 100), dagen = dagenTot(b.deadline);
+  const kpis = [...(AFDELING_KAART_KPIS[id] || []).map(l => ({ label: l, waarde: "–", doel: "nader te bepalen" })),
+    ...AFDELING_KPIS.map(k => ({ label: k.label, waarde: k.waarde(dt), doel: k.doel, stand: k.stand ? k.stand(dt) : "neutral" }))];
+  return `<section class="goalboard dept" style="--dc:${d.kleur}" aria-label="Voortgangsbord ${esc(d.naam)}">
+      <div class="row" style="justify-content:space-between"><span class="eyebrow">Doel ${esc(d.naam)}</span><span class="i-meta">${b.deadline ? `deadline ${fmtDate(b.deadline)} · nog ${dagen} dagen` : "geen deadline"}</span></div>
+      <h3>${b.doel ? esc(b.doel) : `<span style="color:var(--muted)">Nog geen afdelingsdoel${doel.naam ? "" : ": eerst stelt de Raad de doelstelling in"}</span>`}</h3>
+      <p class="lead" style="margin:0">${esc(d.missie)}</p>
+      <div class="goal-progress"><span class="pct">${prog}%</span><div class="bar"><i style="width:${prog}%;background:${d.kleur}"></i></div></div>
+      <div class="board-cols">
+        <div><h4>Hoofdlijnen <span class="i-meta" style="text-transform:none;letter-spacing:0">· ${hl.filter(h => h.status === "klaar").length}/${hl.length} klaar</span></h4>
+          ${hl.length ? `<ul class="hl">${hl.map((h, i) => `<li><span>${esc(h.titel)}</span><span class="hl-act"><button class="st ${h.status === "open" ? "muted" : h.status}" data-hl="${i}" title="Klik om de status te wijzigen">${h.status}</button><button class="del" data-hldel="${i}" aria-label="Hoofdlijn verwijderen">✕</button></span>
+            <div class="bar"><i style="width:${HL_WAARDE[h.status] * 100}%;background:${d.kleur}"></i></div></li>`).join("")}</ul>`
+            : `<p class="i-meta" style="margin:0">Nog geen hoofdlijnen. Voeg de deelresultaten toe zodra het afdelingsdoel bekend is.</p>`}
+          <form class="f" id="hlForm"><label>Nieuwe hoofdlijn <input type="text" id="hlTitel" required placeholder="Bijv. een deelresultaat van de afdeling"></label>
+            <div class="row"><button class="primary" type="submit" style="margin-left:auto">Toevoegen</button></div></form></div>
+        <div><h4>KPI's</h4><div class="kpis">${kpis.map(k => `<div class="kpi ${k.stand || "neutral"}"><b>${esc(k.waarde)}</b><span>${esc(k.label)}</span><small>doel: ${esc(k.doel)}</small></div>`).join("")}</div></div>
+      </div>
+      <details class="edit"><summary>Afdelingsdoel ${b.doel ? "wijzigen" : "instellen"}</summary>
+        <form class="f" id="ddForm"><label>Doel <textarea id="ddDoel" required placeholder="Wat levert ${esc(d.naam)} op voor de doelstelling?">${esc(b.doel)}</textarea></label>
+          <label>Deadline <input type="date" id="ddDeadline" value="${esc(b.deadline)}"></label>
+          <div class="row"><button class="primary" type="submit" style="margin-left:auto">Opslaan</button></div></form></details>
+      <p class="i-meta" style="margin:0">Voortgang = hoofdlijnen (klaar telt volledig, bezig half). KPI's met – worden gemeten zodra de agents draaien.</p>
+    </section>`;
+}
+function wireDeptBoard(id, root) {
+  const b = deptDoel(id);
+  root.querySelectorAll("[data-hl]").forEach(x => x.onclick = () => {
+    const h = b.hoofdlijnen[+x.dataset.hl];
+    h.status = { open: "bezig", bezig: "klaar", klaar: "open" }[h.status];
+    save(); refresh();
+  });
+  root.querySelectorAll("[data-hldel]").forEach(x => x.onclick = () => { b.hoofdlijnen.splice(+x.dataset.hldel, 1); save(); refresh(); });
+  const hf = root.querySelector("#hlForm");
+  if (hf) hf.onsubmit = e => { e.preventDefault(); const t = root.querySelector("#hlTitel").value.trim(); if (!t) return; b.hoofdlijnen.push({ titel: t, status: "open" }); save(); refresh(); };
+  const df = root.querySelector("#ddForm");
+  if (df) df.onsubmit = e => { e.preventDefault(); b.doel = root.querySelector("#ddDoel").value.trim(); b.deadline = root.querySelector("#ddDeadline").value; save(); refresh(); };
+}
+
+function deptPage(id) {
+  const d = deptById[id], team = AGENTS.filter(a => a.dept === id), dt = tasks.filter(t => t.dept === id);
+  const ch = channelsOf(id), prog = Math.round(deptProgress(id) * 100);
+  const dm = m => m.from === id || m.to === id;
+  return {
+    eyebrow: "Afdeling", titel: d.naam, kleur: d.kleur,
+    top: deptBoard(id),
+    wire: root => wireDeptBoard(id, root),
+    tiles: [
+      { key: "team", icon: "team", titel: "Team", preview: `<div class="avatars">${team.map(a => `<span class="avatar" style="background:${d.kleur}" title="${esc(a.naam)}">${esc(initials(a))}</span>`).join("")}</div><span class="sub">${team.length} agents</span>`,
+        sheet: () => `<ul class="items">${team.map(a => `<li style="--dc:${STATUS_COLOR[agentStatus(a.id)]}"><button class="linkrow" data-go="agent-${a.id}"><div class="i-title">${esc(a.naam)} ›</div><div class="i-meta">${esc(ROLKAARTEN[a.rol].titel)} · ${esc(a.specialisme)} · ${agentStatus(a.id)}</div></button></li>`).join("")}</ul>` },
+      { key: "cultuur", icon: "cultuur", titel: "Cultuurkaart", preview: `<span class="sub">${esc(d.cultuur.waarden[0])}</span>`, sheet: () => cultuurSheet(d) },
+      { key: "toegang", icon: "toegang", titel: "Toegangskaart", preview: `<span class="sub">${permSummary(d)}</span>`, sheet: () => toegangSheet(d) },
+      { ...connTile(id), key: "connectors" },
+      { key: "lijnen", icon: "lijnen", titel: "Directe lijnen", preview: id === CONTROLELIJN ? `<span class="sub">Controlelijn naar alle afdelingen</span>` : `<span class="big">${ch.length}</span>`,
+        sheet: () => id === CONTROLELIJN ? `<p style="margin:0">Risk & Safety leest mee op alle lijnen, mag elke afdeling direct een toetsvraag stellen en taken blokkeren. Elke afdeling kan Risk & Safety direct om een toets vragen.</p>`
+          : `<h4>Direct</h4><div class="chips">${ch.map(o => `<button class="chip" data-go="lijn-${chKey(id, o)}"><i class="dot" style="background:${deptById[o].kleur}"></i>${esc(deptById[o].naam)} ›</button>`).join("")}</div>
+             <h4>Via Oppertet</h4><div class="chips">${DEPTS.filter(o => o.id !== id && o.id !== CONTROLELIJN && !ch.includes(o.id)).map(o => `<span class="chip">${esc(o.naam)}</span>`).join("") || '<span class="i-meta">Geen</span>'}</div>
+             <p class="i-meta" style="margin-top:10px">Risk & Safety is altijd direct bereikbaar via de controlelijn.</p>` },
+      { key: "taken", icon: "taken", titel: "Taken", preview: statusChips(dt), sheet: () => tasksSheet(t => t.dept === id, { dept: id }), wire: r => wireTasks(r) },
+      { key: "berichten", icon: "berichten", titel: "Berichten", preview: `<span class="big">${messages.filter(dm).length}</span>`, sheet: () => msgsSheet(dm, { from: id, to: ch[0] || (id === "risk" ? "ops" : "risk") }), wire: wireMsgs },
+      { key: "rollen", icon: "rol", titel: "Rollen", preview: `<span class="sub">${[...new Set(team.map(a => ROLKAARTEN[a.rol].titel))].join(" · ")}</span>`,
+        sheet: () => [...new Set(team.map(a => a.rol))].map(r => `<div class="layer"><div class="lh">${esc(ROLKAARTEN[r].titel)} <small>${team.filter(a => a.rol === r).length}×</small></div>${rolSheet(r)}</div>`).join("") },
+      { key: "geschiedenis", icon: "geschiedenis", titel: "Geschiedenis", preview: `<span class="sub">${dt.filter(t => t.status === "klaar").length} afgerond</span>`,
+        sheet: () => list([...team.flatMap(a => HISTORY[a.id] || []), ...dt.filter(t => t.status === "klaar").map(t => (t.agent ? agentById[t.agent].naam + ": " : "") + t.title)]) }
+    ]
+  };
+}
+
+/* ---------- Agentpagina ---------- */
+function agentPage(id) {
+  const a = agentById[id], d = deptById[a.dept], st = agentStatus(id), mine = tasks.filter(t => t.agent === id);
+  const rapporteert = a.rol === "hoofdtet" ? "Oppertet" : a.rol === "controltet" ? "Hoofdtet Risk & Safety · meldt aan de Raad" : `Hoofdtet ${d.naam}`;
+  return {
+    eyebrow: `${ROLKAARTEN[a.rol].titel} · ${d.naam}`, titel: a.naam, kleur: d.kleur, back: { hash: d.id, label: d.naam },
+    top: `<div class="chips"><span class="chip"><i class="dot" style="background:${STATUS_COLOR[st]}"></i>${st}</span><span class="chip">${esc(a.specialisme)}</span></div>`,
+    tiles: [
+      { key: "profiel", icon: "profiel", titel: "Profielkaart", preview: `<span class="sub">${esc(a.specialisme)}</span>`,
+        sheet: () => `<dl class="kv"><dt>Naam</dt><dd>${esc(a.naam)}</dd><dt>Rol</dt><dd>${esc(ROLKAARTEN[a.rol].titel)}</dd><dt>Afdeling</dt><dd>${esc(d.naam)}</dd><dt>Rapporteert aan</dt><dd>${esc(rapporteert)}</dd><dt>Specialisme</dt><dd>${esc(a.specialisme)}</dd><dt>Missie</dt><dd>${esc(a.missie)}</dd></dl>
+          <h4>Expertise</h4><div class="chips">${a.expertise.map(k => `<span class="chip">${esc(k)}</span>`).join("")}</div>
+          <h4>Kenmerken</h4><div class="chips">${a.kenmerken.map(k => `<span class="chip">${esc(k)}</span>`).join("")}</div>
+          <p class="i-meta" style="margin-top:12px">Profielkaart v1.1.0 · tet-tet/kaarten/agents/${esc(a.id)}.yaml · opdracht volgt per doelstelling.</p>` },
+      { key: "cultuur", icon: "cultuur", titel: "Cultuurkaarten", preview: `<span class="sub">Erft van organisatie en ${esc(d.naam)}</span>`, sheet: () => cultuurSheet(d) },
+      { key: "rol", icon: "rol", titel: "Rolkaart", preview: `<span class="sub">${esc(ROLKAARTEN[a.rol].bereik)}</span>`, sheet: () => rolSheet(a.rol) },
+      { key: "toegang", icon: "toegang", titel: "Toegangskaart", preview: `<span class="sub">${permSummary(d)}${a.inperking ? " · ingeperkt" : ""}</span>`, sheet: () => toegangSheet(d, a.inperking) },
+      { key: "taken", icon: "taken", titel: "Taken", preview: statusChips(mine), sheet: () => tasksSheet(t => t.agent === id, { dept: d.id }), wire: r => wireTasks(r, id) },
+      { key: "geschiedenis", icon: "geschiedenis", titel: "Geschiedenis", preview: `<span class="sub">${(HISTORY[id] || []).length + mine.filter(t => t.status === "klaar").length} items</span>`,
+        sheet: () => list([...(HISTORY[id] || []), ...mine.filter(t => t.status === "klaar").map(t => t.title)]) }
+    ]
+  };
+}
+
+/* ---------- Oppertet & Brein ---------- */
+function goalBoard() {
+  const s = projectStand();
+  const form = `<form class="f" id="goalForm">
+        <label>Naam <input type="text" id="gNaam" required value="${esc(doel.naam)}" placeholder="Korte naam van de doelstelling"></label>
+        <label>Omschrijving <textarea id="gOms" placeholder="Wat moet er opgeleverd zijn, en wanneer is het geslaagd?">${esc(doel.omschrijving)}</textarea></label>
+        <label>Deadline <input type="date" id="gDeadline" value="${esc(doel.deadline)}"></label>
+        <div class="row">${doel.naam ? `<button class="del" type="button" id="gWis" style="margin-left:0">Doelstelling afsluiten</button>` : ""}<button class="primary" type="submit" style="margin-left:auto">Opslaan</button></div>
+      </form>`;
+  return `<section class="goalboard" aria-label="Doelstellingenbord">
+      <div class="row" style="justify-content:space-between"><span class="eyebrow">Doelstelling</span><span class="i-meta">${doel.deadline ? `deadline ${fmtDate(doel.deadline)} · nog ${s.dagenTotDeadline} dagen` : "geen deadline"}</span></div>
+      ${doel.naam ? `<h3>${esc(doel.naam)}</h3>${doel.omschrijving ? `<p class="lead" style="margin:0">${esc(doel.omschrijving)}</p>` : ""}`
+        : `<h3 style="color:var(--muted)">Nog geen doelstelling</h3><p class="lead" style="margin:0">De Raad stelt de doelstelling in; de Oppertet vertaalt die daarna naar afdelingsdoelen.</p>`}
+      <div class="goal-progress"><span class="pct">${s.voortgang}%</span><div class="bar"><i style="width:${s.voortgang}%;background:var(--accent)"></i></div></div>
+      <div class="kpis">${KPIS.map(k => `<div class="kpi ${k.stand(s)}"><b>${esc(k.waarde(s))}</b><span>${esc(k.label)}</span><small>doel: ${esc(k.doel)}</small></div>`).join("")}</div>
+      ${doel.naam ? `<details class="edit"><summary>Doelstelling wijzigen</summary>${form}</details>` : form}
+    </section>`;
+}
+function wireGoal(root) {
+  const f = root.querySelector("#goalForm");
+  if (!f) return;
+  f.onsubmit = e => { e.preventDefault(); doel = { naam: root.querySelector("#gNaam").value.trim(), omschrijving: root.querySelector("#gOms").value.trim(), deadline: root.querySelector("#gDeadline").value }; save(); refresh(); };
+  const w = root.querySelector("#gWis");
+  if (w) w.onclick = () => { if (confirm("Doelstelling afsluiten? Afdelingsdoelen en hoofdlijnen worden ook gewist; taken blijven staan.")) { doel = { ...DOEL_LEEG }; deptDoelen = {}; save(); refresh(); } };
+}
+
+function oppertetPage() {
+  const a = agentById.oppertet, s = projectStand();
+  const open = m => m.status === "bij Oppertet" || m.status === "geëscaleerd";
+  return {
+    eyebrow: "Midden van het kantoor", titel: "Oppertet & Brein", kleur: "var(--accent)",
+    top: goalBoard(),
+    wire: wireGoal,
+    tiles: [
+      { key: "taken", icon: "taken", titel: "Alle taken", preview: statusChips(tasks), sheet: () => tasksSheet(() => true, { chooseDept: true, showDept: true }), wire: r => wireTasks(r) },
+      { key: "berichten", icon: "berichten", titel: "Bij de Oppertet", preview: `<span class="big">${messages.filter(open).length}</span><span class="sub">berichten wachten</span>`, sheet: () => msgsSheet(open, { noForm: true }), wire: wireMsgs },
+      { key: "raad", icon: "doel", titel: "Wacht op de Raad", preview: `<span class="big" style="color:${s.wachtOpRaad ? "var(--warn)" : "var(--done)"}">${s.wachtOpRaad}</span>`, sheet: () => tasksSheet(t => t.approval && t.status !== "klaar", { chooseDept: true, showDept: true }), wire: r => wireTasks(r) },
+      { key: "lijnen", icon: "lijnen", titel: "Directe lijnen", preview: `<span class="big">${KANALEN.length}</span><span class="sub">${s.bespaard} overdrachten bespaard</span>`,
+        sheet: () => `<div class="chips">${KANALEN.map(k => `<button class="chip" data-go="lijn-${chKey(k.a, k.b)}">${esc(deptById[k.a].naam)} ↔ ${esc(deptById[k.b].naam)} ›</button>`).join("")}</div><h4>Spelregels</h4>${list(SPELREGELS)}` },
+      { key: "afdelingen", icon: "team", titel: "Afdelingen", preview: `<div class="avatars">${DEPTS.map(d => `<span class="avatar" style="background:${d.kleur}" title="${esc(d.naam)}">${esc(d.naam.slice(0, 2))}</span>`).join("")}</div>`,
+        sheet: () => `<ul class="items">${DEPTS.map(d => `<li style="--dc:${d.kleur}"><button class="linkrow" data-go="${d.id}"><div class="i-title">${esc(d.naam)} ›</div><div class="i-meta">${esc(d.missie)} · ${Math.round(deptProgress(d.id) * 100)}% klaar</div></button></li>`).join("")}</ul>` },
+      { key: "profiel", icon: "profiel", titel: "Profielkaart", preview: `<span class="sub">Rapporteert aan de Raad</span>`,
+        sheet: () => `<dl class="kv"><dt>Rol</dt><dd>Oppertet (orchestrator)</dd><dt>Rapporteert aan</dt><dd>De Raad (Sjoerd)</dd><dt>Specialisme</dt><dd>${esc(a.specialisme)}</dd><dt>Missie</dt><dd>${esc(a.missie)}</dd></dl><h4>Kenmerken</h4><div class="chips">${a.kenmerken.map(k => `<span class="chip">${esc(k)}</span>`).join("")}</div>` },
+      { key: "cultuur", icon: "cultuur", titel: "Cultuurkaart", preview: `<span class="sub">${esc(CULTUUR_ORG.waarden[0])}</span>`, sheet: () => cultuurSheet(null) },
+      { key: "rol", icon: "rol", titel: "Rolkaart", preview: `<span class="sub">Hele organisatie</span>`, sheet: () => rolSheet("oppertet") },
+      { key: "geschiedenis", icon: "geschiedenis", titel: "Geschiedenis", preview: `<span class="sub">${HISTORY.oppertet.length} besluiten</span>`, sheet: () => list(HISTORY.oppertet) }
+    ]
+  };
+}
+
+/* ---------- Directe lijn ---------- */
+function lijnPage(key) {
+  const k = kanaalByKey[key], A = deptById[k.a], B = deptById[k.b];
+  const onLine = m => chKey(m.from, m.to) === key;
+  return {
+    eyebrow: "Directe lijn", titel: `${A.naam} ↔ ${B.naam}`, kleur: "var(--text)",
+    top: `<p class="lead">${esc(k.doel)}</p>`,
+    tiles: [
+      { key: "doel", icon: "doel", titel: "Doel", kleur: A.kleur, preview: `<span class="sub">${esc(k.voorbeelden[0])}</span>`, sheet: () => `<p style="margin-top:0">${esc(k.doel)}</p><h4>Voorbeelden</h4>${list(k.voorbeelden)}` },
+      { key: "regels", icon: "regels", titel: "Spelregels", kleur: B.kleur, preview: `<span class="sub">${SPELREGELS.length} regels</span>`, sheet: () => list(SPELREGELS) },
+      { key: "berichten", icon: "berichten", titel: "Berichten", preview: `<span class="big">${messages.filter(onLine).length}</span><span class="sub">${messages.filter(m => onLine(m) && m.status !== "geëscaleerd").length * 2} overdrachten bespaard</span>`, sheet: () => msgsSheet(onLine, { from: k.a, to: k.b }), wire: wireMsgs },
+      { key: "a", icon: "team", titel: A.naam, kleur: A.kleur, preview: `<span class="sub">Open de afdeling</span>`, sheet: () => `<button class="primary" data-go="${A.id}">Naar ${esc(A.naam)}</button>` },
+      { key: "b", icon: "team", titel: B.naam, kleur: B.kleur, preview: `<span class="sub">Open de afdeling</span>`, sheet: () => `<button class="primary" data-go="${B.id}">Naar ${esc(B.naam)}</button>` }
+    ]
+  };
+}
+
+/* ===================================================================== */
+window.addEventListener("hashchange", route);
+applyVB();
+route();
+</script>
+
+</body></html>

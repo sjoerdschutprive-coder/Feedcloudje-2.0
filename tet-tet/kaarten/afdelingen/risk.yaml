@@ -40,5 +40,5 @@ edge_principes:
     bron: kalibratie-onthouding
 
 kwaliteitsnorm: Elk resultaat is getoetst op criteria, feiten en waarden vóór het naar de Raad gaat.
-kpis: [open risico's, hoofdstukken getoetst, tools gescand, terechte afkeuringen]
+kpis: [open risico's, output getoetst, tools gescand, terechte afkeuringen]
 kenmerken: {}
