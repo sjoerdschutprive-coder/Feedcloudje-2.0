@@ -237,6 +237,27 @@
   .cell:hover { border-color: var(--accent); }
   .tag-warn { font-size: 11px; color: var(--warn); margin-left: 6px; }
 
+  /* Live-zicht */
+  .ballon-tekst { font-size: 8.5px; fill: var(--text); }
+  .ballon { cursor: pointer; animation: ballon-in .3s ease-out; }
+  @keyframes ballon-in { from { opacity: 0; transform: translateY(4px); } }
+  .livefeed { position: absolute; left: 16px; top: 74px; width: min(300px, calc(100% - 32px)); background: rgba(28,24,21,.94); border: 1px solid var(--line);
+    border-radius: 14px; font-size: 13px; overflow: hidden; z-index: 3; }
+  .livefeed .lf-kop { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; }
+  .livefeed .lf-kop:focus-visible { outline: 2px solid var(--accent); }
+  .livefeed .lf-pijl { margin-left: auto; color: var(--muted); transition: transform .2s; }
+  .livefeed.dicht .lf-pijl { transform: rotate(-90deg); }
+  .livefeed.dicht .lf-body { display: none; }
+  .livefeed .lf-body { border-top: 1px solid var(--line); padding: 6px 6px 8px; display: grid; gap: 2px; max-height: 46vh; overflow: auto; }
+  .livefeed .lf-rij { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: baseline; padding: 6px; border-radius: 8px; }
+  .livefeed .lf-rij:hover, .livefeed .lf-rij:focus-visible { background: var(--panel-2); }
+  .livefeed .lf-rij span { min-width: 0; overflow-wrap: anywhere; }
+  .livefeed .lf-rij small { color: var(--muted); white-space: nowrap; }
+  .livefeed .lf-rij.stil { color: var(--muted); } .livefeed .lf-rij.stil b { color: var(--text); font-weight: 600; }
+  .livefeed .lf-sub { font-size: 11px; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); padding: 8px 6px 2px; }
+  .livefeed .lf-werkdag { font-size: 12px; color: var(--accent); padding: 4px 6px 6px; }
+  pre.verslag { white-space: pre-wrap; overflow-wrap: anywhere; font: 13.5px/1.55 var(--font-body); margin: 8px 0 0; }
+  @media (max-width: 600px) { .livefeed { top: auto; bottom: 70px; left: 70px; width: calc(100% - 140px); } .livefeed .lf-body { max-height: 34vh; } }
   /* Live */
   .runbar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 20; display: flex; align-items: center; gap: 10px;
     background: rgba(34,29,25,.97); border: 1px solid var(--accent); border-radius: 999px; padding: 8px 8px 8px 16px; max-width: calc(100% - 32px); box-shadow: 0 10px 30px rgba(0,0,0,.4); }
@@ -293,6 +314,7 @@
     <span><i class="dash" style="border-color:var(--done);border-top-style:solid"></i>directe lijn tussen afdelingen</span>
     <span>Klik op een eiland, bureau of lijn om te openen.</span>
   </div>
+  <div class="livefeed" id="livefeed" aria-live="polite"></div>
   <div class="hint-toast" id="hintToast">Knijp of scroll om te zoomen · sleep om te verschuiven</div>
 </div>
 
@@ -489,6 +511,8 @@ function save() {
 }
 
 function agentStatus(id) {
+  const act = typeof laatsteActiviteit === "function" ? laatsteActiviteit(id) : null;
+  if (act && act.status === "bezig" && Date.now() - act.ts < 20 * 60 * 1000) return "bezig";
   const mine = tasks.filter(t => t.agent === id);
   if (mine.some(t => t.status === "bezig")) return "bezig";
   if (mine.some(t => t.status === "volgende")) return "volgende";
@@ -496,7 +520,7 @@ function agentStatus(id) {
 }
 const STATUS_COLOR = { bezig: "var(--busy)", volgende: "var(--next)", vrij: "var(--idle)", klaar: "var(--done)" };
 const HL_WAARDE = { klaar: 1, bezig: .5, open: 0 };
-const deptDoel = id => (deptDoelen[id] = deptDoelen[id] || { doel: "", deadline: "", hoofdlijnen: [] });
+const deptDoel = id => (deptDoelen[id] = deptDoelen[id] || { id, doel: "", deadline: "", hoofdlijnen: [] });
 const hlOf = id => deptDoel(id).hoofdlijnen;
 function dagenTot(iso) {
   if (!iso) return null;
@@ -571,7 +595,8 @@ function onActivate(node, fn) {
   node.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } });
 }
 
-function desk(g, a, x, y, color, big) {
+let ballonnen = [];
+function desk(g, a, x, y, color, big, off = [0, 0]) {
   const dg = el("g", { class: "desk", tabindex: 0, role: "link", "aria-label": a.naam }, g);
   const st = agentStatus(a.id);
   const w = big ? 1.3 : 1.0, d = .55;
@@ -591,6 +616,20 @@ function desk(g, a, x, y, color, big) {
   svgText(dg, lx, ly + 9, a.naam, "agent-label");
   const title = el("title", {}, dg); title.textContent = `${a.naam} · ${st}`;
   onActivate(dg, () => go("agent-" + a.id));
+  const act = laatsteActiviteit(a.id);
+  if (st === "bezig" && act) ballonnen.push({ x: off[0] + ax, y: off[1] + ay - 30, tekst: act.tekst, id: a.id, kleur: color });
+}
+function tekenBallonnen(laag) {
+  ballonnen.forEach(b => {
+    const t = b.tekst.length > 34 ? b.tekst.slice(0, 33) + "…" : b.tekst;
+    const w = Math.max(40, t.length * 4.7 + 14), h = 17;
+    const g = el("g", { class: "ballon", transform: `translate(${b.x},${b.y})`, tabindex: -1 }, laag);
+    el("rect", { x: -w / 2, y: -h - 5, width: w, height: h, rx: 8, fill: "rgba(28,24,21,.96)", stroke: b.kleur, "stroke-width": 1.2 }, g);
+    el("path", { d: "M-4 -5 L0 1 L4 -5 Z", fill: "rgba(28,24,21,.96)", stroke: b.kleur, "stroke-width": 1.2 }, g);
+    el("rect", { x: -5, y: -6.5, width: 10, height: 2.5, fill: "rgba(28,24,21,.96)" }, g);
+    svgText(g, 0, -10.5, t, "ballon-tekst");
+    onActivate(g, () => go("agent-" + b.id));
+  });
 }
 
 const CENTER = [600, 500];
@@ -617,6 +656,7 @@ function renderOffice() {
   el("stop", { offset: "60%", "stop-color": "#f0a04b", "stop-opacity": ".35" }, rg);
   el("stop", { offset: "100%", "stop-color": "#f0a04b", "stop-opacity": "0" }, rg);
 
+  ballonnen = [];
   const world = el("g", {}, svg);
   const layerChannels = el("g", {}, world), layerFlow = el("g", {}, world), layerIslands = el("g", {}, world), layerCards = el("g", {}, world);
 
@@ -643,7 +683,7 @@ function renderOffice() {
   el("circle", { cx: 0, cy: -48, r: 46, fill: "url(#brainGlow)", class: "brain-pulse" }, cg);
   el("circle", { cx: 0, cy: -48, r: 20, fill: "#f6b25e", stroke: "#ffe2b0", "stroke-width": 2 }, cg);
   el("path", { d: "M-10 -50 q5 -10 10 0 q5 -10 10 0 M-12 -42 q6 6 12 0 q6 6 12 0 M0 -62 v28", stroke: "#7a4a1c", "stroke-width": 2, fill: "none", "stroke-linecap": "round" }, cg);
-  desk(cg, agentById.oppertet, -.65, 1.0, "#f0a04b", true);
+  desk(cg, agentById.oppertet, -.65, 1.0, "#f0a04b", true, CENTER);
   onActivate(cg, () => go("oppertet"));
 
   // doelstellingenbord op palen achter het Brein
@@ -681,7 +721,7 @@ function renderOffice() {
     onActivate(g, () => go(d.id));
     const team = AGENTS.filter(a => a.dept === d.id);
     const og = el("g", { transform: "translate(0,-12)" }, g);
-    team.forEach((a, j) => { const [sx, sy] = SLOTS[j] || [0, 0]; desk(og, a, sx, sy, d.kleur, a.rol === "hoofdtet"); });
+    team.forEach((a, j) => { const [sx, sy] = SLOTS[j] || [0, 0]; desk(og, a, sx, sy, d.kleur, a.rol === "hoofdtet", [x, y - 12]); });
 
     const dt = tasks.filter(t => t.dept === d.id);
     const n = st => dt.filter(t => t.status === st).length;
@@ -720,6 +760,8 @@ function renderOffice() {
     currentTiles["conn-" + d.id] = connTile(d.id);
     onActivate(cb, () => openSheet("conn-" + d.id));
   });
+  tekenBallonnen(el("g", {}, world));
+  renderLiveFeed();
 }
 
 /* =====================================================================
@@ -1170,7 +1212,8 @@ function agentPage(id) {
   const rapporteert = a.rol === "hoofdtet" ? "Oppertet" : a.rol === "controltet" ? "Hoofdtet Risk & Safety · meldt aan de Raad" : `Hoofdtet ${d.naam}`;
   return {
     eyebrow: `${ROLKAARTEN[a.rol].titel} · ${d.naam}`, titel: a.naam, kleur: d.kleur, back: { hash: d.id, label: d.naam },
-    top: `<div class="chips"><span class="chip"><i class="dot" style="background:${STATUS_COLOR[st]}"></i>${st}</span><span class="chip">${esc(a.specialisme)}</span></div>`,
+    top: `<div class="chips"><span class="chip"><i class="dot" style="background:${STATUS_COLOR[st]}"></i>${st}</span><span class="chip">${esc(a.specialisme)}</span></div>
+      ${activiteiten.some(x => x.agent === id) ? `<section class="goalboard" style="gap:4px"><span class="eyebrow">Activiteit</span>${activiteiten.filter(x => x.agent === id).slice(-8).reverse().map(x => `<div class="ev"><small>${geleden(x.ts)}</small><div>${x.status === "bezig" ? "<b>bezig</b> · " : ""}${esc(x.tekst)}</div></div>`).join("")}</section>` : ""}`,
     tiles: [
       { key: "profiel", icon: "profiel", titel: "Profielkaart", preview: `<span class="sub">${esc(a.specialisme)}</span>`,
         sheet: () => `<dl class="kv"><dt>Naam</dt><dd>${esc(a.naam)}</dd><dt>Rol</dt><dd>${esc(ROLKAARTEN[a.rol].titel)}</dd><dt>Afdeling</dt><dd>${esc(d.naam)}</dd><dt>Rapporteert aan</dt><dd>${esc(rapporteert)}</dd><dt>Specialisme</dt><dd>${esc(a.specialisme)}</dd><dt>Missie</dt><dd>${esc(a.missie)}</dd></dl>
@@ -1233,6 +1276,7 @@ function oppertetPage() {
       { key: "cultuur", icon: "cultuur", titel: "Cultuurkaart", preview: `<span class="sub">${esc(CULTUUR_ORG.waarden[0])}</span>`, sheet: () => cultuurSheet(null) },
       { key: "rol", icon: "rol", titel: "Rolkaart", preview: `<span class="sub">Hele organisatie</span>`, sheet: () => rolSheet("oppertet") },
       { key: "voorstellen", icon: "regels", titel: "Verbetervoorstellen", preview: `<span class="big" style="color:${voorstellen.some(v => v.status === "open") ? "var(--warn)" : "var(--text)"}">${voorstellen.filter(v => v.status === "open").length}</span><span class="sub">wachten op de Raad · ${voorstellen.filter(v => v.status === "goedgekeurd").length} in uitvoering</span>`, sheet: voorstellenSheet, wire: wireVoorstellen },
+      { key: "verslagen", icon: "doel", titel: "Dagverslagen", preview: `<span class="big">${verslagen.length}</span><span class="sub">${verslagen[0] ? "laatste " + geleden(verslagen[0].ts) : "nog geen werkdag"}</span>`, sheet: verslagenSheet },
       { key: "brein", icon: "berichten", titel: "Brein", preview: `<span class="big">${brein.length}</span><span class="sub">lessen</span>`, sheet: () => brein.length ? `<ul class="items">${brein.slice().reverse().map(l => `<li style="--dc:${deptById[l.dept]?.kleur || "var(--accent)"}"><div class="i-title" style="font-weight:500">${esc(l.tekst)}</div><div class="i-meta">${esc(agentById[l.agent]?.naam || l.agent)} · ${esc(deptById[l.dept]?.naam || "")}</div></li>`).join("")}</ul>` : `<p class="i-meta">Nog geen lessen. Na elke afgeronde taak schrijft de Tet er één.</p>` },
       { key: "grootboek", icon: "geschiedenis", titel: "Grootboek", preview: `<span class="big">${grootboek.length}</span><span class="sub">events · ${grootboekIntact() ? "keten intact" : "keten verbroken"}</span>`, sheet: grootboekSheet }
     ]
@@ -1257,17 +1301,26 @@ function lijnPage(key) {
 }
 
 /* =====================================================================
-   LIVE: gedeelde opslag en werkende agents
+   LIVE: gedeelde opslag, werkende agents en live-zicht
    - Opslag: met de db-capability is alles gedeeld en blijvend; anders alleen in deze browser.
-   - Agents: "mock" draait zonder Claude (gratis, voorspelbaar); "claude" laat de agents echt denken,
-     met de samengestelde prompt uit de kaarten, op het Claude-account van de kijker.
-   - Zelfontwikkeling: R&D doet verbetervoorstellen, de Raad keurt goed; een geplande Claude Code-taak
-     bouwt goedgekeurde voorstellen in de repository in en publiceert het kantoor opnieuw.
+     Elk document draagt `bijgewerkt` (ms); bij twee versies wint de nieuwste, zodat een oude
+     melding van de opslag nooit nieuwer werk overschrijft.
+   - Grootboek en activiteit zijn alleen-toevoegen: elke pagina en elke werkdag schrijft eigen
+     documenten (bron), dus ze kunnen elkaar niet overschrijven.
+   - Werk van buitenaf (de geplande werkdag) komt binnen als `patches`; de pagina verwerkt die.
+   - Agents: "mock" (gratis, voorspelbaar) of "claude" (via sample, op het account van de kijker).
    ===================================================================== */
-const COLLECTIES = ["staat", "afdelingsdoelen", "taken", "berichten", "brein", "voorstellen", "grootboek"];
-const VERWIJDERBAAR = ["afdelingsdoelen/", "taken/", "berichten/", "brein/", "voorstellen/"];
-const opgeslagen = new Map(); // pad -> JSON zoals laatst bekend in de gedeelde opslag
-let syncBezig = false, syncOpnieuw = false;
+const BRON = "kantoor-" + Math.random().toString(36).slice(2, 8);
+const COLLECTIES = ["staat", "afdelingsdoelen", "taken", "berichten", "brein", "voorstellen", "grootboek", "activiteit", "patches", "verslagen"];
+const BEHEERD = ["afdelingsdoelen", "taken", "berichten", "brein", "voorstellen"];
+const opgeslagen = new Map();   // pad -> stabiele JSON zoals laatst in de gedeelde opslag gezien
+const wachtrij = [];            // nieuwe alleen-toevoegen documenten: {pad, body} of {pad, weg: true}
+const verwerktePatches = new Set();
+let activiteiten = [], verslagen = [], patchBuffer = [];
+let syncBezig = false, syncOpnieuw = false, eigenTeller = 0, eigenVorige = "", actTeller = 0, gbTeller = 0;
+let gbOnverzonden = [];
+
+const stabiel = body => JSON.stringify({ ...body, bijgewerkt: undefined });
 
 function staatDocs() {
   const docs = { "staat/doel": doel, "staat/connectors": connAccess, "staat/instellingen": instellingen };
@@ -1276,7 +1329,6 @@ function staatDocs() {
   messages.forEach(m => { docs["berichten/" + m.id] = m; });
   brein.forEach(b => { docs["brein/" + b.id] = b; });
   voorstellen.forEach(v => { docs["voorstellen/" + v.id] = v; });
-  for (let i = 0; i < grootboek.length; i += 100) docs["grootboek/blok-" + String(i / 100).padStart(4, "0")] = { events: grootboek.slice(i, i + 100) };
   return docs;
 }
 
@@ -1288,13 +1340,24 @@ async function syncNaarDb() {
       syncOpnieuw = false;
       const docs = staatDocs();
       for (const [pad, body] of Object.entries(docs)) {
-        const j = JSON.stringify(body);
+        const j = stabiel(body);
         if (opgeslagen.get(pad) === j) continue;
+        body.bijgewerkt = Date.now();
         opgeslagen.set(pad, j);
-        await LIVE.db.doc(pad).set(JSON.parse(j));
+        await LIVE.db.doc(pad).set(JSON.parse(JSON.stringify(body)));
       }
       for (const pad of [...opgeslagen.keys()]) {
-        if (!(pad in docs) && VERWIJDERBAAR.some(p => pad.startsWith(p))) { opgeslagen.delete(pad); await LIVE.db.doc(pad).delete(); }
+        if (!(pad in docs) && BEHEERD.some(c => pad.startsWith(c + "/"))) { opgeslagen.delete(pad); await LIVE.db.doc(pad).delete(); }
+      }
+      // Grootboek gebundeld: één document per 25 events of per 20 seconden, niet per opslagmoment.
+      if (gbOnverzonden.length && (gbOnverzonden.length >= 25 || LIVE.gbNu)) {
+        LIVE.gbNu = false;
+        const events = gbOnverzonden; gbOnverzonden = [];
+        wachtrij.push({ pad: `grootboek/${BRON}-${String(++gbTeller).padStart(4, "0")}`, body: { bron: BRON, events } });
+      }
+      while (wachtrij.length) {
+        const w = wachtrij.shift();
+        if (w.weg) await LIVE.db.doc(w.pad).delete(); else await LIVE.db.doc(w.pad).set(w.body);
       }
     } while (syncOpnieuw);
   } catch (e) {
@@ -1307,37 +1370,98 @@ async function syncNaarDb() {
 function verbindDb(db) {
   LIVE.db = db;
   const buffer = {}, definitief = new Set();
-  const clone = d => JSON.parse(JSON.stringify(d.data()));
   COLLECTIES.forEach(c => db.collection(c).onSnapshot(snap => {
-    const docs = snap.docs.filter(d => d.exists);
-    docs.forEach(d => opgeslagen.set(c + "/" + d.id, JSON.stringify(d.data())));
-    for (const p of [...opgeslagen.keys()]) if (p.startsWith(c + "/") && !docs.some(d => c + "/" + d.id === p)) opgeslagen.delete(p);
-    buffer[c] = docs.map(d => ({ id: d.id, data: clone(d) }));
+    buffer[c] = snap.docs.filter(d => d.exists).map(d => ({ id: d.id, data: JSON.parse(JSON.stringify(d.data())) }));
     if (!snap.metadata.fromCache) definitief.add(c);
     if (!LIVE.gedeeld) {
       if (definitief.size < COLLECTIES.length) return;
       LIVE.gedeeld = true;                      // vanaf nu is de gedeelde opslag de waarheid
-      COLLECTIES.forEach(k => pasToe(k, buffer[k] || []));
-    } else pasToe(c, buffer[c]);
+      COLLECTIES.forEach(k => pasToe(k, buffer[k] || [], true));
+      // Activiteit ouder dan twee dagen opruimen (alleen-toevoegen documenten, dus veilig te verwijderen).
+      if (!LIVE.alleenLezen) (buffer.activiteit || []).filter(d => Date.now() - (d.data.ts || 0) > 2 * 864e5).slice(0, 200)
+        .forEach(d => wachtrij.push({ pad: "activiteit/" + d.id, weg: true }));
+    } else pasToe(c, buffer[c], false);
+    verwerkPatches();
     planRefresh();
   }, () => melding("De verbinding met de gedeelde opslag is verbroken. Herlaad de pagina.")));
 }
 
-function pasToe(c, docs) {
+/* Voegt binnenkomende documenten samen met de lokale stand: de nieuwste `bijgewerkt` wint. */
+function voegSamen(lijst, c, docs, eerste) {
+  const lokaal = new Map(lijst.map(x => [x.id, x]));
+  const binnen = new Set();
+  let lokaalNieuwer = false;
+  for (const d of docs) {
+    const pad = c + "/" + d.id, inc = d.data;
+    binnen.add(d.id);
+    opgeslagen.set(pad, stabiel(inc));
+    const loc = lokaal.get(d.id);
+    if (!loc) { lijst.push(inc); continue; }
+    if ((inc.bijgewerkt || 0) >= (loc.bijgewerkt || 0) || eerste) { Object.keys(loc).forEach(k => delete loc[k]); Object.assign(loc, inc); }
+    else lokaalNieuwer = true;
+  }
+  for (let i = lijst.length - 1; i >= 0; i--) {
+    const pad = c + "/" + lijst[i].id;
+    // Alleen weghalen wat elders echt verwijderd is: niet iets wat deze pagina net zelf schreef.
+    const net = Date.now() - (lijst[i].bijgewerkt || 0) < 15000;
+    if (!binnen.has(lijst[i].id) && (eerste || (opgeslagen.has(pad) && !net))) { opgeslagen.delete(pad); lijst.splice(i, 1); }
+  }
+  if (lokaalNieuwer) save();
+}
+
+function pasToe(c, docs, eerste) {
   const op = (a, b) => (b.created || 0) - (a.created || 0);
   if (c === "staat") {
     const m = Object.fromEntries(docs.map(d => [d.id, d.data]));
-    doel = m.doel || { ...DOEL_LEEG };
-    connAccess = m.connectors || JSON.parse(JSON.stringify(CONNECTOR_TOEGANG));
+    docs.forEach(d => opgeslagen.set("staat/" + d.id, stabiel(d.data)));
+    if (eerste || (m.doel && (m.doel.bijgewerkt || 0) >= (doel.bijgewerkt || 0))) doel = m.doel || { ...DOEL_LEEG };
+    if (eerste || (m.connectors && (m.connectors.bijgewerkt || 0) >= (connAccess.bijgewerkt || 0))) connAccess = m.connectors || JSON.parse(JSON.stringify(CONNECTOR_TOEGANG));
     DEPTS.forEach(d => { connAccess[d.id] = connAccess[d.id] || {}; });
-    instellingen = { modus: "mock", ...(m.instellingen || {}) };
+    if (eerste || (m.instellingen && (m.instellingen.bijgewerkt || 0) >= (instellingen.bijgewerkt || 0))) instellingen = { modus: "mock", ...(m.instellingen || {}) };
   }
-  if (c === "afdelingsdoelen") deptDoelen = Object.fromEntries(docs.map(d => [d.id, d.data]));
-  if (c === "taken") tasks = docs.map(d => d.data).sort(op);
-  if (c === "berichten") messages = docs.map(d => d.data).sort(op);
-  if (c === "brein") brein = docs.map(d => d.data).sort((a, b) => (a.ts || 0) - (b.ts || 0));
-  if (c === "voorstellen") voorstellen = docs.map(d => d.data).sort(op);
-  if (c === "grootboek") grootboek = docs.sort((a, b) => (a.id < b.id ? -1 : 1)).flatMap(d => d.data.events || []);
+  if (c === "afdelingsdoelen") {
+    const lijst = Object.entries(deptDoelen).map(([id, v]) => Object.assign(v, { id }));
+    voegSamen(lijst, c, docs, eerste);
+    deptDoelen = Object.fromEntries(lijst.map(v => [v.id, v]));
+  }
+  if (c === "taken") { if (eerste) tasks = []; voegSamen(tasks, c, docs, eerste); tasks.sort(op); }
+  if (c === "berichten") { if (eerste) messages = []; voegSamen(messages, c, docs, eerste); messages.sort(op); }
+  if (c === "brein") { if (eerste) brein = []; voegSamen(brein, c, docs, eerste); brein.sort((a, b) => (a.ts || 0) - (b.ts || 0)); }
+  if (c === "voorstellen") { if (eerste) voorstellen = []; voegSamen(voorstellen, c, docs, eerste); voorstellen.sort(op); }
+  if (c === "grootboek") {
+    const sleutel = e => (e.bron || "blok") + ":" + e.n;
+    const alle = new Map();
+    docs.forEach(d => (d.data.events || []).forEach(e => alle.set(sleutel(e), e)));
+    grootboek.filter(e => e.bron === BRON).forEach(e => alle.set(sleutel(e), e));
+    grootboek = [...alle.values()].sort((a, b) => (a.ts - b.ts) || (a.n - b.n));
+  }
+  if (c === "activiteit") {
+    const alle = new Map(docs.map(d => [d.id, d.data]));
+    activiteiten.filter(a => a.bron === BRON).forEach(a => alle.set(a.id, a));
+    activiteiten = [...alle.values()].sort((a, b) => a.ts - b.ts);
+  }
+  if (c === "verslagen") verslagen = docs.map(d => d.data).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  if (c === "patches") patchBuffer = docs.map(d => ({ id: d.id, ...d.data }));
+}
+
+/* Patches van de werkdag toepassen op de lokale stand, daarna opruimen. */
+function verwerkPatches() {
+  if (!LIVE.gedeeld) return;
+  let iets = false;
+  for (const p of patchBuffer.slice().sort((a, b) => (a.bijgewerkt || 0) - (b.bijgewerkt || 0))) {
+    if (verwerktePatches.has(p.id)) continue;
+    let doelObj = null;
+    if (p.collectie === "taken") doelObj = tasks.find(t => t.id === p.doc);
+    else if (p.collectie === "afdelingsdoelen") doelObj = deptDoelen[p.doc] || (deptDoelen[p.doc] = { id: p.doc, doel: "", deadline: "", hoofdlijnen: [] });
+    else if (p.collectie === "voorstellen") doelObj = voorstellen.find(v => v.id === p.doc);
+    else if (p.collectie === "staat" && p.doc === "doel") doelObj = doel;
+    if (!doelObj) continue; // doel nog niet geladen: later opnieuw
+    verwerktePatches.add(p.id);
+    if ((p.bijgewerkt || 0) >= (doelObj.bijgewerkt || 0)) Object.assign(doelObj, p.velden || {});
+    if (!LIVE.alleenLezen) wachtrij.push({ pad: "patches/" + p.id, weg: true });
+    iets = true;
+  }
+  if (iets) save();
 }
 
 let refreshGepland = false;
@@ -1358,23 +1482,76 @@ function melding(tekst) {
   clearTimeout(melding.t); melding.t = setTimeout(() => { m.hidden = true; }, 6000);
 }
 
-/* ---------- Grootboek (met controleketen) ---------- */
+/* ---------- Grootboek: per bron een controleketen ---------- */
 function controlegetal(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16).padStart(8, "0"); }
 function logEvent(type, agent, data = {}, taak = null) {
-  const vorige = grootboek.length ? grootboek[grootboek.length - 1].h : "";
-  const e = { n: grootboek.length + 1, ts: Date.now(), type, agent, taak, data, modus: instellingen.modus };
-  e.h = controlegetal(vorige + JSON.stringify(e));
-  grootboek.push(e);
+  const e = { bron: BRON, n: ++eigenTeller, ts: Date.now(), type, agent, taak, data, modus: instellingen.modus };
+  e.h = controlegetal(eigenVorige + JSON.stringify(e));
+  eigenVorige = e.h;
+  grootboek.push(e); gbOnverzonden.push(e);
+  if (!LIVE.gbTimer) LIVE.gbTimer = setTimeout(() => { LIVE.gbTimer = null; LIVE.gbNu = true; if (LIVE.db && LIVE.gedeeld && !LIVE.alleenLezen) syncNaarDb(); }, 20000);
 }
 function grootboekIntact() {
-  let vorige = "";
-  return grootboek.every(e => { const { h, ...rest } = e; const ok = controlegetal(vorige + JSON.stringify(rest)) === h; vorige = h; return ok; });
+  const vorige = {};
+  return grootboek.slice().sort((a, b) => ((a.bron || "") < (b.bron || "") ? -1 : (a.bron || "") > (b.bron || "") ? 1 : a.n - b.n)).every(e => {
+    const b = e.bron || "blok", { h, ...rest } = e;
+    const ok = controlegetal((vorige[b] || "") + JSON.stringify(rest)) === h;
+    vorige[b] = h; return ok;
+  });
 }
 function grootboekSheet() {
   const naam = id => id === "raad" ? "Raad" : agentById[id]?.naam || id;
-  return `<p class="lead" style="margin-top:0">${grootboek.length} events · ${grootboekIntact() ? "controleketen intact" : "controleketen verbroken: er is achteraf iets gewijzigd"}</p>
-    ${grootboek.slice(-60).reverse().map(e => `<div class="ev"><small>${new Date(e.ts).toLocaleString("nl-NL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</small><div><b>${esc(e.type)}</b> · ${esc(naam(e.agent))}${e.taak ? ` · ${esc(e.taak)}` : ""}${e.modus === "claude" ? " · Claude" : ""}</div></div>`).join("") || '<p class="i-meta">Nog geen events.</p>'}`;
+  const bronnen = new Set(grootboek.map(e => e.bron || "blok"));
+  return `<p class="lead" style="margin-top:0">${grootboek.length} events uit ${bronnen.size} bronnen · ${grootboekIntact() ? "controleketens intact" : "een controleketen is verbroken"}</p>
+    ${grootboek.slice(-80).reverse().map(e => `<div class="ev"><small>${tijd(e.ts)}</small><div><b>${esc(e.type)}</b> · ${esc(naam(e.agent))}${e.taak ? ` · ${esc(e.taak)}` : ""}${e.modus === "werkdag" ? " · werkdag" : e.modus === "claude" ? " · Claude" : ""}</div></div>`).join("") || '<p class="i-meta">Nog geen events.</p>'}`;
 }
+const tijd = ts => new Date(ts).toLocaleString("nl-NL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+function geleden(ts) {
+  const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+  return s < 60 ? "nu" : s < 3600 ? `${Math.round(s / 60)} min` : s < 86400 ? `${Math.round(s / 3600)} u` : tijd(ts);
+}
+
+/* ---------- Activiteit: wie doet wat, live ---------- */
+const ACTIEF_MS = 20 * 60 * 1000;
+function meldActiviteit(agent, status, tekst, taak = null) {
+  const a = { id: `${BRON}-${String(++actTeller).padStart(4, "0")}`, agent, status, tekst: String(tekst || "").slice(0, 160), taak, ts: Date.now(), bron: BRON };
+  activiteiten.push(a);
+  wachtrij.push({ pad: "activiteit/" + a.id, body: a });
+  if (LIVE.db && LIVE.gedeeld && !LIVE.alleenLezen) syncNaarDb();
+  planRefresh();
+}
+function laatsteActiviteit(agent) {
+  for (let i = activiteiten.length - 1; i >= 0; i--) if (activiteiten[i].agent === agent) return activiteiten[i];
+  return null;
+}
+function actiefNu() {
+  const per = new Map();
+  activiteiten.forEach(a => per.set(a.agent, a));
+  return [...per.values()].filter(a => a.status === "bezig" && Date.now() - a.ts < ACTIEF_MS && agentById[a.agent]).sort((a, b) => b.ts - a.ts);
+}
+function werkdagStand() {
+  const w = activiteiten.filter(a => a.taak === "werkdag");
+  return w.length ? w[w.length - 1] : null;
+}
+function renderLiveFeed() {
+  const el = document.getElementById("livefeed");
+  if (!el || viewOffice.hidden) return;
+  const actief = actiefNu();
+  const klaar = activiteiten.filter(a => a.status !== "bezig" && agentById[a.agent] && a.taak !== "werkdag").slice(-4).reverse();
+  const w = werkdagStand();
+  const kleur = a => (deptById[agentById[a.agent].dept] || { kleur: "#f0a04b" }).kleur;
+  el.innerHTML = `<button class="lf-kop" aria-expanded="${!el.classList.contains("dicht")}"><span class="dotpulse" style="${actief.length ? "" : "animation:none;background:var(--idle)"}"></span>
+      <b>${actief.length ? `${actief.length} agent${actief.length > 1 ? "s" : ""} aan het werk` : "Niemand aan het werk"}</b><span class="lf-pijl">▾</span></button>
+    <div class="lf-body">
+      ${w ? `<div class="lf-werkdag">${w.status === "bezig" && Date.now() - w.ts < 2 * 3600e3 ? "Werkdag loopt" : "Laatste werkdag"} · ${esc(w.tekst)} · ${geleden(w.ts)}</div>` : ""}
+      ${actief.map(a => `<button class="lf-rij" data-go="agent-${a.agent}"><i class="dot" style="background:${kleur(a)}"></i><span><b>${esc(agentById[a.agent].naam)}</b> ${esc(a.tekst)}</span><small>${geleden(a.ts)}</small></button>`).join("")}
+      ${klaar.length ? `<div class="lf-sub">Net gedaan</div>` + klaar.map(a => `<button class="lf-rij stil" data-go="agent-${a.agent}"><i class="dot" style="background:${kleur(a)}"></i><span><b>${esc(agentById[a.agent].naam)}</b> ${esc(a.tekst)}</span><small>${geleden(a.ts)}</small></button>`).join("") : ""}
+      ${!actief.length && !klaar.length ? `<div class="lf-sub" style="text-transform:none">Zodra een agent werkt, zie je het hier en boven zijn bureau.</div>` : ""}
+    </div>`;
+  el.querySelector(".lf-kop").onclick = () => { el.classList.toggle("dicht"); renderLiveFeed(); };
+  el.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+}
+setInterval(() => { renderLiveFeed(); }, 30000);
 
 /* ---------- Agents ---------- */
 const wacht = ms => new Promise(r => setTimeout(r, ms));
@@ -1394,21 +1571,31 @@ async function vraagAgent(agentId, bericht, ctx = {}) {
   stopCheck();
   const a = agentById[agentId];
   logEvent("model.aanroep", agentId, { doel: ctx.doel || "", versie: a.versie || "" }, ctx.taak || null);
-  if (instellingen.modus === "claude") {
-    if (!LIVE.sample) throw new Error("Claude is in deze weergave niet beschikbaar. Zet de agents op mock.");
-    const input = AGENT_PROMPTS[agentId] + "\n\n---\n\n" + bericht;
-    const opts = { cache: false, signal: LIVE.run ? LIVE.run.ctl.signal : undefined };
-    try {
-      return ctx.json ? await LIVE.sample.json(input, opts) : (await LIVE.sample(input, opts)).text;
-    } catch (e) {
-      if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) { LIVE.sample = null; instellingen.modus = "mock"; save(); }
-      if (e && e.code === "cancelled") throw new Gestopt("Gestopt");
-      throw new Error((e && FOUTEN[e.code]) || "Claude gaf geen antwoord. Probeer het opnieuw.");
+  meldActiviteit(agentId, "bezig", ctx.label || "denkt na", ctx.taak);
+  try {
+    let uit;
+    if (instellingen.modus === "claude") {
+      if (!LIVE.sample) throw new Error("Claude is in deze weergave niet beschikbaar. Zet de agents op mock.");
+      const input = AGENT_PROMPTS[agentId] + "\n\n---\n\n" + bericht;
+      const opts = { cache: false, signal: LIVE.run ? LIVE.run.ctl.signal : undefined };
+      try {
+        uit = ctx.json ? await LIVE.sample.json(input, opts) : (await LIVE.sample(input, opts)).text;
+      } catch (e) {
+        if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) { LIVE.sample = null; instellingen.modus = "mock"; save(); }
+        if (e && e.code === "cancelled") throw new Gestopt("Gestopt");
+        throw new Error((e && FOUTEN[e.code]) || "Claude gaf geen antwoord. Probeer het opnieuw.");
+      }
+    } else {
+      await wacht(600);   // in mockmodus zichtbaar verloop
+      stopCheck();
+      uit = MOCK[ctx.soort || a.rol](ctx, a);
     }
+    meldActiviteit(agentId, "klaar", ctx.klaarLabel || ctx.label || "klaar", ctx.taak);
+    return uit;
+  } catch (e) {
+    meldActiviteit(agentId, "gestopt", e instanceof Gestopt ? "gestopt" : "kon niet verder", ctx.taak);
+    throw e;
   }
-  await wacht(400);   // in mockmodus zichtbaar verloop
-  stopCheck();
-  return MOCK[ctx.soort || a.rol](ctx, a);
 }
 
 const MOCK = {
@@ -1422,18 +1609,17 @@ const MOCK = {
     "## Zelfcheck", ...(ctx.criteria || []).map(c => `- ${c}: voldaan`), "## Zekerheid", "middel",
     "## Les", `Bij '${ctx.opdracht}' eerst de acceptatiecriteria naast elkaar leggen.`].join("\n"),
   controltet: ctx => {
-    // Mock: één op de drie taken wordt de eerste keer afgekeurd, zodat de leerlus zichtbaar is.
     const streng = parseInt(controlegetal(ctx.taakObj.id), 16) % 3 === 0 && !ctx.taakObj.afkeuringen;
     return streng ? { oordeel: "afgekeurd", score: 5, bevindingen: ["Onderbouwing ontbreekt bij de kernclaim: voeg bron of berekening toe."] }
       : { oordeel: "goedgekeurd", score: 8, bevindingen: [] };
   },
   voorstellen: ctx => ({ voorstellen: [
     ctx.afkeuringen ? { titel: "Acceptatiecriteria scherper laten formuleren", soort: "werkwijze",
-      toelichting: `Knelpunt: ${ctx.afkeuringen} afkeuring(en) door ontbrekende onderbouwing. Oorzaak: criteria noemen geen bronplicht. Voorstel: Hoofdtets nemen bij analysetaken altijd 'bron of berekening per kernclaim' op. Effect: minder herhaalrondes.` }
+      toelichting: `Knelpunt: ${ctx.afkeuringen} afgekeurde taak/taken door ontbrekende onderbouwing. Voorstel: Hoofdtets nemen bij analysetaken altijd 'bron of berekening per kernclaim' op. Effect: minder herhaalrondes.` }
       : { titel: "Webzoeken aansluiten achter de tool-gateway", soort: "platform",
-      toelichting: "Knelpunt: Tets werken zonder bronnen. Oorzaak: er zijn nog geen tools. Voorstel: webzoeken als eerste tool, via de beleidsmotor en alleen voor afdelingen met 'web' in de toegangskaart. Effect: onderbouwde resultaten." },
+      toelichting: "Knelpunt: Tets werken zonder bronnen. Voorstel: webzoeken als eerste tool, via de beleidsmotor en alleen voor afdelingen met 'web' in de toegangskaart. Effect: onderbouwde resultaten." },
     { titel: "Afdelingsverslag na elke run", soort: "kantoor",
-      toelichting: "Knelpunt: na een run is niet in één oogopslag te zien wat elke afdeling opleverde. Voorstel: per afdeling een kort verslag met KPI's uit het grootboek. Effect: snellere bijsturing door de Raad." }] })
+      toelichting: "Knelpunt: na een run is niet in één oogopslag te zien wat elke afdeling opleverde. Voorstel: per afdeling een kort verslag met KPI's uit het grootboek." }] })
 };
 
 /* ---------- De keten ---------- */
@@ -1448,15 +1634,16 @@ function contract(t) {
     `Budget: ${(t.budget || 2).toFixed(2)} euro`, `Deadline: ${deptDoel(t.dept).deadline || doel.deadline || "geen"}`,
     `Doelstelling: ${doel.naam || "-"}`, `Afdelingsdoel: ${deptDoel(t.dept).doel || "-"}`].join("\n");
 }
+const kort = (s, n = 70) => (s = String(s || "")).length > n ? s.slice(0, n - 1) + "…" : s;
 
 async function planOppertet(afd) {
   if (!doel.naam) throw new Error("Stel eerst een doelstelling in op het doelstellingenbord.");
   const bericht = ["# Doelstelling van de Raad", `Naam: ${doel.naam}`, `Omschrijving: ${doel.omschrijving || "-"}`, `Deadline: ${doel.deadline || "geen"}`,
     "", "# Afdelingen die je mag inzetten", ...afd.map(id => `- ${id} (${deptById[id].naam}): ${deptById[id].missie}`), "", "# Opdracht", PROTOCOLS.oppertet].join("\n");
-  const plan = await vraagAgent("oppertet", bericht, { json: true, doel: "afdelingsdoelen", afdelingen: afd });
+  const plan = await vraagAgent("oppertet", bericht, { json: true, doel: "afdelingsdoelen", afdelingen: afd, label: "verdeelt de doelstelling over de afdelingen", klaarLabel: "heeft de afdelingsdoelen gezet" });
   for (const x of (plan && plan.afdelingsdoelen) || []) {
     if (!afd.includes(x.afdeling)) continue;
-    deptDoelen[x.afdeling] = { doel: String(x.doel || ""), deadline: doel.deadline || "", waarom: String(x.waarom || ""),
+    deptDoelen[x.afdeling] = { id: x.afdeling, doel: String(x.doel || ""), deadline: doel.deadline || "", waarom: String(x.waarom || ""),
       hoofdlijnen: (x.hoofdlijnen || []).slice(0, 4).map(h => ({ titel: String(h), status: "open" })) };
     logEvent("afdelingsdoel.ingesteld", "oppertet", { afdeling: x.afdeling, doel: x.doel });
   }
@@ -1473,7 +1660,7 @@ async function planHoofdtet(dept) {
   const bericht = [`# Afdelingsdoel ${deptById[dept].naam}`, `Doel: ${b.doel}`, `Doelstelling: ${doel.naam || "-"}`,
     ...open.map(i => `- Hoofdlijn: ${b.hoofdlijnen[i].titel}`), "", "# Jouw Tets", ...tets.map(t => `- ${t.id} (${t.naam}): ${t.specialisme}`),
     "", "# Opdracht", PROTOCOLS.hoofdtet].join("\n");
-  const plan = await vraagAgent(h.id, bericht, { json: true, doel: "taken", hoofdlijnen: open.map(i => b.hoofdlijnen[i].titel), tets: tets.map(t => t.id) });
+  const plan = await vraagAgent(h.id, bericht, { json: true, doel: "taken", hoofdlijnen: open.map(i => b.hoofdlijnen[i].titel), tets: tets.map(t => t.id), label: "maakt taken voor het team", klaarLabel: "heeft taken verdeeld" });
   const geldig = new Set(tets.map(t => t.id));
   ((plan && plan.taken) || []).forEach((x, k) => {
     const id = "t" + Date.now() + "-" + k;
@@ -1498,22 +1685,27 @@ function markeerHoofdlijn(t) {
 }
 
 async function voerUit(id) {
-  const t = tasks.find(x => x.id === id);
+  const T = () => tasks.find(x => x.id === id);
+  let t = T();
   if (!t || !t.agent) throw new Error("Wijs eerst een Tet toe aan deze taak.");
   t.criteria = t.criteria && t.criteria.length ? t.criteria : ["Beantwoordt de opdracht volledig"];
   t.control = t.control || kiesControl(t.dept, "kwaliteit");
   t.afkeuringen = t.afkeuringen || 0; t.geescaleerd = false; t.approval = false; t.status = "bezig";
   logEvent("taak.gestart", t.agent, {}, t.id); save(); planRefresh();
   while (true) {
+    t = T(); if (!t) return;
     const lessen = brein.filter(b => b.dept === t.dept && b.taak !== t.id).slice(-5).map(b => `- ${b.tekst}`);
     const bericht = [contract(t), lessen.length ? "# Lessen uit het Brein\n" + lessen.join("\n") : "",
       t.bevindingen && t.bevindingen.length ? "# Bevindingen van de vorige beoordeling\n" + t.bevindingen.map(b => `- ${b}`).join("\n") : "",
       "# Werkwijze\n" + PROTOCOLS.tet].filter(Boolean).join("\n\n");
-    t.resultaat = String(await vraagAgent(t.agent, bericht, { doel: "uitvoeren", taak: t.id, opdracht: t.title, criteria: t.criteria }));
-    logEvent("taak.opgeleverd", t.agent, { tekens: t.resultaat.length }, t.id); save(); planRefresh();
+    const res = String(await vraagAgent(t.agent, bericht, { doel: "uitvoeren", taak: t.id, opdracht: t.title, criteria: t.criteria, label: "werkt aan: " + kort(t.title), klaarLabel: "leverde op: " + kort(t.title) }));
+    t = T(); if (!t) return;
+    t.resultaat = res;
+    logEvent("taak.opgeleverd", t.agent, { tekens: res.length }, t.id); save(); planRefresh();
     if (t.control === "raad") { t.approval = true; logEvent("goedkeuring.gevraagd", t.agent, {}, t.id); save(); return; }
     const o = await vraagAgent(t.control, [contract(t), "# Resultaat van de Tet\n" + t.resultaat, "# Werkwijze\n" + PROTOCOLS.controltet].join("\n\n"),
-      { json: true, doel: "toetsen", taak: t.id, taakObj: t });
+      { json: true, doel: "toetsen", taak: t.id, taakObj: t, label: "toetst: " + kort(t.title), klaarLabel: "toetste: " + kort(t.title) });
+    t = T(); if (!t) return;
     const goed = o && o.oordeel === "goedgekeurd";
     t.score = o && o.score != null ? o.score : null;
     t.bevindingen = ((o && o.bevindingen) || []).map(String);
@@ -1543,7 +1735,7 @@ async function draaiKeten(afd) {
   save();
 }
 
-/* ---------- Een run: één tegelijk, met Stop ---------- */
+/* ---------- Een run in deze pagina: één tegelijk, met Stop ---------- */
 function zetRunTekst(t) { document.getElementById("runText").textContent = t; }
 async function metRun(label, fn) {
   if (LIVE.run) { melding("Er draait al iets. Wacht tot het klaar is of druk op Stop."); return; }
@@ -1554,7 +1746,7 @@ async function metRun(label, fn) {
   catch (e) { if (!(e instanceof Gestopt)) melding(e.message || "Er ging iets mis."); }
   finally {
     tasks.filter(t => t.status === "bezig" && !t.resultaat).forEach(t => { t.status = "volgende"; });
-    LIVE.run = null; bar.hidden = true; save(); planRefresh();
+    LIVE.run = null; bar.hidden = true; LIVE.gbNu = true; save(); planRefresh();
   }
 }
 document.getElementById("runStop").onclick = () => { if (LIVE.run) { LIVE.run.gestopt = true; LIVE.run.ctl.abort(); zetRunTekst("Stoppen…"); } };
@@ -1562,9 +1754,11 @@ document.getElementById("runStop").onclick = () => { if (LIVE.run) { LIVE.run.ge
 /* ---------- Livepaneel op de Oppertet-pagina ---------- */
 function livePanel() {
   const claude = !!LIVE.sample;
+  const w = werkdagStand();
   return `<section class="goalboard livepanel" aria-label="Live">
       <div class="row" style="justify-content:space-between"><span class="eyebrow">Live</span><span class="i-meta">${LIVE.gedeeld ? "gedeeld opgeslagen" : "alleen in deze browser"} · ${grootboek.length} events</span></div>
-      <div class="row"><span class="i-meta" style="margin:0">Agents</span>
+      <p class="lead" style="margin:0">${w ? `Werkdag: ${esc(w.tekst)} (${geleden(w.ts)}). ` : ""}De agents werken zelfstandig in geplande werkdagen. Hier kun je ze ook direct aan het werk zetten.</p>
+      <div class="row"><span class="i-meta" style="margin:0">Agents hier</span>
         <div class="seg" role="group" aria-label="Agents">
           <button class="r" data-modus="mock" aria-pressed="${instellingen.modus !== "claude"}">Mock</button>
           <button class="rw" data-modus="claude" aria-pressed="${instellingen.modus === "claude"}" ${claude ? "" : "disabled title=\"Claude is in deze weergave niet beschikbaar\""}>Claude</button>
@@ -1572,7 +1766,7 @@ function livePanel() {
         <span class="i-meta" style="margin:0">${instellingen.modus === "claude" ? "Agents denken echt, op jouw Claude-gebruik." : "Gratis en voorspelbaar, zonder echte analyse."}</span></div>
       <div class="chips" id="liveAfd">${DEPTS.map(d => `<label class="chipcheck"><input type="checkbox" value="${d.id}" ${d.id === CONTROLELIJN ? "" : "checked"}><i class="dot" style="background:${d.kleur};margin:0"></i>${esc(d.naam)}</label>`).join("")}</div>
       <div class="row">
-        <button class="primary" id="liveKeten" ${!doel.naam || LIVE.run || LIVE.alleenLezen ? "disabled" : ""}>Draai de keten</button>
+        <button class="primary" id="liveKeten" ${!doel.naam || LIVE.run || LIVE.alleenLezen ? "disabled" : ""}>Draai de keten nu</button>
         <span class="i-meta" style="margin:0">${doel.naam ? "Oppertet verdeelt, Hoofdtets maken taken, Tets voeren uit, Control Tets toetsen." : "Stel eerst een doelstelling in."}</span>
       </div>
     </section>`;
@@ -1589,12 +1783,16 @@ function wireLive(root) {
     metRun("Keten draait", () => draaiKeten(afd));
   };
 }
+function verslagenSheet() {
+  return verslagen.length ? verslagen.map(v => `<div class="layer"><div class="lh">${esc(v.titel || "Dagverslag")} <small>${tijd(v.ts)}</small></div><pre class="verslag">${esc(v.tekst || "")}</pre></div>`).join("")
+    : `<p class="i-meta">Nog geen verslagen. Na elke werkdag schrijft de Oppertet er één voor de Raad.</p>`;
+}
 
 /* ---------- Verbetervoorstellen (zelfontwikkeling) ---------- */
 const V_STATUS = { open: ["wacht op de Raad", "warn"], goedgekeurd: ["goedgekeurd · wordt ingebouwd", "volgende"], uitgevoerd: ["ingebouwd", "ok"], afgewezen: ["afgewezen", "muted"] };
 function voorstellenSheet() {
-  return `<p class="lead" style="margin-top:0">R&D kijkt naar hoe Tet Tet werkt en stelt verbeteringen voor. Wat jij goedkeurt, bouwt Claude Code in de repository in; daarna wordt het kantoor opnieuw gepubliceerd.</p>
-    <div class="row" style="margin:10px 0">${!LIVE.alleenLezen ? `<button class="primary" id="vVraag" ${LIVE.run ? "disabled" : ""}>Vraag R&D om voorstellen</button>` : ""}</div>
+  return `<p class="lead" style="margin-top:0">R&D, HR en Risk & Safety kijken naar hoe Tet Tet werkt en stellen verbeteringen voor. Wat jij goedkeurt, bouwt Claude Code in de repository in; daarna wordt het kantoor opnieuw gepubliceerd.</p>
+    <div class="row" style="margin:10px 0">${!LIVE.alleenLezen ? `<button class="primary" id="vVraag" ${LIVE.run ? "disabled" : ""}>Vraag R&D nu om voorstellen</button>` : ""}</div>
     <ul class="items">${voorstellen.length ? voorstellen.map(v => `<li style="--dc:${v.status === "open" ? "var(--warn)" : "var(--line)"}">
         <div class="i-title">${esc(v.titel)}</div><div class="i-meta">${esc(v.soort || "")} · ${esc(v.door === "raad" ? "Raad" : agentById[v.door]?.naam || v.door)}</div>
         <p style="margin:6px 0 0;font-size:13.5px">${esc(v.toelichting || "")}</p>
@@ -1631,7 +1829,7 @@ async function vraagVoorstellen() {
     "Recente lessen:", ...brein.slice(-8).map(b => `- ${b.tekst}`),
     "Eerdere voorstellen (niet herhalen):", ...voorstellen.slice(0, 10).map(v => `- ${v.titel} (${v.status})`),
     "", "# Opdracht", PROTOCOLS.voorstellen].join("\n");
-  const r = await vraagAgent("rnd-h", bericht, { json: true, doel: "voorstellen", soort: "voorstellen", afkeuringen: afgekeurd.length });
+  const r = await vraagAgent("rnd-h", bericht, { json: true, doel: "voorstellen", soort: "voorstellen", afkeuringen: afgekeurd.length, label: "bekijkt hoe Tet Tet beter kan", klaarLabel: "deed verbetervoorstellen" });
   const bestaand = new Set(voorstellen.map(v => v.titel));
   ((r && r.voorstellen) || []).slice(0, 3).filter(v => v.titel && !bestaand.has(v.titel)).forEach((v, k) => {
     voorstellen.unshift({ id: "v" + Date.now() + "-" + k, titel: String(v.titel), toelichting: String(v.toelichting || ""), soort: String(v.soort || "werkwijze"), door: "rnd-h", status: "open", created: Date.now() });
@@ -1642,6 +1840,7 @@ async function vraagVoorstellen() {
 
 /* ---------- Opstarten ---------- */
 async function startLive() {
+  renderLiveFeed();
   if (!window.claude || typeof window.claude.use !== "function") return; // los bestand: alles blijft in deze browser
   const [db, sample] = await Promise.all([window.claude.use("db").catch(() => null), window.claude.use("sample").catch(() => null)]);
   LIVE.sample = sample;

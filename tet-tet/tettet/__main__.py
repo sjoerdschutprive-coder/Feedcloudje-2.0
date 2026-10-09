@@ -16,6 +16,10 @@ from .runtime import laad_instellingen
 
 
 def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] == ["werkdag"]:
+        from .werkdag import main as werkdag_main
+        return werkdag_main(argv[1:])
     p = argparse.ArgumentParser(prog="tettet")
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run", help="draai een doelstelling door de hele keten")

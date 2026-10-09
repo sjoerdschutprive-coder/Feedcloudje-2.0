@@ -30,7 +30,7 @@ Bij tegenstrijdigheid wint de hogere bron.
 
 ## Stand van de bouw
 
-Stap 1 t/m 4 zijn gebouwd in `tettet/` met 23 tests (`python -m unittest discover -s tests -t .`, vanuit `tet-tet/`).
+Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -s tests -t .`, vanuit `tet-tet/`).
 
 | Module | Wat het doet |
 | --- | --- |
@@ -51,6 +51,8 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met 23 tests (`python -m unittest discove
 - **Gedeelde opslag** (`db`): collecties `staat` (doel, instellingen, connectors), `afdelingsdoelen`, `taken`, `berichten`, `brein`, `voorstellen` en `grootboek` (blokken van 100 events). Lezen en schrijven kan ook vanuit Claude Code met de ArtifactData-tool.
 - **Agents**: modus `mock` (gratis, voorspelbaar) of `claude` (via `sample`, op het Claude-account van de kijker). De keten in de pagina volgt `tettet/keten.py`: dezelfde protocollen en dezelfde samengestelde prompts.
 - **Kaarten in het kantoor**: het blok tussen `@@KAARTEN:BEGIN` en `@@KAARTEN:END` wordt gegenereerd door `scripts/bouw_kantoor.py`. Draai dat na elke kaartwijziging en publiceer opnieuw.
+- **Live-zicht**: collectie `activiteit` (alleen-toevoegen, per agent wat hij doet); de pagina toont tekstballonnen en het paneel 'Nu bezig'. Werk van buitenaf komt binnen als `patches`; documenten dragen `bijgewerkt` en de nieuwste wint.
+- **Werkdag**: zie `WERKDAG.md` en `tettet/werkdag.py`. Een geplande taak laat de agents meerdere keren per dag zelfstandig werken, met subagents per agentbeurt.
 - **Zelfontwikkeling**: zie `ZELFONTWIKKELING.md`. Een dagelijkse geplande taak bouwt de door de Raad goedgekeurde verbetervoorstellen in.
 
 Nog te bouwen, in deze volgorde:

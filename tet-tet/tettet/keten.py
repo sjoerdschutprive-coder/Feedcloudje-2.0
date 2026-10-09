@@ -63,6 +63,20 @@ Antwoord uitsluitend met JSON:
 {"voorstellen": [{"titel": "<kort>", "toelichting": "<knelpunt, oorzaak, voorstel, verwacht effect>", "soort": "kaart|werkwijze|platform|kantoor"}]}"""
 
 
+PROTOCOL_ESCALATIE = """Een taak uit jouw afdeling is na herhaalde afkeuring door een Control Tet bij jou geëscaleerd. Lees de opdracht, het laatste resultaat en de bevindingen, en besluit als eigenaar:
+- "herformuleer": de opdracht of criteria waren het probleem; geef een scherpere opdracht, toetsbare criteria en kies de Tet die het moet doen.
+- "naar_raad": het vraagt een besluit of informatie die alleen de Raad heeft; leg uit wat er nodig is.
+Antwoord uitsluitend met JSON:
+{"besluit": "herformuleer|naar_raad", "opdracht": "<nieuwe opdracht>", "acceptatiecriteria": ["<toetsbaar>"], "toegewezen": "<tet-id>", "toelichting": "<één of twee zinnen>"}"""
+
+PROTOCOL_ROUTINE = """Dit is je vaste ronde. Kijk naar de cijfers hieronder vanuit jouw rol. Benoem maximaal drie concrete bevindingen, conclusie eerst. Doe hooguit één verbetervoorstel, alleen als er een concreet knelpunt met een benoemde oorzaak is.
+Antwoord uitsluitend met JSON:
+{"bevindingen": ["<bevinding>"], "voorstel": {"titel": "<kort>", "toelichting": "<knelpunt, oorzaak, voorstel, effect>", "soort": "kaart|werkwijze|platform|kantoor"} of null}"""
+
+PROTOCOL_DAGVERSLAG = """Schrijf het verslag van deze werkdag voor Sjoerd (de Raad). Kort en direct: wat is er gedaan, wat staat er, wat heb je van de Raad nodig. Benoem de grootste afhankelijkheid. Maximaal 12 regels, geen opvulling, eindig niet met een vraag als 'kan ik nog ergens mee helpen'.
+Antwoord met platte tekst, geen JSON."""
+
+
 class Kantoor:
     def __init__(self, *, mock: bool | None = None, opslaan: bool = False, client=None, instellingen: dict | None = None,
                  org: Organisatie | None = None):
