@@ -48,14 +48,31 @@ def labels_uit(tekst: str, toegang: Toegang) -> list[str]:
     return sorted(b for b in genoemd if b in toegang.bronnen and b not in PUBLIEK)
 
 
+HR_WOORDEN = re.compile(r"\b(ontwikkelplan|prestatieprofiel|snapshot|evaluatiegesprek|aandachtspunt|toekomstvragen)\b", re.I)
+
 # Wie `alle_afdelingsoutput` mag lezen (Risk & Safety), ziet alles: toezicht vraagt inzage.
 TOEZICHT = "alle_afdelingsoutput"
 
 
+# HR-dossier: alles over één agent (prestaties, evaluaties, ontwikkelplan). Alleen de agent zelf, zijn leidinggevende,
+# HR en de Oppertet zien het; ook het toezicht van Risk & Safety niet. In de kantine altijd verboden.
+DOSSIER = "hr-dossier:"
+
+
+def dossier_label(agent_id: str) -> str:
+    return DOSSIER + agent_id
+
+
+def is_dossier(item: dict) -> bool:
+    return any(str(l).startswith(DOSSIER) for l in item.get("labels") or [])
+
+
 def ontbrekend(item: dict, toegang: Toegang) -> list[str]:
+    labels = item.get("labels") or []
+    dossier = [l for l in labels if str(l).startswith(DOSSIER) and not toegang.mag_dossier(l[len(DOSSIER):])]
     if toegang.mag(TOEZICHT):
-        return []
-    return [l for l in item.get("labels") or [] if l not in PUBLIEK and not toegang.mag(l)]
+        return dossier
+    return dossier + [l for l in labels if not str(l).startswith(DOSSIER) and l not in PUBLIEK and not toegang.mag(l)]
 
 
 def zichtbaar(item: dict, toegang: Toegang) -> bool:
@@ -67,8 +84,8 @@ def toegangen(org: Organisatie, agents: list[str]) -> dict[str, Toegang]:
 
 
 def deelbaar(items: list[dict], tg: dict[str, Toegang]) -> list[dict]:
-    """Items die iedere aanwezige mag zien (doorsnede van de effectieve toegang)."""
-    return [i for i in items if all(zichtbaar(i, t) for t in tg.values())]
+    """Items die iedere aanwezige mag zien (doorsnede van de effectieve toegang). HR-dossiers nooit."""
+    return [i for i in items if not is_dossier(i) and all(zichtbaar(i, t) for t in tg.values())]
 
 
 # ---------- wie weet wat, wie werkt waaraan, vraagbaak ----------
@@ -229,6 +246,9 @@ def deelfilter(beurten: list[dict], deelnemers: list[str], org: Organisatie, ind
             item = index.get(ref)
             if not item:
                 continue
+            if is_dossier(item):
+                status, reden = "geblokkeerd", "verwijst naar een HR-dossier; dat hoort nooit aan de koffietafel"
+                break
             mist = {h: ontbrekend(item, tg[h]) for h in hoorders}
             mist = {h: m for h, m in mist.items() if m}
             if mist:
@@ -236,6 +256,8 @@ def deelfilter(beurten: list[dict], deelnemers: list[str], org: Organisatie, ind
                 reden = "verwijst naar werk op " + ", ".join(sorted({l for m in mist.values() for l in m})) + \
                         " dat " + ", ".join(org.agent(h)["naam"] for h in mist) + " niet mag zien"
                 break
+        if status == "ok" and HR_WOORDEN.search(b.get("tekst") or ""):
+            status, reden = "twijfel", "lijkt te gaan over iemands evaluatie of prestatieprofiel"
         if status == "ok":
             genoemd = {w for w in re.findall(r"[a-z_]{3,}", (b.get("tekst") or "").lower()) if w in bronnamen}
             mist = sorted({w for w in genoemd for h in hoorders if not tg[h].mag(w) and not tg[h].mag(TOEZICHT)})

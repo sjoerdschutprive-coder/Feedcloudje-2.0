@@ -2,7 +2,7 @@
 # Deze laag komt als eerste in de instructies en gaat altijd voor.
 
 id: beleid-tet-tet
-versie: 1.0.0
+versie: 1.1.0
 
 harde_grenzen:
   - Geen externe communicatie namens de organisatie zonder akkoord van de Raad.
@@ -23,3 +23,12 @@ goedkeuring_raad:
 # Handelingen die nooit zijn toegestaan, ook niet met akkoord.
 verboden:
   - betaling.uitvoeren
+
+# Wie het HR-dossier van een agent (label hr-dossier:<agent-id>) mag zien: de agent zelf, zijn leidinggevende,
+# HR en de Oppertet (en de Raad, die geen agent is). Verder niemand, ook het toezicht van Risk & Safety niet.
+# In de kantine is dit label altijd verboden.
+hr_dossier:
+  eigen: true
+  leidinggevende: true
+  afdelingen: [hr]
+  rollen: [oppertet]

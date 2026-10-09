@@ -28,6 +28,11 @@ class Toegang:
     """Effectieve toegang van één agent. `bronnen` = naam -> 'r' of 'rw'."""
     bronnen: dict[str, str]
     regels: list[str] = field(default_factory=list)  # inperkingen die geen bron raken, als tekstregel
+    agent: str | None = None
+    dossiers: frozenset = frozenset()                  # agents van wie deze agent het HR-dossier mag zien
+
+    def mag_dossier(self, agent_id: str) -> bool:
+        return agent_id in self.dossiers
 
     def mag(self, bron: str, modus: str = "r") -> bool:
         recht = self.bronnen.get(bron)
@@ -108,7 +113,18 @@ class Organisatie:
             bronnen = {b: "r" for b in bronnen}
         # Spelregels van de afdeling alleen tonen voor bronnen die de agent echt heeft.
         spel = [r for r in tk.get("spelregels", []) if (m := re.match(r"^([a-z_]+):", r)) is None or m.group(1) in bronnen]
-        return Toegang(bronnen=bronnen, regels=regels + spel)
+        return Toegang(bronnen=bronnen, regels=regels + spel, agent=agent_id, dossiers=frozenset(self.dossier_inzage(agent_id)))
+
+    def dossier_inzage(self, kijker: str) -> list[str]:
+        """Van welke agents `kijker` het HR-dossier mag zien (config/beleid.yaml, `hr_dossier`)."""
+        regel = self.beleid.get("hr_dossier") or {"eigen": True}
+        k = self.agent(kijker)
+        if k["afdeling"] in (regel.get("afdelingen") or []) or k["rol"] in (regel.get("rollen") or []):
+            return sorted(self.agents)
+        uit = [kijker] if regel.get("eigen", True) else []
+        if regel.get("leidinggevende", True):
+            uit += [a["id"] for a in self.agents.values() if a["rapporteert_aan"] == kijker]
+        return sorted(set(uit))
 
     def mag_handeling(self, agent_id: str, handeling: str) -> bool:
         """Of de rol van deze agent een handeling mag (rolkaart: 'mag' en niet in 'mag_niet')."""
