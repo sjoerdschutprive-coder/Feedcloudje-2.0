@@ -3,7 +3,7 @@
 # meetwaarden worden door het platform gevuld; kenmerken is vrij uit te breiden.
 id: hr-1
 type: profielkaart
-versie: 1.3.0
+versie: 1.4.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -60,7 +60,6 @@ autonomieniveau: 2
 mandaat:
   toegangskaart: toegang-hr
   inperkingen:
-    - 'gmail: geen toegang'
     - Wijzigt kaarten alleen als concept; activeren en een mandaat verruimen doet alleen de Raad.
   # Connectors van een andere afdeling voor alleen deze agent; alleen met akkoord van de Raad.
   # Vorm: - {connector: gmail, recht: r, reden: '...', goedgekeurd_door: raad}
@@ -82,6 +81,9 @@ meetwaarden:
   stabiliteitsscore: null
   kwaliteitsscore: null
 wijzigingslog:
+- versie: 1.4.0
+  datum: '2026-10-09'
+  wijziging: Inperking op Gmail vervallen; iedere agent mag de verbonden connectors volledig gebruiken (besluit Raad).
 - versie: 1.3.0
   datum: '2026-10-09'
   wijziging: Uitgebreid tot shared services van HR (Ulrich); neemt kaartbeheer over van de vervallen Rol-Tet.

@@ -5,7 +5,7 @@
 
 id: cultuur-tet-tet
 type: cultuurkaart_organisatie
-versie: 1.5.0
+versie: 1.6.0
 status: concept
 eigenaar: raad
 goedgekeurd_door: raad
@@ -202,4 +202,4 @@ connectors:
   gdrive: rw
   gcal: rw
   gmail: rw
-  firecrawl: r
+  firecrawl: rw

@@ -148,8 +148,8 @@ class Organisatie:
         for c, r in self.extra_connectors(agent_id).items():
             if bronnen.get(c) != "rw":
                 bronnen[c] = r
-        if self.rollen[a["rolkaart"]].get("toegangsmodus") == "alleen_lezen":
-            bronnen = {b: "r" for b in bronnen}
+        if self.rollen[a["rolkaart"]].get("toegangsmodus") == "alleen_lezen":   # interne systemen; connectors niet
+            bronnen = {b: (r if b in self.connectors else "r") for b, r in bronnen.items()}
         # Spelregels van de afdeling en van de connectors alleen tonen voor bronnen die de agent echt heeft.
         spel = [r for r in tk.get("spelregels", []) if (m := re.match(r"^([a-z_]+):", r)) is None or m.group(1) in bronnen]
         spel += [f"{c}: {self.connectors[c]['spelregel']}" for c in sorted(bronnen) if c in self.connectors and self.connectors[c].get("spelregel")]

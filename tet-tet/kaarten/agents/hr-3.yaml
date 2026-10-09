@@ -3,7 +3,7 @@
 # inzet: actief – de Raad zette deze plek op 2026-10-09 in (toen nog als Rol-Tet of Cultuur-Tet); de nieuwe rol is status concept.
 id: hr-3
 type: profielkaart
-versie: 2.1.0
+versie: 2.2.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -53,7 +53,6 @@ mandaat:
   inperkingen:
   - 'profielkaarten: alleen lezen'
   - 'agentregister: alleen lezen'
-  - 'gmail: geen toegang'
   - Stelt normen voor; de Raad stelt ze vast.
   - Wijzigt nooit toegangslabels en verwijdert nooit iets; markeert alleen (herzien_op, vervangen_door).
   - Cureert alleen items binnen de eigen toegang; andere items worden alleen geteld.
@@ -79,6 +78,9 @@ meetwaarden:
   stabiliteitsscore: null
   kwaliteitsscore: null
 wijzigingslog:
+- versie: 2.2.0
+  datum: '2026-10-09'
+  wijziging: Inperking op Gmail vervallen; iedere agent mag de verbonden connectors volledig gebruiken (besluit Raad).
 - versie: 2.1.0
   datum: '2026-10-09'
   wijziging: Vervangt de Cultuur-Tet uit de samenwerkingsopdracht. Kantinerooster, cultuurmeting en welzijn blijven

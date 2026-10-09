@@ -1,13 +1,14 @@
 # Rolkaart: wat een rol mag en hoe ver hij reikt. Eigenaar: Raad.
 id: rol-controltet
 type: rolkaart
-versie: 1.2.0
+versie: 1.3.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
 eigenaar: raad
 naam: Control Tet
 bereik: organisatie
+# Alleen lezen geldt voor de interne systemen; de verbonden connectors mag elke agent volledig gebruiken (besluit Raad 9-10-2026).
 toegangsmodus: alleen_lezen
 niveau: 4
 max_autonomieniveau: 2

@@ -4,7 +4,7 @@ type: cultuurkaart_afdeling
 afdeling: ops
 naam: Operations
 erft_van: cultuur-tet-tet
-versie: 1.3.0
+versie: 1.4.0
 status: concept
 eigenaar: ops-h
 goedgekeurd_door: raad
@@ -44,5 +44,5 @@ connectors:
   gdrive: rw
   gcal: rw
   gmail: rw
-  firecrawl: r
+  firecrawl: rw
 kenmerken: {}
