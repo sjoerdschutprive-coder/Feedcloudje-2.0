@@ -4,6 +4,8 @@
   python -m tettet prompt fin-1        # toont de samengestelde systeemprompt van een agent
   python -m tettet toegang fin-1       # toont de effectieve toegang van een agent
   python -m tettet grootboek           # controleert de hashketen van het opgeslagen grootboek
+  python -m tettet agenda --ics tet-tet-agenda.ics [--van 2026-11-01 --tot 2026-12-31] [--dump map]
+                                       # de vaste momenten als .ics voor de gedeelde agenda (uit een dump: met verplaatsingen en annuleringen)
 """
 import argparse
 import sys
@@ -33,6 +35,11 @@ def main(argv=None):
         s = sub.add_parser(naam)
         s.add_argument("agent")
     sub.add_parser("grootboek")
+    ag = sub.add_parser("agenda", help="exporteer de vaste momenten als .ics")
+    ag.add_argument("--ics", required=True)
+    ag.add_argument("--van")
+    ag.add_argument("--tot")
+    ag.add_argument("--dump", help="map met een dump van het kantoor: gebruik de agenda daaruit (verplaatst en geannuleerd)")
     a = p.parse_args(argv)
 
     if a.cmd == "run":
@@ -46,6 +53,20 @@ def main(argv=None):
         print("\n".join(f"{b}: {RECHT[v]}" for b, v in sorted(t.bronnen.items())))
         if t.regels:
             print("\nRegels:\n" + "\n".join(f"- {x}" for x in t.regels))
+    elif a.cmd == "agenda":
+        import datetime as dt
+        import pathlib
+        from . import kalender as kal
+        inst = laad_instellingen()
+        van = dt.date.fromisoformat(a.van) if a.van else dt.date.today()
+        tot = dt.date.fromisoformat(a.tot) if a.tot else van + dt.timedelta(days=62)
+        k = kal.IcsKalender(inst, events=kal.rooster(Organisatie(), inst, van, tot))
+        if a.dump:
+            from .kantoordb import KantoorStaat
+            for e in KantoorStaat.uit_dump(pathlib.Path(a.dump)).kalender:
+                k.events[e["uid"]] = e     # de agenda is leidend voor tijdstip en status
+        pathlib.Path(a.ics).write_text(k.export(van, tot), encoding="utf-8", newline="")
+        print(f"{a.ics}: {sum(1 for e in k.lees(van, tot) if e['in_agenda'])} events")
     elif a.cmd == "grootboek":
         gb = Grootboek(BASIS / laad_instellingen()["opslag"]["grootboek"])
         fouten = gb.controleer()

@@ -12,9 +12,15 @@ import sys
 
 BASIS = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASIS))
+import yaml  # noqa: E402
+
+from tettet import hr  # noqa: E402
+from tettet import kalender as kal  # noqa: E402
 from tettet import keten  # noqa: E402
+from tettet import prestatie  # noqa: E402
 from tettet import samenwerking as sw  # noqa: E402
 from tettet.kaarten import Organisatie  # noqa: E402
+from tettet.validatie import controleer_mappen  # noqa: E402
 
 J = lambda o: json.dumps(o, ensure_ascii=False)
 VOLGORDE = ["oppertet", "ops-h", "ops-1", "ops-2", "ops-3", "fin-h", "fin-1", "fin-2", "fin-3", "mkt-h", "mkt-1", "mkt-2", "mkt-3",
@@ -54,6 +60,24 @@ def blok(org: Organisatie) -> str:
     inst = keten.laad_instellingen()
     samen = {"kantine": inst.get("kantine", {}), "overleg": {"mt_dag": (inst.get("overleg") or {}).get("mt_dag", 5)},
              "publiek": sorted(sw.PUBLIEK), "toezicht": sw.TOEZICHT}
+    hb = {k["onderdeel"]: k for k in org.kaarten.values() if k["type"] == "handboek"}
+    k = kal.instellingen(inst)
+    hr_data = {
+        "criteria": [{"dimensie": d, "id": c, "label": l, "uitleg": u} for d, c, l, u in prestatie.CRITERIA],
+        "toekomstvragen": hr.TOEKOMSTVRAGEN,
+        "meting": prestatie.standaard_instellingen(inst),
+        "kalender": {"prefix": k["prefix"], "tijdzone": k["tijdzone"], "kalender_id": k["kalender_id"], "bron": k["bron"],
+                     "soorten_in_agenda": sorted(k["soorten_in_agenda"]), "begintijd": k["begintijd"], "duur": k["duur"],
+                     "namen": kal.SOORT_NAAM, "omschrijving": kal.OMSCHRIJVING},
+        "handboek": {o: {"versie": x["versie"], "status": x["status"], "documentsoort": x["documentsoort"]} for o, x in sorted(hb.items())},
+        "schrijfstijl": hb.get("schrijfstijl", {}).get("regels", {}),
+        "huisstijl": {"afdelingen": hb.get("huisstijl", {}).get("afdelingen", {})},
+        "mappen": controleer_mappen(),
+        "principes": [{"principe": p_["principe"], "indicator": p_.get("indicator"), "norm": p_.get("norm")} for p_ in org.organisatie.get("edge_principes", [])],
+        "dossier": org.beleid.get("hr_dossier", {}),
+        "hr_tets": {"prestatie": kal.beoordelaar_hr(org, "prestatie"), "governance": kal.beoordelaar_hr(org, "governance"),
+                    "personeel": kal.beoordelaar_hr(org, "personeel")},
+    }
     regels = [
         "/* @@KAARTEN:BEGIN – gegenereerd door scripts/bouw_kantoor.py uit tet-tet/kaarten/. Niet met de hand wijzigen. */",
         f"const MAX_AFKEURINGEN = {keten.laad_instellingen()['taken']['max_afkeuringen']};",
@@ -65,14 +89,28 @@ def blok(org: Organisatie) -> str:
         f"const AGENT_PROMPTS = {J(prompts)};",
         f"const PROTOCOLS = {J(protocols)};",
         f"const SAMEN = {J(samen)};",
+        f"const HR = {J(hr_data)};",
         "/* @@KAARTEN:END */",
     ]
     return "\n".join(regels)
 
 
+def huisstijl() -> str:
+    """De tokens uit het handboek (huisstijl.yaml) als CSS-variabelen. Het handboek is leidend."""
+    hs = yaml.safe_load((BASIS / "kaarten" / "handboek" / "huisstijl.yaml").read_text(encoding="utf-8"))
+    regels = [f"    --{n}: {v};" for n, v in hs["kleuren"].items()]
+    regels += [f"    --{n}: {v};" for n, v in hs.get("vormen", {}).items()]
+    regels += [f"    --{n}: {v};" for n, v in hs["typografie"].items() if n.startswith("font")]
+    return "    /* @@HUISSTIJL:BEGIN – uit kaarten/handboek/huisstijl.yaml (scripts/bouw_kantoor.py) */\n" + "\n".join(regels) + "\n    /* @@HUISSTIJL:END */\n"
+
+
 def main():
     pad = BASIS / "kantoor" / "index.html"
     html = pad.read_text(encoding="utf-8")
+    stijl = re.compile(r"    /\* @@HUISSTIJL:BEGIN.*?@@HUISSTIJL:END \*/\n", re.S)
+    if not stijl.search(html):
+        sys.exit("Markeringen @@HUISSTIJL niet gevonden in kantoor/index.html")
+    html = stijl.sub(lambda m: huisstijl(), html)
     nieuw = blok(Organisatie())
     patroon = re.compile(r"/\* @@KAARTEN:BEGIN.*?@@KAARTEN:END \*/", re.S)
     if not patroon.search(html):

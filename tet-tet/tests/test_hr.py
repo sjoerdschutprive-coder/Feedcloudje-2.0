@@ -488,3 +488,37 @@ class GovernanceTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KantoorPariteitTest(unittest.TestCase):
+    """De pagina maakt dezelfde .ics en kiest dezelfde steekproef als het platform."""
+
+    def js(self, code: str) -> str:
+        import shutil as sh
+        import subprocess
+        node = sh.which("node")
+        if not node:
+            self.skipTest("node niet beschikbaar")
+        from tettet import BASIS
+        html = (BASIS / "kantoor" / "index.html").read_text(encoding="utf-8")
+        regels = html.splitlines()
+        hr_const = next(r for r in regels if r.startswith("const HR = "))
+        fn = lambda naam: re.search(rf"^function {naam}\(.*?^}}", html, re.S | re.M).group(0)
+        bron = "\n".join([hr_const, next(r for r in regels if r.startswith("function controlegetal(s)")),
+                          fn("icsEsc"), fn("icsVouw"), fn("maakIcs"), fn("inSteekproef"), code])
+        r = subprocess.run([node, "-e", bron], capture_output=True)   # bytes: \r\n moet blijven staan
+        self.assertEqual(r.returncode, 0, r.stderr.decode())
+        return r.stdout.decode("utf-8")
+
+    def test_ics_gelijk(self):
+        ev = kal.rooster(ORG, INST, dt.date(2026, 11, 1), dt.date(2026, 11, 14))
+        ev[0] = {**ev[0], "datum": "2026-11-05"}                 # verplaatst
+        ev[1] = {**ev[1], "status": "geannuleerd"}
+        uit = self.js(f"process.stdout.write(maakIcs({json.dumps(ev, ensure_ascii=False)}))")
+        self.assertEqual(uit, kal.ics(ev, kal.instellingen(INST)))
+
+    def test_steekproef_gelijk(self):
+        ids = [f"t{i}" for i in range(400)]
+        uit = json.loads(self.js(f"console.log(JSON.stringify({json.dumps(ids)}.filter(inSteekproef)))"))
+        self.assertEqual(uit, [i for i in ids if prestatie.in_steekproef(i, INST["hr"]["meting"]["steekproef_raad"])])
+        self.assertTrue(uit)

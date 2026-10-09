@@ -13,7 +13,6 @@ Werkt op gewone dicts in het formaat van het kantoor (taken met `dept`, `agent`,
 """
 from __future__ import annotations
 
-import hashlib
 import math
 import re
 import statistics
@@ -355,8 +354,8 @@ def paarsgewijs(oordeel, a: str, b: str) -> str | None:
 
 def in_steekproef(taak_id: str, fractie: float) -> bool:
     """Deterministische steekproef: hetzelfde taak-id valt altijd wel of niet in de steekproef voor de Raad."""
-    h = int(hashlib.sha1(str(taak_id).encode()).hexdigest()[:8], 16) / 0xFFFFFFFF
-    return h < fractie
+    from .kantoordb import controlegetal   # zelfde hash als het kantoor (inSteekproef)
+    return int(controlegetal(str(taak_id)), 16) / 0xFFFFFFFF < fractie
 
 
 def overeenstemming(taken: list[dict], inst: dict | None = None) -> dict:
