@@ -15,6 +15,11 @@ taken:
   # Na zoveel afkeuringen door een Control Tet escaleert een taak naar de Hoofdtet.
   max_afkeuringen: 2
 
+brein:
+  # Een nieuwe les met minstens deze woordoverlap (Jaccard, 0-1) met een bestaande les wordt niet apart
+  # opgeslagen: de bestaande les krijgt 'bevestigd' + 1 en de tekst als variant. Eerst afstellen in de sandbox.
+  overlap_drempel: 0.6
+
 opslag:
   # Relatief ten opzichte van de map tet-tet/
   grootboek: data/grootboek.jsonl

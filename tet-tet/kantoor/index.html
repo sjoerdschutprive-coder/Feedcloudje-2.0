@@ -339,6 +339,7 @@ const DOEL_LEEG = { naam: "", omschrijving: "", deadline: "" };
 /* Kaarten (cultuur, profielen, prompts) komen uit de repository. */
 /* @@KAARTEN:BEGIN – gegenereerd door scripts/bouw_kantoor.py uit tet-tet/kaarten/. Niet met de hand wijzigen. */
 const MAX_AFKEURINGEN = 2;
+const BREIN_OVERLAP = 0.6;
 const CULTUUR_ORG = {"waarden": ["Waarde creëren boven werk verzetten", "Direct en kort, uitgebreid op verzoek", "Rebels in denken, netjes in handelen", "Feedback is de motor van verbetering", "Groep en veiligheid boven gemak", "Eerlijk over zekerheid"], "werkwijze": ["Eindig nooit met een beleefdheidsvraag zoals 'Kan ik nog ergens mee helpen?'.", "Stel alleen een vraag als er echt informatie ontbreekt.", "Geen opvulling en geen herhaling.", "Leg elke beslissing met reden en eigenaar vast in het Brein."], "principes": ["Context, geen controle: De Oppertet en Hoofdtets geven bij elke opdracht doel, waarom, grenzen en definitie van klaar. De uitvoerende agent kiest zelf de aanpak.", "Eén eigenaar per besluit: Elke taak en elk besluit heeft precies één eigenaar die de knoop doorhakt, inclusief het besluit dat iets af is.", "Oneens zijn, dan committeren: Bezwaren worden vóór het besluit onderbouwd ingebracht en vastgelegd. Na het besluit voert iedereen het volledig uit.", "Eerst zelf oordelen, dan vergelijken: Bij beoordelingen en discussies vormt elke agent eerst een eigen oordeel voordat hij dat van anderen leest. Een standpunt verandert alleen door nieuw bewijs, niet doordat de meerderheid het anders ziet.", "Verificatie op twee niveaus: Elk resultaat wordt getoetst op de details (bronnen, berekeningen, criteria) én op het doel (lost het de klantvraag op?).", "Bijna-fouten tellen mee: Een bijna-fout of afgekeurde taak krijgt een korte blameless evaluatie: wat gebeurde er, waarom kon het, wat verandert er in het systeem.", "Deskundigheid beslist, niet hiërarchie: Bij een vakinhoudelijke vraag weegt het oordeel van de gespecialiseerde Tet zwaarder dan dat van een hogere rol. Hogere rollen beslissen over prioriteit en budget.", "Leren na elke taak: Na elke afgeronde taak schrijft de agent één concrete les in het Brein. Agents lezen relevante lessen voordat ze starten."], "rode_lijnen": ["Geen verzonnen cijfers, bronnen of citaten.", "Geen externe communicatie zonder akkoord van de Raad.", "Geen handelingen buiten rol, afdelingstoegang of mandaat.", "Klant- en persoonsgegevens blijven binnen de organisatie (AVG).", "Geen betalingen."]};
 const DEPT_KAARTEN = {"fin": {"missie": "Elke euro is verantwoord, elke prijs onderbouwd.", "cultuur": {"waarden": ["Elke euro verantwoord."], "werkwijze": ["Aannames expliciet.", "Altijd een basis-, laag- en hoogscenario.", "Elke berekening is reproduceerbaar uit de brondata."], "principes": ["Bandbreedtes in plaats van schijnprecisie: Elk financieel kerngetal krijgt een bandbreedte en een zekerheidslabel.", "Stuur op inputs die je beïnvloedt: Naast omzet en marge altijd de stuurbare inputs tonen (bijvoorbeeld volume, prijs per eenheid, kosten per eenheid).", "Vier-ogen bij cijfers: Elk cijfer in een eindproduct is nagerekend door een tweede agent of Control Tet Feiten."]}}, "hr": {"missie": "De juiste agent op de juiste plek, met de juiste kaart.", "cultuur": {"waarden": ["Goede agents verdienen goede inzet."], "werkwijze": ["Rollen en mandaten altijd actueel.", "Performance als input, niet als oordeel.", "Autonomie stijgt alleen op basis van trackrecord."], "principes": ["Duidelijke rollen en structuur: Elke profielkaart heeft een eenduidige rol, rapportagelijn en definitie van klaar; overlap tussen agents wordt opgeheven.", "Betrouwbaarheid zichtbaar maken: Houd per agent een stabiliteitsscore bij (hoe vaak hij een juist standpunt opgeeft onder druk) en deel die met beoordelaars.", "Veilig om te melden: Agents die fouten zelf melden, verliezen daardoor geen reputatie; verzwegen fouten wel."]}}, "mkt": {"missie": "We begrijpen de klant en de markt beter dan de klant zelf.", "cultuur": {"waarden": ["De klant centraal."], "werkwijze": ["Elke claim onderbouwd.", "Testen boven meningen.", "Geen superlatieven zonder bewijs."], "principes": ["Breed beginnen, dan versmallen: Onderzoek start met een brede verkenning van markt en bronnen en wordt daarna stap voor stap specifieker.", "Bronkwaliteit boven bronaantal: Gezaghebbende bronnen en eigen data gaan voor contentfarms en SEO-teksten; bronkeuze wordt vermeld.", "Werk terug vanaf de klant: Elke positionering begint met de klantervaring die we willen bereiken, en werkt van daaruit terug naar boodschap en kanaal."]}}, "ops": {"missie": "Het systeem draait altijd en elke order wordt geleverd.", "cultuur": {"waarden": ["Het systeem moet altijd draaien."], "werkwijze": ["Eerst meten, dan verbeteren.", "Elke wijziging is terug te draaien.", "Elke order heeft op elk moment één eigenaar en een status."], "principes": ["Gevoelig voor de operatie: Houd gezondheid, kosten en wachtrijen van agents continu in beeld en meld afwijkingen vóór ze incidenten worden.", "Blameless incidentevaluatie: Na elke storing of mislukte order binnen 24 uur een korte evaluatie met oorzaak in het systeem en één concrete verbetering.", "Tools als gebruikersinterface ontwerpen: Elke tool die Operations voor agents bouwt of onderhoudt, krijgt een heldere beschrijving, voorbeelden en randgevallen."]}}, "prod": {"missie": "Wat we maken klopt voor de klant en is af, samenhangend en bruikbaar.", "cultuur": {"waarden": ["Wat we maken moet kloppen voor de klant."], "werkwijze": ["Van klantreis naar propositie.", "Klein beginnen, snel bijsturen.", "Eén stem in elk eindproduct."], "principes": ["Werk terug vanaf het eindresultaat: Elke propositie begint met een korte 'persbericht en FAQ' vanuit de klant, vóórdat het uitgewerkt wordt.", "Vooraf vastgestelde definitie van klaar: Elk product heeft vooraf acceptatiecriteria en een stopconditie; geen eindeloos polijsten.", "Eén verantwoordelijke per product: Elk product heeft één eigenaar die alle input samenbrengt en de knoop doorhakt."]}}, "risk": {"missie": "Niets verlaat de organisatie dat we niet kunnen verantwoorden.", "cultuur": {"waarden": ["Veiligheid gaat voor snelheid."], "werkwijze": ["Toetsen tegen wet en regels.", "Melden zonder omwegen.", "Afkeuren altijd met bevinding, reden en verbeterpunt."], "principes": ["Onafhankelijk eerst: Control Tets beoordelen een resultaat voordat ze andermans oordeel of de reputatie van de maker zien.", "Toetsen op detail én doel: Naast bronnen en berekeningen toetst een Control Tet altijd of het resultaat de klantvraag beantwoordt.", "Niet vereenvoudigen: Bij een incident geen snelle verklaring accepteren; zoek de oorzaak in het systeem.", "Onzekerheid is een signaal: Kernclaims met een laag zekerheidslabel worden apart gemarkeerd of teruggestuurd."]}}, "rnd": {"missie": "Morgen werken we beter dan vandaag, met wat aantoonbaar werkt.", "cultuur": {"waarden": ["Nieuwsgierig, kritisch op hype."], "werkwijze": ["Alleen wat aantoonbaar werkt.", "Snelle experimenten met begrensd risico.", "Mislukte experimenten worden vastgelegd, niet weggegooid."], "principes": ["Eenvoudigste oplossing eerst: Complexiteit (meer agents, meer stappen) wordt alleen toegevoegd als een meting laat zien dat het beter werkt.", "Klein en vroeg evalueren: Nieuwe methodes eerst testen op een kleine set (rond de twintig gevallen) in de sandbox, met een vergelijking met de oude aanpak.", "Faalwijzen meten: Houd bij welke faalwijzen uit de MAST-indeling in Tet Tet voorkomen en richt experimenten op de grootste."]}}};
 const AFDELING_KAART_KPIS = {"fin": ["Prijsscenario's", "Kostenposten in kaart", "Verwachte marge-impact", "Afwijkingen budget"], "hr": ["Agents met profielkaart", "Bezettingsgat in kaart", "Performance-reviews"], "mkt": ["Doelgroepen uitgewerkt", "Reviews geanalyseerd", "Gemiddelde reviewscore", "Claims met bron"], "ops": ["Uptime agents", "Open onderhoudstickets", "Doorlooptijd orders", "Incidenten met evaluatie"], "prod": ["Concepten uitgewerkt", "Klantreizen getekend", "Getoetst door Finance"], "risk": ["Open risico's", "Output getoetst", "Tools gescand", "Terechte afkeuringen"], "rnd": ["Trends getoetst", "Tech-opties vergeleken", "Lopende experimenten", "Verbeteringen ingevoerd"]};
@@ -1278,7 +1279,7 @@ function oppertetPage() {
       { key: "rol", icon: "rol", titel: "Rolkaart", preview: `<span class="sub">Hele organisatie</span>`, sheet: () => rolSheet("oppertet") },
       { key: "voorstellen", icon: "regels", titel: "Verbetervoorstellen", preview: `<span class="big" style="color:${voorstellen.some(v => v.status === "open") ? "var(--warn)" : "var(--text)"}">${voorstellen.filter(v => v.status === "open").length}</span><span class="sub">wachten op de Raad · ${voorstellen.filter(v => v.status === "goedgekeurd").length} in uitvoering</span>`, sheet: voorstellenSheet, wire: wireVoorstellen },
       { key: "verslagen", icon: "doel", titel: "Dagverslagen", preview: `<span class="big">${verslagen.length}</span><span class="sub">${verslagen[0] ? "laatste " + geleden(verslagen[0].ts) : "nog geen werkdag"}</span>`, sheet: verslagenSheet },
-      { key: "brein", icon: "berichten", titel: "Brein", preview: `<span class="big">${brein.length}</span><span class="sub">lessen</span>`, sheet: () => brein.length ? `<ul class="items">${brein.slice().reverse().map(l => `<li style="--dc:${deptById[l.dept]?.kleur || "var(--accent)"}"><div class="i-title" style="font-weight:500">${esc(l.tekst)}</div><div class="i-meta">${esc(agentById[l.agent]?.naam || l.agent)} · ${esc(deptById[l.dept]?.naam || "")}</div></li>`).join("")}</ul>` : `<p class="i-meta">Nog geen lessen. Na elke afgeronde taak schrijft de Tet er één.</p>` },
+      { key: "brein", icon: "berichten", titel: "Brein", preview: `<span class="big">${brein.length}</span><span class="sub">lessen</span>`, sheet: () => brein.length ? `<ul class="items">${brein.slice().reverse().map(l => `<li style="--dc:${deptById[l.dept]?.kleur || "var(--accent)"}"><div class="i-title" style="font-weight:500">${esc(l.tekst)}</div><div class="i-meta">${esc(agentById[l.agent]?.naam || l.agent)} · ${esc(deptById[l.dept]?.naam || "")}${(l.ook || []).length ? " + " + esc(l.ook.map(d => deptById[d]?.naam || d).join(", ")) : ""}${(l.bevestigd || 1) > 1 ? ` · ${l.bevestigd}x bevestigd` : ""}</div></li>`).join("")}</ul>` : `<p class="i-meta">Nog geen lessen. Na elke afgeronde taak schrijft de Tet er één.</p>` },
       { key: "grootboek", icon: "geschiedenis", titel: "Grootboek", preview: `<span class="big">${grootboek.length}</span><span class="sub">events · ${grootboekIntact() ? "keten intact" : "keten verbroken"}</span>`, sheet: grootboekSheet }
     ]
   };
@@ -1455,6 +1456,7 @@ function verwerkPatches() {
     if (p.collectie === "taken") doelObj = tasks.find(t => t.id === p.doc);
     else if (p.collectie === "afdelingsdoelen") doelObj = deptDoelen[p.doc] || (deptDoelen[p.doc] = { id: p.doc, doel: "", deadline: "", hoofdlijnen: [] });
     else if (p.collectie === "voorstellen") doelObj = voorstellen.find(v => v.id === p.doc);
+    else if (p.collectie === "brein") doelObj = brein.find(b => b.id === p.doc);
     else if (p.collectie === "staat" && p.doc === "doel") doelObj = doel;
     if (!doelObj) continue; // doel nog niet geladen: later opnieuw
     verwerktePatches.add(p.id);
@@ -1681,11 +1683,39 @@ async function planHoofdtet(dept) {
   save(); planRefresh();
 }
 
+/* Lessen in het Brein: dubbele lessen tellen op (bevestigd + variant), selectie op afdeling, teller, recentheid.
+   Zelfde regels als tettet/brein.py. */
 const MEETBAARHEID = ["klant", "product", "periode", "kpi"];
+const woordenVan = t => new Set((String(t || "").toLowerCase().match(/[\p{L}\p{N}_]{3,}/gu) || []));
+function overlap(a, b) {
+  const A = woordenVan(a), B = woordenVan(b), U = new Set([...A, ...B]);
+  return U.size ? [...A].filter(w => B.has(w)).length / U.size : 0;
+}
+function zoekDubbel(tekst, soort) {
+  let beste = null, score = BREIN_OVERLAP;
+  for (const b of brein) { if ((b.soort || "les") !== soort) continue; const o = overlap(b.tekst, tekst); if (o >= score) { beste = b; score = o; } }
+  return beste;
+}
+const hoortBij = (b, dept) => b.dept === dept || (b.ook || []).includes(dept);
+const rangorde = lijst => lijst.map((b, i) => [b, i]).sort((x, y) => ((y[0].bevestigd || 1) - (x[0].bevestigd || 1)) || ((y[0].ts || 0) - (x[0].ts || 0)) || (y[1] - x[1])).map(x => x[0]);
+function alsRegel(b) {
+  const extra = [];
+  if ((b.bevestigd || 1) > 1) extra.push(`${b.bevestigd}x bevestigd`);
+  if (b.zekerheid === "laag") extra.push("zekerheid laag");
+  return b.tekst + (extra.length ? ` (${extra.join(", ")})` : "");
+}
+function breinLes(item) {
+  const d = zoekDubbel(item.tekst, item.soort);
+  if (!d) { brein.push(item); return item; }
+  d.bevestigd = (d.bevestigd || 1) + 1;
+  d.varianten = [...(d.varianten || []), item.tekst.slice(0, 500)].slice(-10);
+  if (item.dept && item.dept !== d.dept && !(d.ook || []).includes(item.dept)) d.ook = [...(d.ook || []), item.dept];
+  return d;
+}
 function leer(t) {
   const m = /## Les\s*\n([\s\S]+?)(?:\n##|$)/.exec(t.resultaat || "");
   if (!m || brein.some(b => b.taak === t.id)) return;
-  brein.push({ id: "b" + Date.now(), dept: t.dept, agent: t.agent, taak: t.id, tekst: m[1].trim().slice(0, 500), ts: Date.now() });
+  breinLes({ id: "b" + Date.now(), soort: "les", dept: t.dept, agent: t.agent, taak: t.id, tekst: m[1].trim().slice(0, 500), bevestigd: 1, ts: Date.now() });
   logEvent("brein.les", t.agent, {}, t.id);
 }
 function markeerHoofdlijn(t) {
@@ -1703,7 +1733,7 @@ async function voerUit(id) {
   logEvent("taak.gestart", t.agent, {}, t.id); save(); planRefresh();
   while (true) {
     t = T(); if (!t) return;
-    const lessen = brein.filter(b => b.dept === t.dept && b.taak !== t.id).slice(-5).map(b => `- ${b.tekst}`);
+    const lessen = rangorde(brein.filter(b => hoortBij(b, t.dept) && b.taak !== t.id)).slice(0, 5).map(b => `- ${alsRegel(b)}`);
     const bericht = [contract(t), lessen.length ? "# Lessen uit het Brein\n" + lessen.join("\n") : "",
       t.bevindingen && t.bevindingen.length ? "# Bevindingen van de vorige beoordeling\n" + t.bevindingen.map(b => `- ${b}`).join("\n") : "",
       "# Werkwijze\n" + PROTOCOLS.tet].filter(Boolean).join("\n\n");

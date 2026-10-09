@@ -85,6 +85,8 @@ class KantoorStaat:
             doel = self.afdelingsdoelen.setdefault(doc, {"id": doc, "doel": "", "deadline": "", "hoofdlijnen": []})
         elif c == "voorstellen":
             doel = self.voorstellen.get(doc)
+        elif c == "brein":
+            doel = next((b for b in self.brein if b.get("id") == doc), None)
         elif c == "staat" and doc == "doel":
             doel = self.doel
         if doel is not None and p.get("bijgewerkt", 0) >= doel.get("bijgewerkt", 0):
@@ -141,7 +143,8 @@ class Schrijver:
         st = self.staat
         doel = {"taken": st.taken.get(doc), "voorstellen": st.voorstellen.get(doc),
                 "afdelingsdoelen": st.afdelingsdoelen.setdefault(doc, {"id": doc, "doel": "", "deadline": "", "hoofdlijnen": []}) if collectie == "afdelingsdoelen" else None,
-                "staat": st.doel if doc == "doel" else None}.get(collectie)
+                "staat": st.doel if doc == "doel" else None,
+                "brein": next((b for b in st.brein if b.get("id") == doc), None) if collectie == "brein" else None}.get(collectie)
         if doel is not None:
             doel.update(velden)
             doel["bijgewerkt"] = t

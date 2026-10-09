@@ -49,6 +49,7 @@ def blok(org: Organisatie) -> str:
     regels = [
         "/* @@KAARTEN:BEGIN – gegenereerd door scripts/bouw_kantoor.py uit tet-tet/kaarten/. Niet met de hand wijzigen. */",
         f"const MAX_AFKEURINGEN = {keten.laad_instellingen()['taken']['max_afkeuringen']};",
+        f"const BREIN_OVERLAP = {float(keten.laad_instellingen().get('brein', {}).get('overlap_drempel', 0.6))};",
         f"const CULTUUR_ORG = {J(cultuur_org)};",
         f"const DEPT_KAARTEN = {J(afd)};",
         f"const AFDELING_KAART_KPIS = {J(kpis)};",

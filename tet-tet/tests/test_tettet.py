@@ -147,7 +147,8 @@ class KetenTest(unittest.TestCase):
         self.assertTrue(all(t.control_tet in {"risk-c1", "risk-c2"} for t in taken))
         self.assertEqual(k.gb.controleer(), [])
         self.assertEqual(len(k.gb.zoek(type="beleid.overtreding")), 0)
-        self.assertEqual(sum(1 for i in k.brein.items if i["soort"] == "les"), len(taken))
+        # Elke taak leverde een les; lessen die op elkaar lijken zijn samengevoegd (teller 'bevestigd').
+        self.assertEqual(sum(i.get("bevestigd", 1) for i in k.brein.items if i["soort"] == "les"), len(taken))
         self.assertIn("Grootboek intact: ja", verslag)
         aanroep = k.gb.zoek(type="model.aanroep", agent="fin-1")[0]
         self.assertIn("cultuur-fin", aanroep["kaartversies"])
@@ -204,6 +205,28 @@ class KetenTest(unittest.TestCase):
     def test_geen_doelstelling_geen_plan(self):
         with self.assertRaises(RuntimeError):
             Kantoor(mock=True).plan_oppertet()
+
+
+class BreinTest(unittest.TestCase):
+    def test_dubbele_les_wordt_bevestigd_met_variant(self):
+        from tettet.brein import Brein
+        b = Brein()
+        b.schrijf("les", "fin-1", "fin", "De doelstelling is niet meetbaar, eerst terugleggen bij de opdrachtgever.")
+        b.schrijf("les", "mkt-1", "mkt", "De doelstelling is niet meetbaar: eerst terugleggen bij de opdrachtgever!")
+        b.schrijf("les", "fin-2", "fin", "Bronnen per kernclaim noteren voordat je rekent.")
+        self.assertEqual(len(b.items), 2)
+        eerste = b.items[0]
+        self.assertEqual(eerste["bevestigd"], 2)
+        self.assertEqual(eerste["ook"], ["mkt"])
+        self.assertIn("opdrachtgever!", eerste["varianten"][0])   # origineel bewaard, terug te draaien
+        # mkt ziet de samengevoegde les ook; vaker bevestigd gaat voor recenter
+        self.assertEqual(b.lessen_voor("mkt")[0]["id"], eerste["id"])
+        self.assertEqual(b.lessen_voor("fin")[0]["id"], eerste["id"])
+
+    def test_verschillende_lessen_blijven_apart(self):
+        from tettet.brein import overlap
+        self.assertLess(overlap("Klein beginnen met één afdeling.", "Bronnen per kernclaim noteren."), 0.6)
+        self.assertEqual(overlap("a b", ""), 0.0)
 
 
 class AnthropicClientTest(unittest.TestCase):

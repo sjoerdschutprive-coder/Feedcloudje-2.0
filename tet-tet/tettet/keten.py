@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 
 from . import BASIS
 from .beleid import Beleidsmotor, Budget, BudgetOverschreden, Geweigerd
-from .brein import Brein
+from .brein import Brein, als_regel
 from .grootboek import Grootboek
 from .kaarten import Organisatie
 from .runtime import Agent, laad_instellingen, lees_json, maak_client
@@ -98,7 +98,8 @@ class Kantoor:
         self.org = org or Organisatie()
         opslag = self.inst["opslag"]
         self.gb = Grootboek(BASIS / opslag["grootboek"] if opslaan else None)
-        self.brein = Brein(BASIS / opslag["brein"] if opslaan else None)
+        self.brein = Brein(BASIS / opslag["brein"] if opslaan else None,
+                           drempel=float(self.inst.get("brein", {}).get("overlap_drempel", 0.6)))
         self.markt = Takenmarkt(self.gb, self.inst["taken"]["max_afkeuringen"])
         self.beleid = Beleidsmotor(self.org, self.gb)
         self.budget = Budget(self.gb)
@@ -184,7 +185,7 @@ class Kantoor:
             lessen = self.brein.lessen_voor(taak.eigenaar)
             bericht = "\n\n".join(filter(None, [
                 taak.contract(),
-                "# Lessen uit het Brein\n" + "\n".join(f"- {l['tekst']}" for l in lessen) if lessen else "",
+                "# Lessen uit het Brein\n" + "\n".join(f"- {als_regel(l)}" for l in lessen) if lessen else "",
                 "# Bevindingen van de vorige beoordeling\n" + "\n".join(f"- {b}" for b in taak.bevindingen) if taak.bevindingen else "",
                 "# Werkwijze\n" + PROTOCOL_TET]))
             try:

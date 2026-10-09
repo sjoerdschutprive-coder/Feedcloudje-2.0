@@ -126,6 +126,21 @@ class WerkdagTest(unittest.TestCase):
         soorten = [s["soort"] for s in Werkdag(self.werk).volgende(3)["stappen"]]
         self.assertNotIn("oppertet_plan", soorten)
 
+    def test_brein_patch_bij_dubbele_les(self):
+        Werkdag.start(self.dump, self.werk)
+        wd = Werkdag(self.werk)
+        t = wd.staat.taken["t1"]
+        t["resultaat"] = "## Les\nKlein beginnen met de criteria."
+        wd._leer(t)
+        wd._brein_les({"id": "bx", "soort": "les", "dept": "mkt", "agent": "mkt-1", "taak": "t9", "tekst": "Klein beginnen met de criteria!", "bevestigd": 1, "ts": 1})
+        self.assertEqual(len(wd.staat.brein), 1)
+        self.assertEqual(wd.staat.brein[0]["bevestigd"], 2)
+        self.assertEqual(wd.staat.brein[0]["ook"], ["mkt"])
+        uit = wd.klaar_met({})
+        regels = [r for b in uit["batches"] for r in b]
+        patch = [json.loads(pathlib.Path(r["file_path"]).read_text()) for r in regels if r["collection"] == "patches"]
+        self.assertTrue(any(p["collectie"] == "brein" and p["velden"]["bevestigd"] == 2 for p in patch))
+
     def test_dump_met_patches_laden(self):
         st = KantoorStaat.uit_dump(self.dump)
         self.assertEqual(st.taken["t2"]["title"], "Risk-taak (gepatcht)")

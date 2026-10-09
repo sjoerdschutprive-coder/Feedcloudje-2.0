@@ -19,6 +19,7 @@ import re
 import time
 
 from . import keten
+from .brein import als_regel, bevestig, hoort_bij, rangorde, zoek_dubbel
 from .kaarten import Organisatie
 from .kantoordb import KantoorStaat, Schrijver, in_batches, nu_ms
 from .runtime import laad_instellingen, lees_json
@@ -34,7 +35,9 @@ class Werkdag:
     def __init__(self, werk: pathlib.Path, org: Organisatie | None = None):
         self.werk = werk
         self.org = org or Organisatie()
-        self.max_afkeuringen = laad_instellingen()["taken"]["max_afkeuringen"]
+        inst = laad_instellingen()
+        self.max_afkeuringen = inst["taken"]["max_afkeuringen"]
+        self.drempel = float(inst.get("brein", {}).get("overlap_drempel", 0.6))
         self.staat = KantoorStaat.uit_json(json.loads((werk / "staat.json").read_text(encoding="utf-8")))
         self.v = json.loads((werk / "voortgang.json").read_text(encoding="utf-8"))
         self.s = Schrijver(werk, self.staat)
@@ -213,7 +216,7 @@ class Werkdag:
         if soort == "uitvoeren":
             t = st.taken[stap["taak"]]
             if stap["fase"] == "tet":
-                lessen = [b["tekst"] for b in st.brein if b.get("dept") == t["dept"] and b.get("taak") != t["id"]][-5:]
+                lessen = [als_regel(b) for b in rangorde([b for b in st.brein if hoort_bij(b, t["dept"], "dept") and b.get("taak") != t["id"]])[:5]]
                 delen = [self._contract(t)]
                 if lessen:
                     delen.append("# Lessen uit het Brein\n" + "\n".join(f"- {x}" for x in lessen))
@@ -403,13 +406,24 @@ class Werkdag:
         stap["fase"], stap["poging"] = "tet", stap.get("poging", 1) + 1
         return {"uitkomst": "afgekeurd", "klaar": False, "volgende": "prompt"}
 
+    def _brein_les(self, item: dict) -> dict:
+        """Schrijft een les of incident, of telt hem op bij een bestaande les die erop lijkt."""
+        dubbel = zoek_dubbel(self.staat.brein, item["tekst"], item["soort"], self.drempel)
+        if dubbel:
+            bevestig(dubbel, item["tekst"], item["dept"], "dept")
+            self.s.patch("brein", dubbel["id"], {k: dubbel[k] for k in ("bevestigd", "varianten", "ook") if k in dubbel})
+            return dubbel
+        self.staat.brein.append(item)
+        self.s.nieuw("brein", item["id"], item)
+        return item
+
     def _leer(self, t):
         m = re.search(r"## Les\s*\n(.+?)(?:\n##|\Z)", t.get("resultaat") or "", re.S)
         if m and not any(b.get("taak") == t["id"] for b in self.staat.brein):
-            b = {"id": f"b{nu_ms()}", "dept": t["dept"], "agent": t["agent"], "taak": t["id"], "tekst": m.group(1).strip()[:500], "ts": nu_ms()}
-            self.staat.brein.append(b)
-            self.s.nieuw("brein", b["id"], b)
+            self._brein_les({"id": f"b{nu_ms()}", "soort": "les", "dept": t["dept"], "agent": t["agent"], "taak": t["id"],
+                             "tekst": m.group(1).strip()[:500], "bevestigd": 1, "ts": nu_ms()})
             self.s.event("brein.les", t["agent"], {}, t["id"])
+
 
     def _markeer_hoofdlijn(self, t):
         ad = self.staat.afdelingsdoelen.get(t["dept"])
