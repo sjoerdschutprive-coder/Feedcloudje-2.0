@@ -17,7 +17,7 @@ Tet Tet is een platform waarop AI-agents zelfstandig werken en samen één centr
 
 Bij tegenstrijdigheid wint de hogere bron.
 
-1. `kaarten/` (organisatiekaart v1.3.0): cultuur-, profiel-, rol- en toegangskaarten van alle 31 agents (22 ingezet, 9 `inzet: gepland`, waaronder de Assistent-Oppertet). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
+1. `kaarten/` (organisatiekaart v1.3.0): cultuur-, profiel-, rol- en toegangskaarten van alle 31 agents (alle 31 ingezet sinds 9 oktober 2026, ook de Assistent-Oppertet). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
 2. `WHITEPAPER.md`: architectuur, taakcontract, feedbackloops, governance, autonomieniveaus, KPI's en de bouwstappen. **De pilotcasus (hotelketen) en bijlagen A–C zijn verouderde voorbeelden**: gebruik de kaarten in `kaarten/` en bouw niets dat aan die casus vastzit.
 3. `kantoor/index.html`: het Tet Tet-kantoor, de referentie voor design en interactie van de interface (isometrisch kantoor, afdelingseilanden, doelstellingenbord, takenpaneel, kaarten per agent). De data in dat bestand is afgeleid van de kaarten.
 4. `ONDERZOEK.md`: onderbouwing van de `werkstijl`-velden en `edge_principes`.
@@ -59,7 +59,7 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 ### Directie (zie ONDERZOEK.md, 'Een extra laag versnelt, filtert niet')
 
 - **Lijn**: Raad → Oppertet → Assistent-Oppertet (`oppertet-a`, rol `assistent_oppertet`) → Hoofdtets → Tets. `niveau` en `voorbehouden` in de rolkaarten; de validator bewaakt rangorde, cirkels, één assistent en toegang binnen die van de Oppertet.
-- **Fallback**: de assistent staat op `inzet: gepland`. Dan werkt alles zoals daarvoor (getest). Ingezet: `Organisatie.leidinggevende` laat Hoofdtets aan hem rapporteren.
+- **Inzet**: sinds 9 oktober 2026 ingezet; `Organisatie.leidinggevende` laat Hoofdtets aan hem rapporteren. **Fallback**: zet hem op `inzet: gepland` en alles werkt zoals daarvoor (getest).
 - **Escalaties**: Hoofdtet → assistent → Oppertet → Raad (`Beleidsmotor.escaleer`, `directie.escalatieroute`, stap `escalatie_triage`). Soorten uit `directe_lijn` (beleid.yaml) gaan rechtstreeks naar de Oppertet met een kopie aan de assistent. Het origineel gaat altijd ongewijzigd mee; de samenvatting komt erbij.
 - **Besluiten**: MT-besluiten in het register (Brein `register`), doorvertaald als `opdracht` per afdeling, dagelijks opgevolgd. Meting vóór/na (`directie.meting`, ook op de Oppertet-pagina).
 - **Kantoor**: Oppertet en Hoofdtets zitten in afgesloten glazen kantoortjes binnen hun eigen ruimte; de assistent zit open in de directie bij de deur. Wie op bezoek gaat (`plek: kantoor-<id>`), loopt door de deur.

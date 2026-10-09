@@ -2,11 +2,11 @@
 # Chief of staff van de Oppertet: hoort bij de directie (afdeling centraal), staat boven de Hoofdtets.
 # Erft cultuur van cultuur-tet-tet. Mandaat kan rechten alleen inperken, nooit uitbreiden:
 # de toegang is een deelverzameling van die van de Oppertet (zelfde toegangskaart, extra ingeperkt).
-# inzet: gepland – de Raad activeert hem na een meting vóór en na (principe 'Eenvoudigste oplossing eerst').
-# Zolang hij gepland is, rapporteren de Hoofdtets rechtstreeks aan de Oppertet en werkt alles zoals daarvoor.
+# inzet: actief – geactiveerd door de Raad op 2026-10-09.
+# Als hij weer op gepland gaat, rapporteren de Hoofdtets rechtstreeks aan de Oppertet en werkt alles zoals daarvoor.
 id: oppertet-a
 type: profielkaart
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -15,7 +15,7 @@ naam: Assistent-Oppertet
 rol: assistent_oppertet
 rolkaart: rol-assistent-oppertet
 afdeling: centraal
-inzet: gepland
+inzet: actief
 erft_van:
   - cultuur-tet-tet
 rapporteert_aan: oppertet

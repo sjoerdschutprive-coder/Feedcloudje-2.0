@@ -10,7 +10,7 @@ tet-tet/
     schema/kaarten.schema.json   # JSON Schema voor alle kaarttypes
     organisatie/tet-tet.yaml     # cultuurkaart organisatie (laag 1)
     afdelingen/<afdeling>.yaml   # 7 cultuurkaarten afdeling (laag 2)
-    agents/<agent-id>.yaml       # 31 profielkaarten (laag 3); 9 met 'inzet: gepland', waaronder de Assistent-Oppertet
+    agents/<agent-id>.yaml       # 31 profielkaarten (laag 3); allemaal ingezet, ook de Assistent-Oppertet
     rollen/<rol>.yaml            # 5 rolkaarten: wat een rol mag en waar hij staat in de lijn (`niveau`)
     toegang/<afdeling>.yaml      # 8 toegangskaarten: tools en data per afdeling, plus centraal
   config/                        # instellingen (model, budget) en harde grenzen (beleid.yaml)
@@ -51,7 +51,7 @@ Raad
 
 - `niveau` in de rolkaart legt de rangorde vast (1 = Oppertet). De validator controleert dat iedereen aan een hoger niveau rapporteert, dat er geen cirkels zijn, dat er hoogstens één Assistent-Oppertet is met toegang binnen die van de Oppertet, en dat geen rol lager in de lijn een handeling heeft die `voorbehouden` is aan een hogere rol.
 - De Hoofdtets houden `rapporteert_aan: oppertet` in hun kaart. Zodra de Assistent-Oppertet is ingezet, rapporteren ze aan hem (`Organisatie.leidinggevende`), met een **directe lijn** naar de Oppertet voor risico's, integriteit en onenigheid (`directe_lijn` in `config/beleid.yaml`).
-- Activeren: zet `inzet: actief` in `kaarten/agents/oppertet-a.yaml`, verhoog de versie, draai de validator en `scripts/bouw_kantoor.py`. Op de Oppertet-pagina staat de nulmeting om vóór en na te vergelijken.
+- De assistent is ingezet sinds 9 oktober 2026. Terug naar de oude lijn: zet `inzet: gepland` in `kaarten/agents/oppertet-a.yaml`, verhoog de versie, draai de validator en `scripts/bouw_kantoor.py`. De Oppertet-pagina vergelijkt vóór en na het inzetten.
 
 ## Kaarten toevoegen of wijzigen
 

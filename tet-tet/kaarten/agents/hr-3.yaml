@@ -1,9 +1,9 @@
 # Profielkaart (laag 3) – Cultuur-Tet
 # Erft cultuur van cultuur-tet-tet, cultuur-hr. Mandaat kan rechten alleen inperken, nooit uitbreiden.
-# inzet: gepland – kaart klaar, de Raad activeert de agent na een meting (zie ONDERZOEK.md, 'Afdelingsomvang').
+# inzet: actief – geactiveerd door de Raad op 2026-10-09.
 id: hr-3
 type: profielkaart
-versie: 1.0.0
+versie: 1.1.0
 status: concept
 goedgekeurd_door: raad
 geldig_vanaf: '2026-10-09'
@@ -12,7 +12,7 @@ naam: Cultuur-Tet
 rol: tet
 rolkaart: rol-tet
 afdeling: hr
-inzet: gepland
+inzet: actief
 erft_van:
 - cultuur-tet-tet
 - cultuur-hr

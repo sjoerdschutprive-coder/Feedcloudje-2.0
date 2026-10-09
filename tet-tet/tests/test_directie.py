@@ -1,7 +1,7 @@
 """Tests voor de directie: de Assistent-Oppertet, de escalatieroute met directe lijn, het besluitenregister en de fallback.
 
-Alles in mockmodus, zonder API. De assistent staat in de kaarten op `inzet: gepland`; voor de tests met een actieve
-assistent wordt een kopie van de kaarten gemaakt waarin hij is ingezet.
+Alles in mockmodus, zonder API. De assistent is ingezet (`inzet: actief`); voor de fallback-tests wordt een kopie van de
+kaarten gemaakt waarin hij weer op `inzet: gepland` staat.
 """
 import datetime as dt
 import json
@@ -21,22 +21,22 @@ from tettet.validatie import valideer_lijn
 from tettet.werkdag import Werkdag
 from tests.test_samenwerking import antwoord as antwoord_samen, pas_batches_toe, schrijf_dump
 
-ORG = Organisatie()
+ORG_ACTIEF = Organisatie()
 ASS = "oppertet-a"
 ORIGINEEL = "Leverancier X levert pas in week 50; dat raakt de klantbelofte. Origineel-7731."
 UNIEK = "Alleen-wij-weten-{d}: de klant wil eigenlijk iets anders"
 
 
-def org_met_assistent() -> Organisatie:
-    """Kopie van de kaarten met de Assistent-Oppertet ingezet."""
+def org_zonder_assistent() -> Organisatie:
+    """Kopie van de kaarten met de Assistent-Oppertet op gepland (fallback)."""
     tmp = pathlib.Path(tempfile.mkdtemp())
     shutil.copytree(BASIS / "kaarten", tmp / "kaarten")
     pad = tmp / "kaarten" / "agents" / f"{ASS}.yaml"
-    pad.write_text(pad.read_text(encoding="utf-8").replace("inzet: gepland", "inzet: actief"), encoding="utf-8")
+    pad.write_text(pad.read_text(encoding="utf-8").replace("\ninzet: actief", "\ninzet: gepland"), encoding="utf-8")
     return Organisatie(tmp / "kaarten")
 
 
-ORG_ACTIEF = org_met_assistent()
+ORG = org_zonder_assistent()
 
 
 def antwoord(stap: dict, prompt: str, escalatie_soort: str = "operationeel", assistent_handelt_af: bool = False) -> str:
@@ -110,7 +110,8 @@ class KaartenEnLijnTest(unittest.TestCase):
     def test_kaart_gepland_en_toegang_deelverzameling(self):
         a = ORG.agent(ASS)
         self.assertEqual(a["rol"], "assistent_oppertet")
-        self.assertEqual(a.get("inzet"), "gepland")
+        self.assertEqual(ORG_ACTIEF.agent(ASS).get("inzet"), "actief")
+        self.assertEqual(ORG_ACTIEF.assistent()["id"], ASS)
         self.assertIsNone(ORG.assistent())
         t, top = ORG.effectieve_toegang(ASS), ORG.effectieve_toegang("oppertet")
         for bron, recht in t.bronnen.items():
