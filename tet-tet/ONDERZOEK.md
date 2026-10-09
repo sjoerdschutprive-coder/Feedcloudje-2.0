@@ -46,6 +46,20 @@ De `bron`-velden in de kaarten verwijzen naar de ids hieronder. Per bron: wat he
 | Cultuurmeting | Energie (interacties), betrokkenheid (gelijke spreektijd), verkenning (contact buiten de eigen afdeling) en veiligheid (zelf gemelde fouten). | `pentland-teams`, `project-aristotle` |
 | Eenvoudigste oplossing eerst | Complexiteit alleen toevoegen als metingen dat rechtvaardigen. | `anthropic-effectieve-agents` |
 
+## Kenmerken van de HR-afdeling
+
+| Onderdeel | Ontwerpkeuze | Bron |
+| --- | --- | --- |
+| Structuur | 1 Hoofdtet + 3 Tets: de Hoofdtet is businesspartner, Prestatie-Tet en Governance-Tet zijn expertisecentra, Personeels-Tet is shared services. Een kleine organisatie heeft geen aparte pijlers nodig. | `ulrich-hr` |
+| Check-in | Wekelijks, kort, tussen Hoofdtet en Tet. Over de komende week, niet over een cijfer. | `deloitte-checkins` |
+| Prestatieprofiel | Meerdere maten per agent (kwaliteit, betrouwbaarheid, veiligheid, efficiëntie, samenwerking, stijl), met intervallen en een minimale steekproef. Geen totaalscore, geen ranglijst, geen automatische gevolgen. | `rater-effect`, `surrogatie` |
+| Beoordelaars | Blind (geen naam, afdeling of eerdere scores), lengte telt niet mee, bij paarsgewijze vergelijking de volgorde wisselen; een steekproef voor de Raad houdt de beoordelaar eerlijk. | `llm-rechter` |
+| Betrouwbaarheid | pass^k op een vaste ijkset per rol: dezelfde taak k keer goed, niet één keer. | `pass-k` |
+| Evaluatiegesprek | Maandelijks: eerst zelfreflectie (zonder de cijfers te zien), dan de snapshot, dan toekomstvragen van de Hoofdtet. Uitkomst: één prestatiedoel en één leerdoel met datum en actieplan. Feedback alleen over de taak. | `doelen-locke-latham`, `feedback-interventie`, `deloitte-checkins` |
+| Kalibratie | Per kwartaal leggen de Hoofdtets hun oordelen naast elkaar om verschillen in strengheid te corrigeren; eerst ieder apart, dan bespreken. | `rater-effect` |
+| Fouten melden | Zelf gemelde fouten tellen positief; elke grensovertreding krijgt binnen een werkdag een blameless incidentevaluatie. | `psychologische-veiligheid`, `google-sre-postmortems` |
+| Handboek | Eén handboek (werkwijze, schrijfstijl, woordenlijst, huisstijl, mappenstructuur) is de enige bron van waarheid; documentatie volgt de vier soorten van Diátaxis. | `handboek-eerst`, `diataxis` |
+
 ## Bronnen
 
 - `mast`: Cemri e.a., *Why Do Multi-Agent LLM Systems Fail?* (NeurIPS 2025). https://arxiv.org/abs/2503.13657
@@ -70,3 +84,14 @@ De `bron`-velden in de kaarten verwijzen naar de ids hieronder. Per bron: wat he
 - `schaal-agents`: Google Research en MIT, *Towards a Science of Scaling Agent Systems* (2025). https://research.google/blog/towards-a-science-of-scaling-agent-systems-when-and-why-agent-systems-work/
 - `teamomvang`: Hackman & Vidmar (1970), samengevat in GWU-gids teameffectiviteit. https://guides.himmelfarb.gwu.edu/teameffectiveness/structural-factors
 - `geheimen-multi-agent`: *Got a Secret? LLM Agents Can't Keep It: Evaluating Privacy in Multi-Agent Systems* (2026). https://arxiv.org/abs/2605.27766
+- `deloitte-checkins`: Buckingham & Goodall, *Reinventing Performance Management* (HBR 2015). https://hbr.org/2015/04/reinventing-performance-management
+- `rater-effect`: Scullen, Mount & Goff, *Understanding the Latent Structure of Job Performance Ratings* (Journal of Applied Psychology 2000). https://doi.org/10.1037/0021-9010.85.6.956
+- `feedback-interventie`: Kluger & DeNisi, *The Effects of Feedback Interventions on Performance* (Psychological Bulletin 1996). https://doi.org/10.1037/0033-2909.119.2.254
+- `surrogatie`: Harris & Tayler, *Don't Let Metrics Undermine Your Business* (HBR 2019). https://hbr.org/2019/09/dont-let-metrics-undermine-your-business
+- `doelen-locke-latham`: Locke & Latham, *Building a Practically Useful Theory of Goal Setting and Task Motivation* (American Psychologist 2002). https://doi.org/10.1037/0003-066X.57.9.705
+- `psychologische-veiligheid`: Edmondson, *Psychological Safety and Learning Behavior in Work Teams* (Administrative Science Quarterly 1999). https://doi.org/10.2307/2666999
+- `llm-rechter`: Zheng e.a., *Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena* (NeurIPS 2023). https://arxiv.org/abs/2306.05685
+- `pass-k`: Yao e.a., *τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains* (2024). https://arxiv.org/abs/2406.12045
+- `ulrich-hr`: Ulrich; Ulrich & Brockbank, *The HR Value Proposition* (2005), samengevat door HRworks. https://www.hrworks.de/news/dave-ulrich-modell-was-das-3-saeulen-modell-fuer-hr-bedeutet/
+- `handboek-eerst`: GitLab Handbook, *Handbook-first*. https://handbook.gitlab.com/handbook/company/culture/all-remote/handbook-first/
+- `diataxis`: Procida, *Diátaxis*. https://diataxis.fr/

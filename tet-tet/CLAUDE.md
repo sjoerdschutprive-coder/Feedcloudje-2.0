@@ -16,7 +16,7 @@ Tet Tet is een platform waarop AI-agents zelfstandig werken en samen één centr
 
 Bij tegenstrijdigheid wint de hogere bron.
 
-1. `kaarten/` (organisatiekaart v1.2.0): cultuur-, profiel-, rol- en toegangskaarten van alle 30 agents (22 ingezet, 8 `inzet: gepland`). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
+1. `kaarten/` (organisatiekaart v1.3.0): cultuur-, profiel-, rol- en toegangskaarten van alle 30 agents (22 ingezet, 8 `inzet: gepland`). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
 2. `WHITEPAPER.md`: architectuur, taakcontract, feedbackloops, governance, autonomieniveaus, KPI's en de bouwstappen. **De pilotcasus (hotelketen) en bijlagen A–C zijn verouderde voorbeelden**: gebruik de kaarten in `kaarten/` en bouw niets dat aan die casus vastzit.
 3. `kantoor/index.html`: het Tet Tet-kantoor, de referentie voor design en interactie van de interface (isometrisch kantoor, afdelingseilanden, doelstellingenbord, takenpaneel, kaarten per agent). De data in dat bestand is afgeleid van de kaarten.
 4. `ONDERZOEK.md`: onderbouwing van de `werkstijl`-velden en `edge_principes`.
