@@ -13,9 +13,11 @@ from __future__ import annotations
 
 import json
 import pathlib
+import random
 import time
 
-COLLECTIES = ["staat", "afdelingsdoelen", "taken", "berichten", "brein", "voorstellen", "grootboek", "activiteit", "patches", "verslagen"]
+COLLECTIES = ["staat", "afdelingsdoelen", "taken", "berichten", "brein", "voorstellen", "grootboek", "activiteit", "patches", "verslagen",
+              "overleggen", "kantine"]
 
 
 def nu_ms() -> int:
@@ -50,6 +52,8 @@ class KantoorStaat:
         self.activiteit: list[dict] = []
         self.grootboek: list[dict] = []
         self.patches: list[dict] = []
+        self.overleggen: list[dict] = []   # alleen-toevoegen: huddles, voorbereidingen, memo's, MT-verslagen, fasen
+        self.kantine: list[dict] = []      # alleen-toevoegen: kantinegesprekken (geblokkeerde beurten zonder inhoud)
 
     # ---------- laden ----------
     @classmethod
@@ -65,6 +69,8 @@ class KantoorStaat:
         st.brein = sorted(lees("brein").values(), key=lambda b: b.get("ts", 0))
         st.voorstellen = {k: {**v, "id": v.get("id", k)} for k, v in lees("voorstellen").items()}
         st.verslagen = sorted(lees("verslagen").values(), key=lambda v: v.get("ts", 0))
+        st.overleggen = sorted(({**v, "id": v.get("id", k)} for k, v in lees("overleggen").items()), key=lambda o: o.get("ts", 0))
+        st.kantine = sorted(({**v, "id": v.get("id", k)} for k, v in lees("kantine").items()), key=lambda o: o.get("ts", 0))
         st.activiteit = sorted(({**v, "id": v.get("id", k)} for k, v in lees("activiteit").items()), key=lambda a: a.get("ts", 0))
         events = {}
         for blok in lees("grootboek").values():
@@ -122,7 +128,8 @@ class Schrijver:
         self.werk, self.staat = werk, staat
         self.pad_meta = werk / "schrijver.json"
         meta = json.loads(self.pad_meta.read_text()) if self.pad_meta.exists() else {}
-        self.bron = meta.get("bron") or bron or "werkdag-" + time.strftime("%Y%m%d%H%M")
+        # Uniek per run, ook als twee runs in dezelfde minuut starten (anders botsen document-ids van patches en activiteit).
+        self.bron = meta.get("bron") or bron or "werkdag-" + time.strftime("%Y%m%d%H%M") + "-" + format(random.getrandbits(16), "04x")
         self.n, self.vorige = meta.get("n", 0), meta.get("vorige", "")
         self.teller = meta.get("teller", 0)
         self.blok = meta.get("blok", 0)
@@ -149,8 +156,11 @@ class Schrijver:
             doel.update(velden)
             doel["bijgewerkt"] = t
 
-    def activiteit(self, agent: str, status: str, tekst: str, taak: str | None = None) -> None:
+    def activiteit(self, agent: str, status: str, tekst: str, taak: str | None = None, plek: str | None = None) -> None:
+        """`plek` laat de agent in het kantoor lopen: bureau (standaard), kantine, vergaderzaal, overleghoek-<afdeling>."""
         a = {"id": self._id("a"), "agent": agent, "status": status, "tekst": str(tekst)[:160], "taak": taak, "ts": nu_ms(), "bron": self.bron}
+        if plek:
+            a["plek"] = plek
         self.nieuw("activiteit", a["id"], a)
         self.staat.activiteit.append(a)
 

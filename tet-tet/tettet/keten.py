@@ -64,7 +64,16 @@ PROTOCOL_TET = """Voer de taak uit binnen je toegang. Antwoord in vier delen:
 ## Zekerheid
 <hoog, middel of laag, met de reden als het niet hoog is>
 ## Les
-<één concrete les voor de volgende keer>"""
+<één concrete les voor de volgende keer>
+Werk vanuit het Brein: gebruik de lessen, de wie-weet-wat-gids en de open vragen hierboven. Voeg zo nodig deze blokken toe (weglaten mag):
+## Bronnen
+<de bronnen uit jouw toegang waarop dit werk steunt, bijvoorbeeld: boekhouding, klantsysteem; alleen wie die bronnen ook mag zien, ziet je les>
+## Vragen aan het Brein
+- [aan: <afdeling-id of agent-id>] <vraag die een collega kan beantwoorden>
+## Signalen
+- [voor: <afdeling-id>, <afdeling-id>] <bevinding die andere afdelingen raakt>
+## Antwoorden
+- [<vraag-id>] <antwoord op een open vraag uit het Brein>"""
 
 PROTOCOL_CONTROLTET = """Beoordeel het resultaat zelfstandig, op twee niveaus: de details (criteria, bronnen, berekeningen) en het doel (beantwoordt het de opdracht?). Toets ook op de waarden uit de cultuurkaarten.
 Keur af met concrete bevindingen: wat, waarom, en wat er moet veranderen.
@@ -191,7 +200,7 @@ class Kantoor:
         self.markt.claim(taak, tet)
         self.markt.start(taak, tet)
         while True:
-            lessen = self.brein.lessen_voor(taak.eigenaar)
+            lessen = self.brein.lessen_voor(taak.eigenaar, toegang=self.org.effectieve_toegang(tet))
             bericht = "\n\n".join(filter(None, [
                 taak.contract(),
                 "# Lessen uit het Brein\n" + "\n".join(f"- {als_regel(l)}" for l in lessen) if lessen else "",

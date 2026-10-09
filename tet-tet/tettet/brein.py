@@ -8,6 +8,10 @@ Voor de start van een taak leest een agent de lessen van zijn afdeling en de org
 Lessen worden niet dubbel opgeslagen: lijkt een nieuwe les op een bestaande (woordoverlap, Jaccard),
 dan telt het veld `bevestigd` van de bestaande les op en wordt de nieuwe tekst als variant bewaard.
 De selectie kiest op afdeling, dan op `bevestigd`, dan op recentheid.
+
+Collectief Brein (zie tettet/samenwerking.py): items dragen `labels` (de bronnen waarop ze steunen). Wie die bronnen
+niet mag zien, krijgt het item niet; lessen worden alleen samengevoegd met lessen op dezelfde bronnen.
+Naast lessen bevat het Brein vragen (vraagbaak) en signalen voor andere afdelingen.
 """
 from __future__ import annotations
 
@@ -16,7 +20,7 @@ import pathlib
 import re
 import time
 
-SOORTEN = {"les", "besluit", "notitie", "incident"}
+SOORTEN = {"les", "besluit", "notitie", "incident", "vraag", "signaal"}
 LES_SOORTEN = ("les", "incident")
 DREMPEL = 0.6          # standaard; de waarde in config/instellingen.yaml (brein.overlap_drempel) gaat voor
 MAX_VARIANTEN = 10
@@ -82,27 +86,30 @@ class Brein:
             self.items = json.loads(pad.read_text(encoding="utf-8"))
 
     def schrijf(self, soort: str, agent: str, afdeling: str, tekst: str, *, taak: str | None = None,
-                bron: str | None = None, zekerheid: str | None = None) -> dict:
+                bron: str | None = None, zekerheid: str | None = None, labels: list[str] | None = None, **extra) -> dict:
         if soort not in SOORTEN:
             raise ValueError(f"Onbekende soort: {soort}")
         if soort in LES_SOORTEN:
-            dubbel = zoek_dubbel(self.items, tekst, soort, self.drempel)
+            zelfde = [i for i in self.items if sorted(i.get("labels") or []) == sorted(labels or [])]
+            dubbel = zoek_dubbel(zelfde, tekst, soort, self.drempel)
             if dubbel:
                 bevestig(dubbel, tekst, afdeling)
                 self._bewaar()
                 return dubbel
         item = {"id": f"b{len(self.items) + 1}", "soort": soort, "agent": agent, "afdeling": afdeling,
-                "tekst": tekst.strip(), "taak": taak, "bron": bron, "zekerheid": zekerheid, "bevestigd": 1,
+                "tekst": tekst.strip(), "taak": taak, "bron": bron, "zekerheid": zekerheid, "labels": sorted(labels or []), "bevestigd": 1, **extra,
                 "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
         self.items.append(item)
         self._bewaar()
         return item
 
-    def lessen_voor(self, afdeling: str, max_aantal: int = 5) -> list[dict]:
+    def lessen_voor(self, afdeling: str, max_aantal: int = 5, toegang=None) -> list[dict]:
         """Lessen (en incidenten) van de eigen afdeling, aangevuld met lessen van de organisatie.
 
+        Met `toegang` (effectieve toegang van de lezer) alleen lessen die hij mag zien.
         Binnen elke groep: eerst vaker bevestigd, daarna recenter."""
-        lessen = [i for i in self.items if i["soort"] in LES_SOORTEN]
+        from .samenwerking import zichtbaar
+        lessen = [i for i in self.items if i["soort"] in LES_SOORTEN and (toegang is None or zichtbaar(i, toegang))]
         eigen = [i for i in lessen if hoort_bij(i, afdeling)]
         rest = [i for i in lessen if i["afdeling"] in ("centraal", "risk") and i not in eigen]
         return (rangorde(eigen) + rangorde(rest))[:max_aantal]

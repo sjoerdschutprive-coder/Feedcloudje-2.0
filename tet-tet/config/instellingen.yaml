@@ -24,3 +24,22 @@ opslag:
   # Relatief ten opzichte van de map tet-tet/
   grootboek: data/grootboek.jsonl
   brein: data/brein.json
+
+# Overlegstructuur (zie ONDERZOEK.md, 'Kenmerken van de samenwerking').
+overleg:
+  aan: true
+  # Dag van het MT-overleg (Oppertet + Hoofdtets): 1 = maandag … 7 = zondag.
+  # Voorbereiding en afdelingsoverleg 2 dagen eerder, bilaterale afstemming en vooraf lezen 1 dag eerder.
+  mt_dag: 5
+  # Dagelijkse huddle per afdeling, vlak vóór de kantinepauze.
+  huddle: true
+  # Bovengrens op het aantal overlegbeurten per werkdagrun; de rest volgt in de volgende run.
+  max_stappen_per_run: 30
+
+kantine:
+  aan: true
+  # Eén gemengde tafel per werkdagrun.
+  tafel: 6
+  min_afdelingen: 3
+  min_beurten: 4
+  max_beurten: 8

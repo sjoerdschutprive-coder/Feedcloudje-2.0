@@ -23,6 +23,8 @@ from .brein import als_regel, bevestig, hoort_bij, rangorde, zoek_dubbel
 from .kaarten import Organisatie
 from .kantoordb import KantoorStaat, Schrijver, in_batches, nu_ms
 from .runtime import laad_instellingen, lees_json
+from . import samenwerking as sw
+from .werkdag_samen import PARALLEL, SAMEN, SamenwerkingStappen
 
 MAX_UITVOEREN = 8          # taken per werkdag
 MAX_ESCALATIES = 3
@@ -31,13 +33,14 @@ ROUTINES = [("voorstellen", "rnd-h"), ("performance", "hr-h"), ("risico", "risk-
 kort = lambda s, n=70: (s := str(s or "")) if len(s) <= n else s[: n - 1] + "…"
 
 
-class Werkdag:
+class Werkdag(SamenwerkingStappen):
     def __init__(self, werk: pathlib.Path, org: Organisatie | None = None):
         self.werk = werk
         self.org = org or Organisatie()
         inst = laad_instellingen()
         self.max_afkeuringen = inst["taken"]["max_afkeuringen"]
         self.drempel = float(inst.get("brein", {}).get("overlap_drempel", 0.6))
+        self._samen_instellingen(inst)
         self.staat = KantoorStaat.uit_json(json.loads((werk / "staat.json").read_text(encoding="utf-8")))
         self.v = json.loads((werk / "voortgang.json").read_text(encoding="utf-8"))
         self.s = Schrijver(werk, self.staat)
@@ -102,6 +105,8 @@ class Werkdag:
         return self.klaar_met({"stappen": stappen, "lopend": [s["id"] for s in lopend], "klaar": not stappen and not lopend})
 
     def _omschrijf(self, s: dict) -> str:
+        if s["soort"] in SAMEN:
+            return self._omschrijf_samen(s)
         naam = self.org.agent(s["agent"])["naam"]
         return {"oppertet_plan": "Oppertet verdeelt de doelstelling", "hoofdtet_plan": f"{naam} maakt taken",
                 "uitvoeren": f"{naam} voert een taak uit", "escalatie": f"{naam} besluit over een escalatie",
@@ -109,8 +114,9 @@ class Werkdag:
 
     def _bepaal(self, aantal: int, lopend: list[dict]) -> list[dict]:
         st, d = self.staat, self.staat.doel
-        if any(s["soort"] != "uitvoeren" for s in lopend):
-            return []  # planstappen eerst afmaken
+        if any(s["soort"] not in PARALLEL for s in lopend):
+            return []  # planstappen, kantine en MT eerst afmaken
+        soorten_lopend = {s["soort"] for s in lopend}
         lopende_taken = {s.get("taak") for s in lopend}
         # 1. Oppertet verdeelt de doelstelling over afdelingen zonder doel
         zonder = [a for a in self.org.afdelingen if not st.afdelingsdoelen.get(a, {}).get("doel")]
@@ -129,6 +135,8 @@ class Werkdag:
                 if st.afdelingsdoelen.get(a, {}).get("doel") and st.open_hoofdlijnen(a) and not self._gedaan("hoofdtet_plan", afdeling=a):
                     return [self._nieuwe_stap("hoofdtet_plan", self.org.hoofdtet(a)["id"], afdeling=a)]
         # 4. Tets voeren taken uit (parallel)
+        if not soorten_lopend <= {"uitvoeren"}:
+            return self._bepaal_samen(aantal, lopend)
         gedaan_uit = sum(1 for s in self.v["stappen"].values() if s["soort"] == "uitvoeren")
         ruimte = min(aantal - len(lopend), MAX_UITVOEREN - gedaan_uit)
         kandidaten = sorted((t for t in st.taken.values() if t.get("status") == "volgende" and t.get("agent") in self.org.agents
@@ -145,11 +153,15 @@ class Werkdag:
             nieuw.append(self._nieuwe_stap("uitvoeren", t["agent"], taak=t["id"], fase="tet", poging=1))
         if nieuw or lopend:
             return nieuw
-        # 5. Vaste rondes
+        # 5. Samenwerking: huddles, kantine en de overlegcyclus naar het MT
+        samen = self._bepaal_samen(aantal, lopend)
+        if samen:
+            return samen
+        # 6. Vaste rondes
         for naam, agent in ROUTINES:
             if not self._routine_recent(naam) and not self._gedaan("routine", routine=naam):
                 return [self._nieuwe_stap("routine", agent, routine=naam)]
-        # 6. Dagverslag
+        # 7. Dagverslag
         if not self._gedaan("dagverslag"):
             return [self._nieuwe_stap("dagverslag", "oppertet")]
         return []
@@ -160,6 +172,8 @@ class Werkdag:
         agent = stap["agent"]
         if stap["soort"] == "uitvoeren" and stap.get("fase") == "control":
             agent = self.staat.taken[stap["taak"]]["control"]
+        if stap["soort"] == "kantine" and stap.get("fase") == "toezicht":
+            agent = self._toezichthouder()
         bericht, label = self._bericht(stap)
         kaart = self.org.agent(agent)
         web = self.org.effectieve_toegang(agent).mag("web")
@@ -187,7 +201,9 @@ class Werkdag:
             self.s.patch("taken", taak, {"status": "bezig", "approval": False})
             self.s.event("taak.gestart", agent, {"poging": stap["poging"]}, taak)
         self.s.event("model.aanroep", agent, {"doel": stap["soort"], "versie": kaart["versie"]}, taak)
-        self.s.activiteit(agent, "bezig", label, taak)
+        self.s.activiteit(agent, "bezig", label, taak, self._plek(stap) if stap["soort"] in SAMEN else None)
+        if stap["soort"] in SAMEN:
+            self._samen_bij_prompt(stap, agent, label)
         return self.klaar_met({"stap": stap_id, "agent": agent, "naam": kaart["naam"], "prompt": str(pad), "antwoord": str(antwoord), "web": web})
 
     def _contract(self, t: dict) -> str:
@@ -216,10 +232,11 @@ class Werkdag:
         if soort == "uitvoeren":
             t = st.taken[stap["taak"]]
             if stap["fase"] == "tet":
-                lessen = [als_regel(b) for b in rangorde([b for b in st.brein if hoort_bij(b, t["dept"], "dept") and b.get("taak") != t["id"]])[:5]]
+                lessen = self._zichtbare_lessen(t["agent"], t["dept"], behalve_taak=t["id"])
                 delen = [self._contract(t)]
                 if lessen:
                     delen.append("# Lessen uit het Brein\n" + "\n".join(f"- {x}" for x in lessen))
+                delen += self._brein_context(t["agent"], " ".join([t.get("title", ""), *(t.get("criteria") or [])]))
                 if t.get("bevindingen"):
                     delen.append("# Bevindingen van de vorige beoordeling\n" + "\n".join(f"- {x}" for x in t["bevindingen"]))
                 delen.append("# Werkwijze\n" + keten.PROTOCOL_TET)
@@ -234,6 +251,8 @@ class Werkdag:
         if soort == "routine":
             return self._routine_bericht(stap["routine"]), {"voorstellen": "bekijkt hoe Tet Tet beter kan", "performance": "bekijkt hoe de agents presteren",
                                                             "risico": "doet de risicoronde"}[stap["routine"]]
+        if soort in SAMEN:
+            return self._bericht_samen(stap)
         if soort == "dagverslag":
             return "\n".join(["# Deze werkdag", *[f"- {r}" for r in self.v["log"]], "", "# Stand", *self._stand_regels(), "", "# Opdracht", keten.PROTOCOL_DAGVERSLAG]), "schrijft het dagverslag voor de Raad"
         raise ValueError(soort)
@@ -272,7 +291,7 @@ class Werkdag:
         elif routine == "voorstellen":
             afgekeurd = [t for t in st.taken.values() if t.get("afkeuringen")]
             regels += ["# Afkeuringen", *[f"- {org.afdelingen[t['dept']]['naam']}: {b}" for t in afgekeurd[:8] for b in (t.get("bevindingen") or [])[:2]],
-                       "# Recente lessen", *[f"- {b['tekst']}" for b in st.brein[-8:]],
+                       "# Recente lessen", *[f"- {b['tekst']}" for b in [x for x in st.brein if sw.zichtbaar(x, org.effectieve_toegang("rnd-h"))][-8:]],
                        "# Eerdere voorstellen (niet herhalen)", *[f"- {v['titel']} ({v.get('status')})" for v in list(st.voorstellen.values())[-12:]],
                        "", "# Opdracht", keten.PROTOCOL_VOORSTELLEN]
             return "\n".join(regels)
@@ -293,8 +312,12 @@ class Werkdag:
         return self.klaar_met({"stap": stap_id, **uitkomst})
 
     def _mislukt(self, stap: dict, reden: str) -> dict:
+        if stap["soort"] == "kantine" and stap.get("fase") == "toezicht" and stap.get("beurten"):
+            return self._kantine_zonder_toezicht(stap, reden)
         agent = stap["agent"] if stap.get("fase") != "control" else self.staat.taken[stap["taak"]]["control"]
         stap["status"] = "mislukt"
+        if stap["soort"] in SAMEN:
+            self._samen_klaar(stap, "overleg afgebroken")
         if stap.get("taak") and stap["soort"] == "uitvoeren":
             self.s.patch("taken", stap["taak"], {"status": "volgende"})
         self.s.activiteit(agent, "gestopt", reden, stap.get("taak"))
@@ -369,7 +392,7 @@ class Werkdag:
     def _verwerk_uitvoeren(self, stap, tekst):
         t = self.staat.taken[stap["taak"]]
         if stap["fase"] == "tet":
-            self.s.patch("taken", t["id"], {"resultaat": tekst, "status": "bezig"})
+            self.s.patch("taken", t["id"], {"resultaat": tekst, "status": "bezig", "labels": sw.labels_uit(tekst, self.org.effectieve_toegang(t["agent"]))})
             self.s.event("taak.opgeleverd", t["agent"], {"tekens": len(tekst)}, t["id"])
             self.s.activiteit(t["agent"], "klaar", "leverde op: " + kort(t.get("title")), t["id"])
             if t.get("control") == "raad":
@@ -393,6 +416,7 @@ class Werkdag:
         if goed:
             self.s.patch("taken", t["id"], {"status": "klaar", "score": score, "bevindingen": bevindingen})
             self._leer(t)
+            self._deel_uit_resultaat(t)
             self._markeer_hoofdlijn(t)
             stap["status"] = "klaar"
             self.log(f"{self.org.agent(t['agent'])['naam']} rondde '{kort(t.get('title'), 50)}' af (score {score}).")
@@ -410,7 +434,9 @@ class Werkdag:
 
     def _brein_les(self, item: dict) -> dict:
         """Schrijft een les of incident, of telt hem op bij een bestaande les die erop lijkt."""
-        dubbel = zoek_dubbel(self.staat.brein, item["tekst"], item["soort"], self.drempel)
+        # Alleen samenvoegen met lessen op precies dezelfde bronnen: anders lekt de variant naar wie die bronnen niet mag zien.
+        zelfde = [x for x in self.staat.brein if sorted(x.get("labels") or []) == sorted(item.get("labels") or [])]
+        dubbel = zoek_dubbel(zelfde, item["tekst"], item["soort"], self.drempel)
         if dubbel:
             bevestig(dubbel, item["tekst"], item["dept"], "dept")
             self.s.patch("brein", dubbel["id"], {k: dubbel[k] for k in ("bevestigd", "varianten", "ook") if k in dubbel})
@@ -423,14 +449,15 @@ class Werkdag:
         m = re.search(r"## Les\s*\n(.+?)(?:\n##|\Z)", t.get("resultaat") or "", re.S)
         if m and not any(b.get("taak") == t["id"] and b.get("bron") != "afkeuring" for b in self.staat.brein):
             self._brein_les({"id": f"b{nu_ms()}", "soort": "les", "dept": t["dept"], "agent": t["agent"], "taak": t["id"],
-                             "tekst": m.group(1).strip()[:500], "bevestigd": 1, "ts": nu_ms()})
+                             "tekst": m.group(1).strip()[:500], "labels": t.get("labels") or [], "bevestigd": 1, "ts": nu_ms()})
             self.s.event("brein.les", t["agent"], {}, t["id"])
 
     def _leer_van_afkeuring(self, t, ct, bevindingen, faalwijze, escalatie: bool):
         """Bijna-fouten tellen mee: elke afkeuring of escalatie wordt een les of incident, zekerheid laag tot de Hoofdtet bevestigt."""
         tekst = keten.afkeurles(t.get("title") or "", self.org.agent(ct)["naam"], bevindingen, faalwijze, escalatie)
         self._brein_les({"id": f"b{nu_ms()}-a{t.get('afkeuringen', 0)}", "soort": "incident" if escalatie else "les", "dept": t["dept"],
-                         "agent": ct, "taak": t["id"], "tekst": tekst, "bron": "afkeuring", "zekerheid": "laag", "bevestigd": 1, "ts": nu_ms()})
+                         "agent": ct, "taak": t["id"], "tekst": tekst, "bron": "afkeuring", "zekerheid": "laag", "labels": t.get("labels") or [],
+                         "bevestigd": 1, "ts": nu_ms()})
         self.s.event("brein.afkeurles", ct, {"escalatie": escalatie}, t["id"])
 
     def _markeer_hoofdlijn(self, t):
