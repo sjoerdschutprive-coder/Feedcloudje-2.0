@@ -145,6 +145,15 @@
   .kpi span { font-size: 12.5px; color: var(--muted); }
   .kpi small { font-size: 11.5px; color: var(--muted); }
   .kpi.ok b { color: var(--done); } .kpi.warn b { color: var(--warn); } .kpi.neutral b { color: var(--text); }
+  .goalboard.dept { background: linear-gradient(160deg, color-mix(in srgb, var(--dc) 14%, var(--panel)), var(--panel)); border-color: color-mix(in srgb, var(--dc) 45%, var(--line)); }
+  .goalboard.dept .eyebrow, .goalboard.dept .pct { color: var(--dc); }
+  .board-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 14px; }
+  .board-cols h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); }
+  .hl { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .hl li { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; background: rgba(20,17,15,.45); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .hl .bar { grid-column: 1 / -1; height: 4px; }
+  .st.open { color: var(--muted); }
+  @media (max-width: 760px) { .board-cols { grid-template-columns: 1fr; } }
   .tbd { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--panel-2); color: var(--muted); margin-left: 4px; }
 
   /* ---------- Sheet (kaartdetail) ---------- */
@@ -371,6 +380,39 @@ const CONNECTORS = [
   { id: "canva",   naam: "Canva",            mono: "CA", kleur: "#7fd1c7", soort: "Ontwerp" },
   { id: "github",  naam: "GitHub",           mono: "GH", kleur: "#b7a6f5", soort: "Code van de agents" }
 ];
+/* Voortgangsbord per afdeling: doel, hoofdlijnen (deelresultaten) en KPI's.
+   De voortgang van een afdeling volgt uit de hoofdlijnen (klaar = 1, bezig = ½, open = 0).
+   KPI-waarden zijn voorlopig en fictief, tenzij `waarde` een functie is op de stand van het kantoor. */
+const AFDELINGSBORD = {
+  ops: { doel: "Hoofdstuk bedrijfsvoering met verbeterplan per hotel", deadline: "2026-11-27",
+    hoofdlijnen: [["Procesanalyse binnenstad", "klaar"], ["Procesanalyse snelweghotel", "bezig"], ["Procesanalyse Heuvelrug", "open"], ["Verbeterplan en uitvoeringsroute", "open"]],
+    kpis: [{ label: "Hotels geanalyseerd", waarde: "1/3", doel: "3/3" }, { label: "Uptime agents", waarde: "99,2%", doel: "≥ 99%", stand: "ok" }, { label: "Open onderhoudstickets", waarde: "2", doel: "≤ 3", stand: "ok" }] },
+  fin: { doel: "Financieel advies met prijsstrategie en business cases", deadline: "2026-12-04",
+    hoofdlijnen: [["Kostenstructuur per hotel", "bezig"], ["Prijsbenchmark regio Utrecht", "bezig"], ["Prijsstrategie en yield", "open"], ["Business cases nieuwe proposities", "open"]],
+    kpis: [{ label: "Prijsscenario's", waarde: "4/6", doel: "6" }, { label: "Kostenposten in kaart", waarde: "70%", doel: "100%" }, { label: "Verwachte marge-impact", waarde: "+3,5 pt", doel: "≥ +3 pt", stand: "ok" }] },
+  mkt: { doel: "Positionering en marketingplan per doelgroep", deadline: "2026-11-27",
+    hoofdlijnen: [["Reviewanalyse 12 maanden", "klaar"], ["Doelgroepen en personas", "bezig"], ["Positionering per hotel", "open"], ["Campagneplan en budget", "open"]],
+    kpis: [{ label: "Doelgroepen uitgewerkt", waarde: "3/5", doel: "5" }, { label: "Reviews geanalyseerd", waarde: "1.240", doel: "≥ 1.000", stand: "ok" }, { label: "Gem. reviewscore", waarde: "8,2", doel: "≥ 8,5", stand: "warn" }] },
+  rnd: { doel: "Innovatiekansen getoetst en geprioriteerd", deadline: "2026-12-04",
+    hoofdlijnen: [["Trendscan hospitality", "bezig"], ["Technologie-opties vergelijken", "bezig"], ["Experimenten voorstellen", "open"]],
+    kpis: [{ label: "Trends getoetst", waarde: "12/20", doel: "20" }, { label: "Tech-opties vergeleken", waarde: "3/5", doel: "5" }, { label: "Lopende experimenten", waarde: "2", doel: "2–3", stand: "ok" }] },
+  hr: { doel: "Personeelsadvies en een volledig agentregister", deadline: "2026-11-20",
+    hoofdlijnen: [["Agentregister met profielkaarten", "klaar"], ["Bezettingsgat per hotel", "bezig"], ["Advies werving en roosters", "open"]],
+    kpis: [{ label: "Agents met profielkaart", waarde: "21/21", doel: "21/21", stand: "ok" }, { label: "Bezettingsgat in kaart", waarde: "0/3", doel: "3/3" }, { label: "Performance-reviews", waarde: "4", doel: "elke 3 dagen" }] },
+  risk: { doel: "Elk hoofdstuk getoetst; risico's en compliance in kaart", deadline: "2026-12-11",
+    hoofdlijnen: [["Risicoregister pilot", "klaar"], ["Toolscans (connectors en extensions)", "bezig"], ["Bronnencheck alle hoofdstukken", "bezig"], ["Compliance-check (AVG, horeca)", "open"]],
+    kpis: [{ label: "Open risico's", waarde: "2", doel: "0 hoog", stand: "warn" }, { label: "Hoofdstukken getoetst", waarde: "1/7", doel: "7/7" }, { label: "Tools gescand", waarde: "5/6", doel: "6/6" }] },
+  prod: { doel: "Drie proposities met gastreis, klaar voor de business case", deadline: "2026-12-04",
+    hoofdlijnen: [["Wellness-arrangement Heuvelrug", "klaar"], ["Gastreis binnenstadhotel", "bezig"], ["Propositie snelweghotel", "open"]],
+    kpis: [{ label: "Concepten uitgewerkt", waarde: "1/3", doel: "3" }, { label: "Gastreizen getekend", waarde: "1/3", doel: "3" }, { label: "Getoetst door Finance", waarde: "0/3", doel: "3/3" }] }
+};
+/* KPI's die op elk afdelingsbord staan en meerekenen met de stand van het kantoor. */
+const AFDELING_KPIS = [
+  { label: "Taken afgerond", waarde: (dt) => `${dt.length ? Math.round(dt.filter(t => t.status === "klaar").length / dt.length * 100) : 0}%`, doel: "100%" },
+  { label: "Wacht op de Raad", waarde: (dt) => String(dt.filter(t => t.approval && t.status !== "klaar").length), doel: "0", stand: (dt) => dt.some(t => t.approval && t.status !== "klaar") ? "warn" : "ok" },
+  { label: "Open verzoeken via lijnen", waarde: (dt) => String(dt.filter(t => t.via && t.status !== "klaar").length), doel: "≤ 2", stand: (dt) => dt.filter(t => t.via && t.status !== "klaar").length > 2 ? "warn" : "ok" }
+];
+
 const CONNECTOR_TOEGANG = {
   ops:  { gdrive: "rw", slack: "rw", notion: "rw", github: "rw", pms: "r", gcal: "r", web: "r" },
   fin:  { exact: "rw", gdrive: "rw", slack: "rw", pms: "r", hubspot: "r", web: "r" },
@@ -446,13 +488,14 @@ const HISTORY = {
 /* =====================================================================
    STATE (taken en berichten worden lokaal in de browser bewaard)
    ===================================================================== */
-const KEYS = { tasks: "tettet-office-v1", msgs: "tettet-messages-v1", conn: "tettet-connectors-v1" };
+const KEYS = { tasks: "tettet-office-v1", msgs: "tettet-messages-v1", conn: "tettet-connectors-v1", hl: "tettet-hoofdlijnen-v1" };
 const deptById = Object.fromEntries(DEPTS.map(d => [d.id, d]));
 const agentById = Object.fromEntries(AGENTS.map(a => [a.id, a]));
 const now = Date.now();
 let tasks = load(KEYS.tasks, () => SEED_TASKS.map((t, i) => ({ id: "t" + (i + 1), approval: false, ...t, created: now - (SEED_TASKS.length - i) * 3600e3 })));
 let messages = load(KEYS.msgs, () => SEED_MESSAGES.map((m, i) => ({ id: "m" + (i + 1), ...m, created: now - (3 - i) * 1800e3 })));
 let connAccess = load(KEYS.conn, () => JSON.parse(JSON.stringify(CONNECTOR_TOEGANG)));
+let hlStatus = load(KEYS.hl, () => Object.fromEntries(DEPTS.map(d => [d.id, AFDELINGSBORD[d.id].hoofdlijnen.map(h => h[1])])));
 DEPTS.forEach(d => { connAccess[d.id] = connAccess[d.id] || {}; });
 
 function load(key, seed) {
@@ -460,7 +503,7 @@ function load(key, seed) {
   return seed();
 }
 function save() {
-  try { localStorage.setItem(KEYS.tasks, JSON.stringify(tasks)); localStorage.setItem(KEYS.msgs, JSON.stringify(messages)); localStorage.setItem(KEYS.conn, JSON.stringify(connAccess)); } catch (e) {}
+  try { localStorage.setItem(KEYS.tasks, JSON.stringify(tasks)); localStorage.setItem(KEYS.msgs, JSON.stringify(messages)); localStorage.setItem(KEYS.conn, JSON.stringify(connAccess)); localStorage.setItem(KEYS.hl, JSON.stringify(hlStatus)); } catch (e) {}
 }
 
 function agentStatus(id) {
@@ -470,7 +513,9 @@ function agentStatus(id) {
   return "vrij";
 }
 const STATUS_COLOR = { bezig: "var(--busy)", volgende: "var(--next)", vrij: "var(--idle)", klaar: "var(--done)" };
-const deptProgress = id => { const dt = tasks.filter(t => t.dept === id); return dt.length ? dt.filter(t => t.status === "klaar").length / dt.length : 0; };
+const HL_WAARDE = { klaar: 1, bezig: .5, open: 0 };
+const hlOf = id => AFDELINGSBORD[id].hoofdlijnen.map((h, i) => ({ titel: h[0], status: (hlStatus[id] || [])[i] || h[1] }));
+const deptProgress = id => { const hl = hlOf(id); return hl.length ? hl.reduce((a, h) => a + HL_WAARDE[h.status], 0) / hl.length : 0; };
 
 const chKey = (a, b) => [a, b].sort().join("-");
 const kanaalByKey = Object.fromEntries(KANALEN.map(k => [chKey(k.a, k.b), k]));
@@ -1042,13 +1087,39 @@ function wireMsgs(root) {
 }
 
 /* ---------- Afdelingspagina ---------- */
+function deptBoard(id) {
+  const d = deptById[id], b = AFDELINGSBORD[id], dt = tasks.filter(t => t.dept === id), hl = hlOf(id);
+  const prog = Math.round(deptProgress(id) * 100);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const dagen = Math.max(0, Math.ceil((new Date(b.deadline + "T00:00:00") - today) / 864e5));
+  const kpis = [...b.kpis.map(k => ({ ...k, fictief: true })), ...AFDELING_KPIS.map(k => ({ label: k.label, waarde: k.waarde(dt), doel: k.doel, stand: k.stand ? k.stand(dt) : "neutral" }))];
+  return `<section class="goalboard dept" style="--dc:${d.kleur}" aria-label="Voortgangsbord ${esc(d.naam)}">
+      <div class="row" style="justify-content:space-between"><span class="eyebrow">Doelstelling ${esc(d.naam)}</span><span class="i-meta">deadline ${fmtDate(b.deadline)} · nog ${dagen} dagen</span></div>
+      <h3>${esc(b.doel)}</h3>
+      <div class="goal-progress"><span class="pct">${prog}%</span><div class="bar"><i style="width:${prog}%;background:${d.kleur}"></i></div></div>
+      <div class="board-cols">
+        <div><h4>Hoofdlijnen <span class="i-meta" style="text-transform:none;letter-spacing:0">· ${hl.filter(h => h.status === "klaar").length}/${hl.length} klaar</span></h4>
+          <ul class="hl">${hl.map((h, i) => `<li><span>${esc(h.titel)}</span><button class="st ${h.status === "open" ? "open" : h.status}" data-hl="${i}" title="Klik om de status te wijzigen">${h.status}</button>
+            <div class="bar"><i style="width:${HL_WAARDE[h.status] * 100}%;background:${d.kleur}"></i></div></li>`).join("")}</ul></div>
+        <div><h4>KPI's</h4><div class="kpis">${kpis.map(k => `<div class="kpi ${k.stand || "neutral"}"><b>${esc(k.waarde)}</b><span>${esc(k.label)}${k.fictief ? '<span class="tbd">fictief</span>' : ""}</span><small>doel: ${esc(k.doel)}</small></div>`).join("")}</div></div>
+      </div>
+      <p class="i-meta" style="margin:0">Voortgang = hoofdlijnen (klaar telt volledig, bezig half). Voorlopige KPI's.</p>
+    </section>`;
+}
+
 function deptPage(id) {
   const d = deptById[id], team = AGENTS.filter(a => a.dept === id), dt = tasks.filter(t => t.dept === id);
   const ch = channelsOf(id), prog = Math.round(deptProgress(id) * 100);
   const dm = m => m.from === id || m.to === id;
   return {
     eyebrow: "Afdeling", titel: d.naam, kleur: d.kleur,
-    top: `<div style="display:grid;gap:6px"><div class="bar"><i style="width:${prog}%;background:${d.kleur}"></i></div><span class="i-meta">Hoofdstuk “${esc(d.hoofdstuk)}” · ${prog}% klaar</span></div>`,
+    top: deptBoard(id),
+    wire: root => root.querySelectorAll("[data-hl]").forEach(b => b.onclick = () => {
+      const i = +b.dataset.hl, cur = hlOf(id)[i].status;
+      hlStatus[id] = hlOf(id).map(h => h.status);
+      hlStatus[id][i] = { open: "bezig", bezig: "klaar", klaar: "open" }[cur];
+      save(); refresh();
+    }),
     tiles: [
       { key: "team", icon: "team", titel: "Team", preview: `<div class="avatars">${team.map(a => `<span class="avatar" style="background:${d.kleur}" title="${esc(a.naam)}">${esc(initials(a))}</span>`).join("")}</div><span class="sub">${team.length} agents</span>`,
         sheet: () => `<ul class="items">${team.map(a => `<li style="--dc:${STATUS_COLOR[agentStatus(a.id)]}"><button class="linkrow" data-go="agent-${a.id}"><div class="i-title">${esc(a.naam)} ›</div><div class="i-meta">${esc(ROLKAARTEN[a.rol].titel)} · ${esc(a.specialisme)} · ${agentStatus(a.id)}</div></button></li>`).join("")}</ul>` },
