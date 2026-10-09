@@ -13,8 +13,10 @@ tet-tet/
     agents/<agent-id>.yaml       # 30 profielkaarten (laag 3); 8 met 'inzet: gepland'
     rollen/<rol>.yaml            # 4 rolkaarten: wat een rol mag
     toegang/<afdeling>.yaml      # 8 toegangskaarten: tools en data per afdeling, plus centraal
+    handboek/<onderdeel>.yaml    # het handboek: werkwijze, schrijfstijl, woordenlijst, huisstijl, mappenstructuur
+    ijkset/<rol>.yaml            # vaste ijktaken per rol voor pass^k (betrouwbaarheid)
   config/                        # instellingen (model, budget) en harde grenzen (beleid.yaml)
-  tettet/                        # het platform: kaartenlader, grootboek, Brein, beleid, taken, agents, keten, samenwerking
+  tettet/                        # het platform: kaartenlader, grootboek, Brein, beleid, taken, agents, keten, samenwerking, HR
   tests/                         # tests, draaien zonder API-sleutel
   scripts/valideer_kaarten.py    # controleert schema, verwijzingen en mandaten
   kantoor/index.html             # het Tet Tet-kantoor (interface-referentie)
@@ -53,6 +55,18 @@ Controleer daarna:
 pip install pyyaml jsonschema
 python tet-tet/scripts/valideer_kaarten.py
 ```
+
+## Gedeelde agenda koppelen
+
+De HR-momenten (check-ins, evaluaties, kalibratie, raadsreview, MT, retrospectief, proefperiodes en incidenten) staan in een gedeelde agenda. Tot die bestaat, plant de werkdag ze in de collectie `kalender` van het kantoor; zo koppel je de echte Google-agenda:
+
+1. **Agenda aanmaken.** Maak in Google Calendar een nieuwe agenda, bijvoorbeeld "Tet Tet", en deel hem met wie hem moet zien. Zet hem op dezelfde tijdzone als `hr.kalender.tijdzone`.
+2. **Instellingen invullen.** Zet in `config/instellingen.yaml` onder `hr.kalender`: `tijdzone` (bijv. `Europe/Amsterdam`), `startdatum` (werkdag 1) en `kalender_id` (Instellingen van de agenda → *Agenda-ID*). Commit en draai `python scripts/bouw_kantoor.py`, zodat het kantoor een link naar de agenda toont.
+3. **.ics importeren.** Maak het bestand met `python -m tettet agenda --ics tet-tet-agenda.ics` (of `--dump <map>` met een dump van het kantoor, dan gaan verplaatsingen en annuleringen mee), of gebruik op de HR-pagina *Evaluatiekalender → Exporteer naar agenda* (het kantoor slaat het op als `.txt`: hernoem naar `.ics`). Importeer in Google Calendar via *Instellingen → Importeren* in de nieuwe agenda. Opnieuw importeren levert geen dubbele events op: elke UID is vast.
+4. **Verplaatsen en annuleren.** Doe dat in het kantoor (HR → Evaluatiekalender): de werkdag volgt het nieuwe tijdstip, een geannuleerd moment komt niet terug. Exporteer daarna opnieuw.
+5. **Later: de connector.** Zet `hr.kalender.bron` op `google` zodra `GoogleKalender` in `tettet/kalender.py` is uitgebouwd via de Google Calendar-connector (zelfde interface; elke aanroep via `Beleidsmotor.gebruik_bron(agent, 'gcal', 'rw')`). Dan is de gedeelde agenda leidend voor het tijdstip en is exporteren niet meer nodig.
+
+In de agenda staat nooit inhoud uit een HR-dossier: alleen soort, deelnemers en verwijzingen.
 
 ## Opdracht voor Claude Code
 

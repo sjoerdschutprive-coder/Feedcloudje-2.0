@@ -16,6 +16,8 @@ Repository: `sjoerdschutprive-coder/Feedcloudje-2.0`, map `tet-tet/`. Lees eerst
 2. Per voorstel:
    - Beoordeel eerst of het veilig en binnen de kaders past (harde grenzen in `config/beleid.yaml`, `CLAUDE.md`). Niet toegestaan, onduidelijk of te groot voor één run? Zet het voorstel op `status: "uitgevoerd"` niet; zet in plaats daarvan het veld `uitvoering` op een korte uitleg waarom het wacht, en laat de status `goedgekeurd`.
    - Bouw het in: kaarten in `kaarten/` (verhoog `versie`), platform in `tettet/` (met tests), kantoor in `kantoor/index.html`.
+   - Voorstellen met `soort: "hr"` komen uit de kalibratie of een evaluatie en noemen één agent (`agent`). Goedgekeurd door de Raad: pas alleen die profielkaart aan zoals het voorstel zegt (bijvoorbeeld `autonomieniveau`, `inzet` of de werkstijl), met versie-ophoging en een regel in `wijzigingslog`. Nooit verder dan de rolkaart toestaat.
+   - Voorstellen met `soort: "handboek"` wijzigen alleen `kaarten/handboek/` (versie omhoog); draai daarna `bouw_kantoor.py` (de huisstijl komt daaruit).
    - Nooit: kaarten van rollen of mandaten uitbreiden zonder dat het voorstel daar expliciet om vraagt; harde grenzen versoepelen; externe communicatie, betalingen of echte persoonsgegevens toevoegen.
 3. Controleer: `python scripts/valideer_kaarten.py` en `python -m unittest discover -s tests -t .` moeten slagen. Zo niet: draai je wijziging terug, zet `uitvoering` op wat er misging en ga door met het volgende voorstel.
 4. Draai `python scripts/bouw_kantoor.py`, commit (één commit per voorstel, met de titel van het voorstel) en push naar `main`.

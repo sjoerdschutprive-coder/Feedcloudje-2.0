@@ -14,15 +14,16 @@ Repository: `sjoerdschutprive-coder/Feedcloudje-2.0`, map `tet-tet/`.
 5. **Huddles**: elke afdeling met werk houdt dagelijks een korte huddle in haar overleghoek (voorzitter rouleert).
 6. **Kantine**: een gemengde tafel pauzeert; de **Privacy-Tet** toetst elke beurt vóór de anderen hem horen.
 7. **Overlegcyclus** (richting het MT op `overleg.mt_dag`): voorbereiding en afdelingsoverleg twee dagen ervoor, bilateraal en vooraf lezen één dag ervoor, op de MT-dag eerst ieders eigen oordeel en dan het MT; retrospectief bij het eerste MT van de maand. Wat een run niet afkrijgt (`max_stappen_per_run`), volgt in de volgende.
-8. Vaste rondes (eens per ~20 uur): R&D doet verbetervoorstellen, HR kijkt naar prestaties, Risk & Safety naar risico's.
-9. De **Oppertet** schrijft het dagverslag voor de Raad.
+8. **HR** volgt de gedeelde agenda (collectie `kalender`; zie `tettet/werkdag_hr.py`): de werkdag zet de vaste momenten uit het rooster in de agenda en doet wat er vandaag (of in de afgelopen twee weken, nog niet gedaan) op staat. Wekelijkse **check-ins** (Hoofdtet met elke Tet, de werkdag na het MT), maandelijks de **snapshot** (prestatieprofielen, zonder model), **zelfreflecties** en **evaluatiegesprekken** (vóór het retrospectief), per kwartaal de **kalibratie** (voorstellen aan de Raad), wekelijks de **curatie** van het Brein en maandelijks de **cultuurbrief**. Een grensovertreding krijgt binnen een werkdag een blameless **incidentevaluatie**; een uitblinker een **patroon-oogst** in het Brein. Verplaatst de Raad een moment, dan volgt de werkdag; een geannuleerd moment komt niet terug.
+9. Vaste rondes (eens per ~20 uur): R&D doet verbetervoorstellen, HR kijkt naar prestaties (profielen, geen totaalscore), Risk & Safety naar risico's.
+10. De **Oppertet** schrijft het dagverslag voor de Raad.
 
 ## Procedure voor de sessie
 
 Gebruik een werkmap, bijvoorbeeld de scratchpad van de sessie: `W`.
 
 1. **Repository**: voeg `sjoerdschutprive-coder/Feedcloudje-2.0` toe (add_repo) en clone. Werk vanuit `tet-tet/`. Installeer zo nodig `pyyaml` en `jsonschema`.
-2. **Stand ophalen**: lees met de ArtifactData-tool (`action: "list"`, `query: {"limit": 1000}`, `out_dir: "W/db"`) de collecties `staat`, `afdelingsdoelen`, `taken`, `brein`, `voorstellen`, `verslagen`, `activiteit`, `patches`, `grootboek`, `overleggen` en `kantine`. Een lege collectie is normaal.
+2. **Stand ophalen**: lees met de ArtifactData-tool (`action: "list"`, `query: {"limit": 1000}`, `out_dir: "W/db"`) de collecties `staat`, `afdelingsdoelen`, `taken`, `brein`, `voorstellen`, `verslagen`, `activiteit`, `patches`, `grootboek`, `overleggen`, `kantine`, `prestaties`, `evaluaties` en `kalender`. Een lege collectie is normaal.
 3. **Start**: `python -m tettet werkdag start --db W/db --werk W/run`
 4. **Lus** tot `volgende` `"klaar": true` geeft:
    - `python -m tettet werkdag volgende --werk W/run --aantal 3` geeft de stappen.
@@ -40,3 +41,4 @@ Gebruik een werkmap, bijvoorbeeld de scratchpad van de sessie: `W`.
 - Schrijf alleen via de batches van `tettet werkdag`. Wijzig geen kaarten, code of instellingen; dat loopt via verbetervoorstellen en `ZELFONTWIKKELING.md`.
 - Geen externe communicatie, betalingen of persoonsgegevens. Agents met `web` in hun toegang mogen openbare bronnen lezen.
 - Mislukt een beurt, dan verwerkt `verwerk` dat als mislukt; ga door met de volgende stap.
+- `prestaties` en `evaluaties` dragen het label `hr-dossier:<agent-id>`. Neem hun inhoud nooit op in de samenvatting van de sessie: noem alleen aantallen.

@@ -16,7 +16,7 @@ Tet Tet is een platform waarop AI-agents zelfstandig werken en samen één centr
 
 Bij tegenstrijdigheid wint de hogere bron.
 
-1. `kaarten/` (organisatiekaart v1.3.0): cultuur-, profiel-, rol- en toegangskaarten van alle 30 agents (22 ingezet, 8 `inzet: gepland`). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
+1. `kaarten/` (organisatiekaart v1.3.0): cultuur-, profiel-, rol- en toegangskaarten van alle 30 agents (22 ingezet, 8 `inzet: gepland`), het handboek (`kaarten/handboek/`) en de ijksets per rol (`kaarten/ijkset/`). Leidend voor wie de agents zijn en wat ze mogen. Controleer met `python tet-tet/scripts/valideer_kaarten.py`.
 2. `WHITEPAPER.md`: architectuur, taakcontract, feedbackloops, governance, autonomieniveaus, KPI's en de bouwstappen. **De pilotcasus (hotelketen) en bijlagen A–C zijn verouderde voorbeelden**: gebruik de kaarten in `kaarten/` en bouw niets dat aan die casus vastzit.
 3. `kantoor/index.html`: het Tet Tet-kantoor, de referentie voor design en interactie van de interface (isometrisch kantoor, afdelingseilanden, doelstellingenbord, takenpaneel, kaarten per agent). De data in dat bestand is afgeleid van de kaarten.
 4. `ONDERZOEK.md`: onderbouwing van de `werkstijl`-velden en `edge_principes`.
@@ -45,6 +45,11 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 | `__main__.py` | Opdrachtregel: `run`, `prompt`, `toegang`, `grootboek` |
 | `samenwerking.py` | Collectief Brein (toegangslabels, wie-weet-wat, wie-werkt-waaraan, vraagbaak, signalen), kantinetafel, deelfilter, overlegcyclus, cultuurmeting, protocollen |
 | `werkdag_samen.py` | Werkdagstappen voor huddle, kantine met toezicht en de overlegcyclus naar het MT |
+| `prestatie.py` | Prestatieprofiel per agent (kwaliteit, betrouwbaarheid met pass^k en kalibratie, veiligheid, efficiëntie, samenwerking, stijl), Wilson-intervallen, uitblinker/aandachtspunt, gaming-signalen, blind beoordelen |
+| `stijl.py` | Stijlcontrole tegen het handboek (schrijfstijl, woordenlijst): score en suggesties per zin, signalerend |
+| `kalender.py` | Rooster van de vaste momenten, de interface `Kalender` (Mock, Ics, Google-vorm), deterministische UID's, .ics-export |
+| `hr.py` | Evaluaties normaliseren (doelen met datum en eigenaar, feedback over de taak), onboarding-checklist, Brein-curatie, cultuurkloof, HR-cijfers per afdeling |
+| `werkdag_hr.py` | Werkdagstappen voor HR: agenda, snapshot, check-ins, zelfreflectie, evaluaties, kalibratie, incidenten, patroon-oogst, curatie, cultuurbrief |
 
 ### Samenwerking (zie ONDERZOEK.md, 'Kenmerken van de samenwerking')
 
@@ -54,11 +59,19 @@ Stap 1 t/m 4 zijn gebouwd in `tettet/` met tests (`python -m unittest discover -
 - **Afdelingsomvang**: norm 1 Hoofdtet + 3 Tets. Nieuwe agents staan op `inzet: gepland` tot de Raad ze activeert na een meting; `Organisatie.team()` en `tets()` geven alleen ingezette agents.
 - **Kantoor**: kantine en vergaderzaal onder het plein, een overleghoek op elk eiland, agents lopen erheen (veld `plek` in `activiteit`; collecties `kantine` en `overleggen`). Wie een vraag uit de vraagbaak beantwoordt, loopt naar het bureau van de vraagsteller (`beantwoord_ts`). Knop 'Terugkijken' speelt de laatste werkdag af. HR toont de cultuurmeting, Risk & Safety het toezicht met een testknop.
 
+### HR (zie ONDERZOEK.md, 'Kenmerken van de HR-afdeling')
+
+- **Structuur**: Hoofdtet HR (businesspartner), Prestatie-Tet `hr-2` en Governance-Tet `hr-3` (expertisecentra, `inzet: gepland`; tot de Raad ze activeert doet de Hoofdtet HR hun werk), Personeels-Tet `hr-1` (shared services: onboarding, kaarten, vraagbaak). Wie welke HR-rol heeft, volgt uit het specialisme of de naam in de kaart (`kalender.beoordelaar_hr`).
+- **Meten**: een profiel per agent, nooit een totaalscore of ranglijst; onder `hr.meting.min_taken` "te weinig data". Grensnaleving is een poortcriterium. Tets geven in `## Zekerheid` een getal 0–1; de werkdag bewaart de eerste oplevering (`zekerheid_eerste`, `zelf_gemeld_eerste`) en het eerste oordeel (`eerste_oordeel`, `claims`). Control Tets beoordelen blind (geen naam, id of afdeling) en negeren lengte. Ijksets: events `ijkset.run` (`data: {ijktaak, geslaagd}`).
+- **Toegang**: alles over één agent (`prestaties`, `evaluaties`) draagt `hr-dossier:<agent-id>`: zichtbaar voor de agent zelf, zijn leidinggevende, HR en de Oppertet (`config/beleid.yaml`, `hr_dossier`), niet voor het toezicht, nooit in de kantine.
+- **Cyclus en agenda**: zie WERKDAG.md, punt 8, en README.md, 'Gedeelde agenda koppelen'. Instellingen onder `hr:` in `config/instellingen.yaml`. Geen enkel cijfer leidt vanzelf tot een besluit: voorstellen (`soort: "hr"`) gaan naar de Raad.
+- **Governance**: het handboek is de enige bron van waarheid; `bouw_kantoor.py` haalt de huisstijltokens uit `huisstijl.yaml`; de validator waarschuwt bij bestanden buiten `mappenstructuur.yaml`.
+
 ### Het live kantoor
 
-`kantoor/index.html` is gepubliceerd als artifact (`https://claude.ai/code/artifact/ed7cfae4-f453-4b86-bf01-b9304f737e70`) met de capabilities `db`, `user` en `sample`:
+`kantoor/index.html` is gepubliceerd als artifact (`https://claude.ai/code/artifact/ed7cfae4-f453-4b86-bf01-b9304f737e70`) met de capabilities `db`, `user`, `sample` en `downloads` (export van de agenda):
 
-- **Gedeelde opslag** (`db`): collecties `staat` (doel, instellingen, connectors), `afdelingsdoelen`, `taken`, `berichten`, `brein`, `voorstellen`, `grootboek` (blokken van 100 events), en alleen-toevoegen `overleggen` en `kantine`. Lezen en schrijven kan ook vanuit Claude Code met de ArtifactData-tool.
+- **Gedeelde opslag** (`db`): collecties `staat` (doel, instellingen, connectors), `afdelingsdoelen`, `taken`, `berichten`, `brein`, `voorstellen`, `grootboek` (blokken van 100 events), en alleen-toevoegen `overleggen`, `kantine`, `prestaties` en `evaluaties`, en `kalender` (de agenda; de Raad verplaatst of annuleert). Lezen en schrijven kan ook vanuit Claude Code met de ArtifactData-tool.
 - **Agents**: modus `mock` (gratis, voorspelbaar) of `claude` (via `sample`, op het Claude-account van de kijker). De keten in de pagina volgt `tettet/keten.py`: dezelfde protocollen en dezelfde samengestelde prompts.
 - **Kaarten in het kantoor**: het blok tussen `@@KAARTEN:BEGIN` en `@@KAARTEN:END` wordt gegenereerd door `scripts/bouw_kantoor.py`. Draai dat na elke kaartwijziging en publiceer opnieuw.
 - **Live-zicht**: collectie `activiteit` (alleen-toevoegen, per agent wat hij doet); de pagina toont tekstballonnen en het paneel 'Nu bezig'. Werk van buitenaf komt binnen als `patches`; documenten dragen `bijgewerkt` en de nieuwste wint.
