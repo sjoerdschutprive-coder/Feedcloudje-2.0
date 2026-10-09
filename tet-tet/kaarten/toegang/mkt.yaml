@@ -1,0 +1,26 @@
+# Toegangskaart afdeling: tools en data die de afdeling mag gebruiken.
+# rw = lezen en schrijven, r = alleen lezen, niet genoemd = geen toegang.
+id: toegang-mkt
+type: toegangskaart_afdeling
+afdeling: mkt
+versie: 1.0.0
+status: concept
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+eigenaar: risk-h
+connectors:
+  hubspot: rw
+  canva: rw
+  gdrive: rw
+  slack: rw
+  reviews: r
+  web: r
+intern:
+  brein: rw
+  webonderzoek: r
+  reviewdata: r
+  contentbibliotheek: rw
+geen_toegang:
+  - externe_publicatie
+spelregels: []
+kenmerken: {}

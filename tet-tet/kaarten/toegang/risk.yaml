@@ -1,0 +1,32 @@
+# Toegangskaart afdeling: tools en data die de afdeling mag gebruiken.
+# rw = lezen en schrijven, r = alleen lezen, niet genoemd = geen toegang.
+id: toegang-risk
+type: toegangskaart_afdeling
+afdeling: risk
+versie: 1.0.0
+status: concept
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+eigenaar: risk-h
+connectors:
+  gmail: r
+  gdrive: r
+  slack: r
+  notion: r
+  hubspot: r
+  exact: r
+  pms: r
+  reviews: r
+  web: r
+  github: r
+intern:
+  brein: r
+  alle_afdelingsoutput: r
+  auditlog: rw
+  tool_scanner: rw
+geen_toegang: []
+spelregels:
+  - 'gmail: Versturen namens de Raad alleen na goedkeuring'
+  - 'exact: Geen betalingen; boekingen alleen als concept'
+  - 'pms: Bevat gastgegevens (AVG)'
+kenmerken: {}

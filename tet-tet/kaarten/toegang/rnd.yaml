@@ -1,0 +1,24 @@
+# Toegangskaart afdeling: tools en data die de afdeling mag gebruiken.
+# rw = lezen en schrijven, r = alleen lezen, niet genoemd = geen toegang.
+id: toegang-rnd
+type: toegangskaart_afdeling
+afdeling: rnd
+versie: 1.0.0
+status: concept
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+eigenaar: risk-h
+connectors:
+  web: r
+  gdrive: rw
+  notion: rw
+  slack: rw
+  github: r
+intern:
+  brein: rw
+  webonderzoek: r
+  sandbox: rw
+  marktdata: r
+geen_toegang: []
+spelregels: []
+kenmerken: {}

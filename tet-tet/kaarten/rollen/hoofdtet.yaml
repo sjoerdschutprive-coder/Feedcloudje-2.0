@@ -1,0 +1,23 @@
+# Rolkaart: wat een rol mag en hoe ver hij reikt. Eigenaar: Raad.
+id: rol-hoofdtet
+type: rolkaart
+versie: 1.0.0
+status: concept
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+eigenaar: raad
+naam: Hoofdtet
+bereik: eigen_afdeling
+max_autonomieniveau: 3
+mag:
+  - taken.verdelen_binnen_afdeling
+  - output.accorderen
+  - lijnverzoek.accepteren_of_escaleren
+  - rapporteren.aan_oppertet
+  - brein.lezen
+  - brein.schrijven
+mag_niet:
+  - werk.andere_afdeling_wijzigen
+  - budget.boven_afdelingsbudget
+  - extern.communiceren
+kenmerken: {}

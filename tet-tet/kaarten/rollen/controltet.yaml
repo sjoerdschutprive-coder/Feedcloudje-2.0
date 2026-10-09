@@ -1,0 +1,23 @@
+# Rolkaart: wat een rol mag en hoe ver hij reikt. Eigenaar: Raad.
+id: rol-controltet
+type: rolkaart
+versie: 1.0.0
+status: concept
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+eigenaar: raad
+naam: Control Tet
+bereik: organisatie
+toegangsmodus: alleen_lezen
+max_autonomieniveau: 2
+mag:
+  - output.toetsen
+  - lijnen.meelezen
+  - bevinding.melden_aan_raad
+  - taak.blokkeren_bij_risico
+  - brein.lezen
+mag_niet:
+  - werk.herschrijven
+  - eigen_afdeling.beoordelen
+  - extern.communiceren
+kenmerken: {}

@@ -1,0 +1,40 @@
+# Cultuurkaart afdeling (laag 2) – erft alles van cultuur-tet-tet
+id: cultuur-prod
+type: cultuurkaart_afdeling
+afdeling: prod
+naam: Product
+erft_van: cultuur-tet-tet
+versie: 1.0.0
+status: concept
+eigenaar: prod-h
+goedgekeurd_door: raad
+geldig_vanaf: 2026-10-09
+
+missie: Wat we maken klopt voor de gast en is af, samenhangend en bruikbaar.
+verantwoordelijk_voor:
+  - Wat de organisatie levert: proposities, productroadmap en eisen
+  - Samenhang en eindredactie van eindproducten
+  - Pilot: proposities en gastreizen voor de drie hotels
+accent_op: [waarde-creeren, direct-en-kort]
+
+waarden:
+  - Wat we maken moet kloppen voor de gast.
+werkwijze:
+  - Van gastreis naar propositie.
+  - Klein beginnen, snel bijsturen.
+  - Eén stem in elk eindproduct.
+
+edge_principes:
+  - principe: Werk terug vanaf het eindresultaat
+    toepassing: Elke propositie begint met een korte 'persbericht en FAQ' vanuit de gast, vóórdat het uitgewerkt wordt.
+    bron: amazon-working-backwards
+  - principe: Vooraf vastgestelde definitie van klaar
+    toepassing: Elk product heeft vooraf acceptatiecriteria en een stopconditie; geen eindeloos polijsten.
+    bron: mast
+  - principe: Eén verantwoordelijke per product
+    toepassing: Elk product heeft één eigenaar die alle input samenbrengt en de knoop doorhakt.
+    bron: [amazon-working-backwards, netflix-cultuur]
+
+kwaliteitsnorm: Elke aanbeveling is concreet, haalbaar, doorgerekend door Finance en toegewezen.
+kpis: [concepten uitgewerkt, gastreizen getekend, getoetst door Finance]
+kenmerken: {}

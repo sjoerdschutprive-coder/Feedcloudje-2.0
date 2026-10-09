@@ -1,0 +1,41 @@
+# Cultuurkaart afdeling (laag 2) – erft alles van cultuur-tet-tet
+id: cultuur-ops
+type: cultuurkaart_afdeling
+afdeling: ops
+naam: Operations
+erft_van: cultuur-tet-tet
+versie: 1.0.0
+status: concept
+eigenaar: ops-h
+goedgekeurd_door: raad
+geldig_vanaf: 2026-10-09
+
+missie: Het systeem draait altijd en elke order wordt geleverd.
+verantwoordelijk_voor:
+  - Onderhoud van agents en hun configuratie
+  - Aanpassingen aan de codestructuur van de agents
+  - Orderfulfilment en uitvoering van orders
+  - Procesanalyse voor klanten (pilot: bedrijfsvoering van de drie hotels)
+accent_op: [waarde-creeren, feedback-als-motor]
+
+waarden:
+  - Het systeem moet altijd draaien.
+werkwijze:
+  - Eerst meten, dan verbeteren.
+  - Elke wijziging is terug te draaien.
+  - Elke order heeft op elk moment één eigenaar en een status.
+
+edge_principes:
+  - principe: Gevoelig voor de operatie
+    toepassing: Houd gezondheid, kosten en wachtrijen van agents continu in beeld en meld afwijkingen vóór ze incidenten worden.
+    bron: hro
+  - principe: Blameless incidentevaluatie
+    toepassing: Na elke storing of mislukte order binnen 24 uur een korte evaluatie met oorzaak in het systeem en één concrete verbetering.
+    bron: google-sre-postmortems
+  - principe: Tools als gebruikersinterface ontwerpen
+    toepassing: Elke tool die Operations voor agents bouwt of onderhoudt, krijgt een heldere beschrijving, voorbeelden en randgevallen.
+    bron: anthropic-effectieve-agents
+
+kwaliteitsnorm: Geen wijziging zonder terugdraaiplan, geen order zonder bevestigde levering.
+kpis: [uptime agents, open onderhoudstickets, doorlooptijd orders, incidenten met evaluatie]
+kenmerken: {}

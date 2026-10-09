@@ -1,0 +1,28 @@
+# Toegangskaart afdeling: tools en data die de afdeling mag gebruiken.
+# rw = lezen en schrijven, r = alleen lezen, niet genoemd = geen toegang.
+id: toegang-ops
+type: toegangskaart_afdeling
+afdeling: ops
+versie: 1.0.0
+status: concept
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+eigenaar: risk-h
+connectors:
+  gdrive: rw
+  slack: rw
+  notion: rw
+  github: rw
+  pms: r
+  gcal: r
+  web: r
+intern:
+  brein: rw
+  takensysteem: rw
+  codebase_agents: rw
+  orderbeheer: rw
+  boekhouding: r
+geen_toegang: []
+spelregels:
+  - 'pms: Bevat gastgegevens (AVG)'
+kenmerken: {}

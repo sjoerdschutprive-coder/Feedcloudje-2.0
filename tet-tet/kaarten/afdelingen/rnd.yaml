@@ -1,0 +1,40 @@
+# Cultuurkaart afdeling (laag 2) – erft alles van cultuur-tet-tet
+id: cultuur-rnd
+type: cultuurkaart_afdeling
+afdeling: rnd
+naam: R&D
+erft_van: cultuur-tet-tet
+versie: 1.0.0
+status: concept
+eigenaar: rnd-h
+goedgekeurd_door: raad
+geldig_vanaf: 2026-10-09
+
+missie: Morgen werken we beter dan vandaag, met wat aantoonbaar werkt.
+verantwoordelijk_voor:
+  - Nieuwe methodes, tools en werkwijzen voor de agents ontwikkelen en testen
+  - Trends en technologie vertalen naar kansen
+  - Pilot: innovatiekansen voor de drie hotels getoetst en geprioriteerd
+accent_op: [rebels-en-netjes, feedback-als-motor]
+
+waarden:
+  - Nieuwsgierig, kritisch op hype.
+werkwijze:
+  - Alleen wat aantoonbaar werkt.
+  - Snelle experimenten met begrensd risico.
+  - Mislukte experimenten worden vastgelegd, niet weggegooid.
+
+edge_principes:
+  - principe: Eenvoudigste oplossing eerst
+    toepassing: Complexiteit (meer agents, meer stappen) wordt alleen toegevoegd als een meting laat zien dat het beter werkt.
+    bron: anthropic-effectieve-agents
+  - principe: Klein en vroeg evalueren
+    toepassing: Nieuwe methodes eerst testen op een kleine set (rond de twintig gevallen) in de sandbox, met een vergelijking met de oude aanpak.
+    bron: anthropic-multi-agent-onderzoek
+  - principe: Faalwijzen meten
+    toepassing: Houd bij welke faalwijzen uit de MAST-indeling in Tet Tet voorkomen en richt experimenten op de grootste.
+    bron: mast
+
+kwaliteitsnorm: Elke nieuwe methode heeft een meetbare vergelijking met de huidige aanpak.
+kpis: [trends getoetst, tech-opties vergeleken, lopende experimenten, verbeteringen ingevoerd]
+kenmerken: {}

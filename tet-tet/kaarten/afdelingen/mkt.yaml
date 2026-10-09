@@ -1,0 +1,40 @@
+# Cultuurkaart afdeling (laag 2) – erft alles van cultuur-tet-tet
+id: cultuur-mkt
+type: cultuurkaart_afdeling
+afdeling: mkt
+naam: Marketing
+erft_van: cultuur-tet-tet
+versie: 1.0.0
+status: concept
+eigenaar: mkt-h
+goedgekeurd_door: raad
+geldig_vanaf: 2026-10-09
+
+missie: We begrijpen de gast en de markt beter dan de klant zelf.
+verantwoordelijk_voor:
+  - Positionering, doelgroepen en marketingplannen
+  - Analyse van reviews en online reputatie
+  - Pilot: positionering en marketingplan per doelgroep voor de drie hotels
+accent_op: [direct-en-kort, eerlijk-over-zekerheid]
+
+waarden:
+  - De gast centraal.
+werkwijze:
+  - Elke claim onderbouwd.
+  - Testen boven meningen.
+  - Geen superlatieven zonder bewijs.
+
+edge_principes:
+  - principe: Breed beginnen, dan versmallen
+    toepassing: Onderzoek start met een brede verkenning van markt en bronnen en wordt daarna stap voor stap specifieker.
+    bron: anthropic-multi-agent-onderzoek
+  - principe: Bronkwaliteit boven bronaantal
+    toepassing: Gezaghebbende bronnen en eigen data gaan voor contentfarms en SEO-teksten; bronkeuze wordt vermeld.
+    bron: anthropic-multi-agent-onderzoek
+  - principe: Werk terug vanaf de gast
+    toepassing: Elke positionering begint met de gastervaring die we willen bereiken, en werkt van daaruit terug naar boodschap en kanaal.
+    bron: amazon-working-backwards
+
+kwaliteitsnorm: Elke marktclaim heeft een bron of is als aanname gemarkeerd; analyses dekken alle locaties van de klant.
+kpis: [doelgroepen uitgewerkt, reviews geanalyseerd, gemiddelde reviewscore, claims met bron]
+kenmerken: {}

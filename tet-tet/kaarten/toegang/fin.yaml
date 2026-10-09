@@ -1,0 +1,28 @@
+# Toegangskaart afdeling: tools en data die de afdeling mag gebruiken.
+# rw = lezen en schrijven, r = alleen lezen, niet genoemd = geen toegang.
+id: toegang-fin
+type: toegangskaart_afdeling
+afdeling: fin
+versie: 1.0.0
+status: concept
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+eigenaar: risk-h
+connectors:
+  exact: rw
+  gdrive: rw
+  slack: rw
+  pms: r
+  hubspot: r
+  web: r
+intern:
+  brein: rw
+  boekhouding: rw
+  rekenmodellen: rw
+  marktdata: r
+geen_toegang:
+  - betalingen
+spelregels:
+  - 'exact: Geen betalingen; boekingen alleen als concept'
+  - 'pms: Bevat gastgegevens (AVG)'
+kenmerken: {}

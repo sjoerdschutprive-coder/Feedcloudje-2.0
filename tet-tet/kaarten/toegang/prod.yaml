@@ -1,0 +1,27 @@
+# Toegangskaart afdeling: tools en data die de afdeling mag gebruiken.
+# rw = lezen en schrijven, r = alleen lezen, niet genoemd = geen toegang.
+id: toegang-prod
+type: toegangskaart_afdeling
+afdeling: prod
+versie: 1.0.0
+status: concept
+goedgekeurd_door: raad
+geldig_vanaf: '2026-10-09'
+eigenaar: risk-h
+connectors:
+  notion: rw
+  gdrive: rw
+  canva: rw
+  slack: rw
+  reviews: r
+  pms: r
+  web: r
+intern:
+  brein: rw
+  reviewdata: r
+  ontwerpbord: rw
+  takensysteem: rw
+geen_toegang: []
+spelregels:
+  - 'pms: Bevat gastgegevens (AVG)'
+kenmerken: {}
