@@ -111,6 +111,27 @@ class WerkdagTest(unittest.TestCase):
         self.assertTrue(any(b["soort"] == "incident" for b in afkeur))
         self.assertTrue(all(b["zekerheid"] == "middel" and b.get("bevestigd_door") == "fin-h" for b in afkeur))
 
+    def test_stand_per_agent_met_stabiliteit_en_afkeurreden(self):
+        Werkdag.start(self.dump, self.werk)
+        draai_werkdag(self.werk, streng_voor=("t1",))
+        wd = Werkdag(self.werk)
+        self.assertEqual(wd.staat.taken["t1"]["afkeurreden"], "Bron ontbreekt.")   # blijft staan na de herkansing
+        bericht = wd._routine_bericht("performance")
+        self.assertIn("stabiliteitsscore: nog niet gemeten", bericht)              # geen verzonnen getal zolang niet gemeten
+        self.assertIn("afgekeurd: 'Scherper werk': Bron ontbreekt.", bericht)
+        self.assertIn(", sluit", "\n".join(wd._stand_regels()))
+
+    def test_statustelling_controleert_de_som(self):
+        from tettet.werkdag import afkeurreden, stabiliteit_tekst, statustelling
+        goed = statustelling([{"status": "klaar"}, {"status": "bezig"}, {"status": "klaar"}])
+        self.assertEqual((goed["per_status"], goed["sluit"]), ({"bezig": 1, "klaar": 2}, True))
+        fout = statustelling([{"status": "klaar"}, {}])
+        self.assertFalse(fout["sluit"])
+        self.assertEqual(fout["per_status"]["onbekend"], 1)
+        self.assertEqual(afkeurreden({"bevindingen": ["Eerste\nregel", "tweede"]}), "Eerste regel")
+        self.assertEqual(afkeurreden({}), "geen reden vastgelegd")
+        self.assertEqual(stabiliteit_tekst({"meetwaarden": {"stabiliteitsscore": 0.8}}), "0.8")
+
     def test_niet_meetbaar_vraagt_de_raad(self):
         Werkdag.start(self.dump, self.werk)
         wd = Werkdag(self.werk)

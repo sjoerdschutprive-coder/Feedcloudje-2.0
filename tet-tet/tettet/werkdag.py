@@ -36,6 +36,31 @@ ROUTINES = [("voorstellen", "rnd-h"), ("performance", "hr-h"), ("risico", "risk-
 kort = lambda s, n=70: (s := str(s or "")) if len(s) <= n else s[: n - 1] + "…"
 
 
+def statustelling(taken) -> dict:
+    """Taken per status, met de controle dat de som gelijk is aan het totaal (een taak zonder status telt als 'onbekend')."""
+    taken = list(taken)
+    per: dict[str, int] = {}
+    for t in taken:
+        k = str(t.get("status") or "onbekend")
+        per[k] = per.get(k, 0) + 1
+    som = sum(per.values())
+    return {"per_status": dict(sorted(per.items())), "som": som, "totaal": len(taken), "sluit": som == len(taken) and "onbekend" not in per}
+
+
+def stabiliteit_tekst(agent: dict) -> str:
+    """Stabiliteitsscore uit de profielkaart (meetwaarden); zolang die niet gemeten is, staat er geen getal."""
+    w = (agent.get("meetwaarden") or {}).get("stabiliteitsscore")
+    return "nog niet gemeten" if w is None else str(w)
+
+
+def afkeurreden(t: dict) -> str:
+    """De reden van een afkeuring in één regel: de eerste bevinding van de Control Tet."""
+    if t.get("afkeurreden"):
+        return kort(str(t["afkeurreden"]), 120)
+    b = [str(x) for x in (t.get("bevindingen") or []) if str(x).strip()]
+    return kort(b[0].replace("\n", " "), 120) if b else "geen reden vastgelegd"
+
+
 class Werkdag(SamenwerkingStappen, HRStappen):
     def __init__(self, werk: pathlib.Path, org: Organisatie | None = None):
         self.werk = werk
@@ -322,11 +347,14 @@ class Werkdag(SamenwerkingStappen, HRStappen):
     def _stand_regels(self) -> list[str]:
         st = self.staat
         tel = lambda f: sum(1 for t in st.taken.values() if f(t))
+        telling = statustelling(st.taken.values())
         return [f"Doelstelling: {st.doel.get('naam') or 'nog niet ingesteld'} (deadline {st.doel.get('deadline') or 'geen'})",
                 f"Afdelingen met doel: {sum(1 for a in st.afdelingsdoelen.values() if a.get('doel'))} van 7",
                 f"Taken: {len(st.taken)} totaal, {tel(lambda t: t.get('status') == 'klaar')} klaar, {tel(lambda t: t.get('status') == 'volgende')} open, "
                 f"{tel(lambda t: t.get('status') not in ('klaar', 'volgende'))} overig "
                 f"(los daarvan: {tel(lambda t: t.get('approval'))} met een Raadsakkoord nodig, {tel(lambda t: t.get('geescaleerd'))} geëscaleerd; die tellen ook mee in de aantallen hiervoor)",
+                f"Telling per status: " + ", ".join(f"{k} {n}" for k, n in telling["per_status"].items())
+                + (f" = {telling['som']}, sluit" if telling["sluit"] else f" = {telling['som']} tegen {telling['totaal']} totaal: TELLING SLUIT NIET, controleer de taken"),
                 f"Open verbetervoorstellen: {sum(1 for v in st.voorstellen.values() if v.get('status') == 'open')}",
                 f"Lessen in het Brein: {len(st.brein)}"]
 
@@ -346,7 +374,9 @@ class Werkdag(SamenwerkingStappen, HRStappen):
                     b = d[c]
                     delen.append(f"{c.replace('_', ' ')}: " + (f"{b['waarde']} ({b['onder']}–{b['boven']}, n={b['n']})" if b["status"] == "ok" and b.get("onder") is not None
                                                              else f"{b['waarde']} (n={b['n']})" if b["status"] == "ok" else f"te weinig data (n={b['n']})"))
-                regels.append(f"- {a['naam']}: " + "; ".join(delen) + f"; grensovertredingen: {p['poort']['grensnaleving']['overtredingen']}")
+                regels.append(f"- {a['naam']}: " + "; ".join(delen) + f"; grensovertredingen: {p['poort']['grensnaleving']['overtredingen']}"
+                              + f"; stabiliteitsscore: {stabiliteit_tekst(a)}")
+                regels += [f"  - afgekeurd: '{kort(t.get('title'), 50)}': {afkeurreden(t)}" for t in taken if t.get("agent") == a["id"] and (t.get("afkeuringen") or t.get("afkeurreden"))][:5]
         elif routine == "risico":
             regels.append("# Signalen")
             for t in st.taken.values():
@@ -504,13 +534,14 @@ class Werkdag(SamenwerkingStappen, HRStappen):
             self.log(f"{self.org.agent(t['agent'])['naam']} rondde '{kort(t.get('title'), 50)}' af (score {score}).")
             return {"uitkomst": "goedgekeurd", "score": score, "klaar": True}
         afk = t.get("afkeuringen", 0) + 1
+        reden = {"afkeurreden": afkeurreden({"bevindingen": bevindingen})}   # één regel per afkeuring, blijft staan na een herkansing
         if afk >= self.max_afkeuringen:
-            self.s.patch("taken", t["id"], {"status": "volgende", "afkeuringen": afk, "score": score, "bevindingen": bevindingen, "geescaleerd": True, "approval": False})
+            self.s.patch("taken", t["id"], {"status": "volgende", "afkeuringen": afk, "score": score, "bevindingen": bevindingen, "geescaleerd": True, "approval": False, **reden})
             self.s.event("escalatie", ct, {"naar": self.org.hoofdtet(t["dept"])["id"]}, t["id"])
             stap["status"] = "klaar"
             self.log(f"'{kort(t.get('title'), 50)}' na {afk} afkeuringen geëscaleerd naar de Hoofdtet.")
             return {"uitkomst": "geescaleerd", "klaar": True}
-        self.s.patch("taken", t["id"], {"afkeuringen": afk, "score": score, "bevindingen": bevindingen, "status": "bezig"})
+        self.s.patch("taken", t["id"], {"afkeuringen": afk, "score": score, "bevindingen": bevindingen, "status": "bezig", **reden})
         stap["fase"], stap["poging"] = "tet", stap.get("poging", 1) + 1
         return {"uitkomst": "afgekeurd", "klaar": False, "volgende": "prompt"}
 

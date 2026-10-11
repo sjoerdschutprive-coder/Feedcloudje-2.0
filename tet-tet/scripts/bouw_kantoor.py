@@ -52,7 +52,9 @@ def blok(org: Organisatie) -> str:
                 # Effectieve toegang (zonder publieke bronnen): het deelfilter in de kantine rekent hiermee.
                 "toegang": sorted(b for b in org.effectieve_toegang(i).bronnen if b not in sw.PUBLIEK),
                 # Lijn: rapporteert_aan uit de kaart, niveau uit de rolkaart. Wie er nu boven zit, rekent de pagina uit (de assistent telt alleen als hij is ingezet).
-                "rapporteert_aan": a["rapporteert_aan"], "niveau": org.niveau(i)}
+                "rapporteert_aan": a["rapporteert_aan"], "niveau": org.niveau(i),
+                # Stand per agent: de stabiliteitsscore uit de profielkaart (null = nog niet gemeten).
+                "stabiliteitsscore": (a.get("meetwaarden") or {}).get("stabiliteitsscore")}
         if a["mandaat"]["inperkingen"]:
             item["inperking"] = a["mandaat"]["inperkingen"]
         agents.append(item)
