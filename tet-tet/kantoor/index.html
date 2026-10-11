@@ -344,6 +344,7 @@
   /* ---------- Rooster en chat met de Oppertet ---------- */
   .rooster-nu { margin-top: 2px !important; color: var(--accent) !important; }
   .rooster-btn { top: 62px; }
+  .pauze-balk { margin-top: 6px !important; color: var(--warn) !important; font-weight: 700; }
   @media (min-width: 601px) { .livefeed { top: 104px; } }
   #view-office.nacht #office { filter: brightness(.62) saturate(.8); }
   .desk.rust { opacity: .42; }
@@ -407,6 +408,7 @@
     <h1>Tet Tet<span>-kantoor</span></h1>
     <p id="doelLine"></p>
     <p id="roosterNu" class="rooster-nu"></p>
+    <p id="pauzeBalk" class="pauze-balk" hidden>⏸ Gepauzeerd: Claude-agents staan uit, geen verbruik. Alles draait in mockmodus.</p>
   </div>
   <button class="conn-btn rooster-btn" id="roosterBtn" aria-label="Weekrooster"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Rooster</span></button>
   <button class="conn-btn" id="connBtn" aria-label="Connectors per afdeling">
@@ -2607,7 +2609,7 @@ async function vraagAgent(agentId, bericht, ctx = {}) {
   meldActiviteit(agentId, "bezig", ctx.label || "denkt na", ctx.taak, ctx.plek || null);
   try {
     let uit;
-    if (instellingen.modus === "claude") {
+    if (instellingen.modus === "claude" && !instellingen.pauze) {
       if (!LIVE.sample) throw new Error("Claude is in deze weergave niet beschikbaar. Zet de agents op mock.");
       const input = AGENT_PROMPTS[agentId] + "\n\n---\n\n" + bericht;
       const opts = { cache: false, signal: LIVE.run ? LIVE.run.ctl.signal : undefined };
@@ -3090,6 +3092,7 @@ function livePanel() {
 function wireLive(root) {
   root.querySelectorAll("[data-modus]").forEach(b => b.onclick = () => {
     if (LIVE.alleenLezen) return;
+    if (instellingen.pauze && b.dataset.modus === "claude") { melding("Het kantoor staat op pauze: Claude-agents zijn uit."); return; }
     instellingen.modus = b.dataset.modus; logEvent("instellingen.modus", "raad", { modus: instellingen.modus }); save(); refresh();
   });
   const k = root.querySelector("#liveKeten");
@@ -3534,7 +3537,7 @@ async function stuurChat(tekst) {
     if (VERBODEN.test(tekst)) {
       antwoord = "Dat doe ik niet via de chat. Harde grenzen, mandaten en toegang veranderen alleen via de kaarten in de repository, met versie-ophoging en vastlegging in het grootboek. Zeg wat je wilt bereiken, dan kijk ik wat binnen de grenzen kan.";
       logEvent("raad.chat_geweigerd", "oppertet", { reden: "verruiming via chat" });
-    } else if (LIVE.sample) {
+    } else if (LIVE.sample && !instellingen.pauze) {
       const geschiedenis = raadschat.slice(-16).map(c => (c.rol === "raad" ? "Raad: " : "Oppertet: ") + c.tekst).join("\n\n");
       const input = AGENT_PROMPTS.oppertet + "\n\n---\n\n" + CHAT_INSTRUCTIE + "\n\n" + oppertetContext() + "\n\n## Gesprek\n" + geschiedenis + "\n\nAntwoord nu als Oppertet op het laatste bericht van de Raad.";
       CHAT.ctl = new AbortController();
@@ -3603,16 +3606,16 @@ function renderChat() {
   const cw = document.getElementById("chatCtxWeg"); if (cw) cw.onclick = () => { CHAT.context = null; renderChat(); };
   document.getElementById("chatStop").hidden = !CHAT.bezig;
   document.getElementById("chatSend").disabled = CHAT.bezig || LIVE.alleenLezen;
-  document.getElementById("chatModus").textContent = LIVE.sample ? "Claude · live" : "mockmodus";
+  document.getElementById("chatModus").textContent = instellingen.pauze ? "gepauzeerd · geen verbruik" : LIVE.sample ? "Claude · live" : "mockmodus";
   lijst.querySelectorAll("[data-uit]").forEach(b => b.onclick = async () => {
     const c = raadschat.find(x => x.id === b.dataset.uit); if (!c || c.uitgezet) return;
     b.disabled = true;
-    if (LIVE.sample && instellingen.modus !== "claude") { instellingen.modus = "claude"; logEvent("instellingen.modus", "raad", { modus: "claude", via: "chat" }); }
+    if (LIVE.sample && !instellingen.pauze && instellingen.modus !== "claude") { instellingen.modus = "claude"; logEvent("instellingen.modus", "raad", { modus: "claude", via: "chat" }); }
     const o = await zetUit(c.voorstel, "chat");
     if (o) { c.uitgezet = o.id; schrijfRaadDoc("raadschat", c); melding(`${o.id} is uitgezet en wordt nu uitgevoerd.`); startTicket(o.id); }
     renderChat();
   });
-  lijst.querySelectorAll("[data-aok]").forEach(b => b.onclick = () => { const c = raadschat.find(x => x.id === b.dataset.aok); if (!c) return; b.disabled = true; if (LIVE.sample && instellingen.modus !== "claude") { instellingen.modus = "claude"; logEvent("instellingen.modus", "raad", { modus: "claude", via: "chat" }); } keurGoed(c.actie.taken); schrijfRaadDoc("raadschat", c); renderChat(); });
+  lijst.querySelectorAll("[data-aok]").forEach(b => b.onclick = () => { const c = raadschat.find(x => x.id === b.dataset.aok); if (!c) return; b.disabled = true; if (LIVE.sample && !instellingen.pauze && instellingen.modus !== "claude") { instellingen.modus = "claude"; logEvent("instellingen.modus", "raad", { modus: "claude", via: "chat" }); } keurGoed(c.actie.taken); schrijfRaadDoc("raadschat", c); renderChat(); });
   lijst.querySelectorAll("[data-actie]").forEach(b => b.onclick = () => {
     const c = raadschat.find(x => x.id === b.dataset.actie); if (!c) return;
     if (c.actie.type === "intrekken") trekIn(c.actie.ticket); else startTicket(c.actie.ticket);
@@ -3739,7 +3742,7 @@ async function verdeelOverTets(t, o) {
 }
 async function samenvatTicket(o, taken) {
   const delen = taken.map(x => `## ${deptById[x.dept].naam} · ${agentById[x.agent]?.naam || "-"} (score ${x.score ?? "-"})\n${kort(blokVan(x.resultaat, "Resultaat") || x.resultaat || "", 1500)}`).join("\n\n");
-  if (instellingen.modus === "claude" && LIVE.sample) {
+  if (instellingen.modus === "claude" && LIVE.sample && !instellingen.pauze) {
     try {
       const r = await LIVE.sample((AGENT_PROMPTS[o.eigenaar] || "") + `\n\n---\n\n# Ticket ${o.id}: ${o.titel}\nWat er moest liggen: ${o.doel}\n\n# Opgeleverd werk\n${delen}\n\n# Opdracht\nVat voor de Raad samen in hooguit vijf korte regels: wat er nu ligt, de belangrijkste conclusie, wat de Raad moet weten of beslissen. Geen opvulling.`, { cache: false });
       return r.text.trim();
@@ -3858,6 +3861,7 @@ function ticketBord() {
 
 /* Kopregel en nachtstand van het kantoor volgen het rooster. */
 function toonRoosterNu() {
+  const pz = document.getElementById("pauzeBalk"); if (pz) pz.hidden = !instellingen.pauze;
   const p = document.getElementById("roosterNu"); if (!p) return;
   const nu = new Date(), u = nu.getHours();
   const act = AGENTS.filter(a => actief(a) && roosterNu(a, nu).soort !== "rust");
