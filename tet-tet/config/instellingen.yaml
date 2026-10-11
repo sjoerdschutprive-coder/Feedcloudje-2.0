@@ -14,6 +14,13 @@ model:
 taken:
   # Na zoveel afkeuringen door een Control Tet escaleert een taak naar de Hoofdtet.
   max_afkeuringen: 2
+  # Elk verzoek aan de Raad krijgt een uiterste beslisdatum vóór de deadline (deadline min marge_dagen, nooit vóór vandaag;
+  # zonder deadline: vandaag plus zonder_deadline_dagen) en een veilig standaardgedrag zolang er geen besluit is.
+  # De Oppertet ziet in de stand welke verzoeken over hun datum zijn.
+  raadsakkoord:
+    marge_dagen: 1
+    zonder_deadline_dagen: 3
+    standaardgedrag: "Werk gaat door op de huidige, al goedgekeurde kaarten; niets onomkeerbaars, connectors en externe acties blijven dicht tot de Raad besluit."
 
 brein:
   # Een nieuwe les met minstens deze woordoverlap (Jaccard, 0-1) met een bestaande les wordt niet apart

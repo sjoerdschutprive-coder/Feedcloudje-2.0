@@ -132,6 +132,28 @@ class WerkdagTest(unittest.TestCase):
         self.assertEqual(afkeurreden({}), "geen reden vastgelegd")
         self.assertEqual(stabiliteit_tekst({"meetwaarden": {"stabiliteitsscore": 0.8}}), "0.8")
 
+    def test_raadsverzoek_met_beslisdatum_en_standaardgedrag(self):
+        Werkdag.start(self.dump, self.werk)
+        draai_werkdag(self.werk)
+        wd = Werkdag(self.werk)
+        t2 = wd.staat.taken["t2"]
+        self.assertTrue(t2["approval"])
+        self.assertEqual(t2["beslis_voor"], "2026-12-30")          # één dag vóór de deadline van de doelstelling
+        self.assertIn("al goedgekeurde kaarten", t2["standaardgedrag"])
+        self.assertIn("Raad beslist uiterlijk 2026-12-30", wd._routine_bericht("risico"))
+        # een lopend verzoek houdt zijn afgesproken datum
+        self.assertNotIn("beslis_voor", wd._raadsverzoek(t2, raadsvraag="x"))
+
+    def test_beslisregel_en_verlopen(self):
+        from tettet.werkdag import beslisregel, verlopen_raadsverzoeken
+        self.assertEqual(beslisregel("2026-10-20", {"marge_dagen": 2}, "2026-10-11")["beslis_voor"], "2026-10-18")
+        self.assertEqual(beslisregel("2026-10-11", {}, "2026-10-11")["beslis_voor"], "2026-10-11")   # nooit vóór vandaag
+        self.assertEqual(beslisregel(None, {"zonder_deadline_dagen": 3}, "2026-10-11")["beslis_voor"], "2026-10-14")
+        self.assertEqual(beslisregel("onzin", {}, "2026-10-11")["beslis_voor"], "2026-10-14")
+        taken = [{"approval": True, "status": "bezig", "beslis_voor": "2026-10-10"}, {"approval": True, "status": "bezig", "beslis_voor": "2026-10-12"},
+                 {"approval": False, "beslis_voor": "2026-10-01"}]
+        self.assertEqual(len(verlopen_raadsverzoeken(taken, "2026-10-11")), 1)
+
     def test_niet_meetbaar_vraagt_de_raad(self):
         Werkdag.start(self.dump, self.werk)
         wd = Werkdag(self.werk)

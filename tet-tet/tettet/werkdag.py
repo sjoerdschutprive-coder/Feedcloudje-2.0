@@ -13,6 +13,7 @@ De agent zelf is een subagent van de sessie die de prompt uitvoert en zijn antwo
 """
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import pathlib
 import re
@@ -34,6 +35,7 @@ MAX_ESCALATIES = 3
 ROUTINE_INTERVAL_MS = 20 * 3600 * 1000
 ROUTINES = [("voorstellen", "rnd-h"), ("performance", "hr-h"), ("risico", "risk-h")]
 kort = lambda s, n=70: (s := str(s or "")) if len(s) <= n else s[: n - 1] + "…"
+STANDAARDGEDRAG = "Werk gaat door op de huidige, al goedgekeurde kaarten; niets onomkeerbaars, connectors en externe acties blijven dicht tot de Raad besluit."
 
 
 def statustelling(taken) -> dict:
@@ -45,6 +47,18 @@ def statustelling(taken) -> dict:
         per[k] = per.get(k, 0) + 1
     som = sum(per.values())
     return {"per_status": dict(sorted(per.items())), "som": som, "totaal": len(taken), "sluit": som == len(taken) and "onbekend" not in per}
+
+
+def beslisregel(deadline: str | None, inst: dict | None = None, vandaag: str | None = None) -> dict:
+    """Uiterste beslisdatum (vóór de deadline) en veilig standaardgedrag voor een verzoek aan de Raad."""
+    inst = inst or {}
+    nu = _dt.date.fromisoformat(vandaag) if vandaag else _dt.date.today()
+    marge, zonder = int(inst.get("marge_dagen", 1)), int(inst.get("zonder_deadline_dagen", 3))
+    try:
+        d = _dt.date.fromisoformat(str(deadline)[:10]) - _dt.timedelta(days=marge) if deadline else nu + _dt.timedelta(days=zonder)
+    except ValueError:
+        d = nu + _dt.timedelta(days=zonder)
+    return {"beslis_voor": max(d, nu).isoformat(), "standaardgedrag": str(inst.get("standaardgedrag") or STANDAARDGEDRAG)}
 
 
 def stabiliteit_tekst(agent: dict) -> str:
@@ -61,6 +75,12 @@ def afkeurreden(t: dict) -> str:
     return kort(b[0].replace("\n", " "), 120) if b else "geen reden vastgelegd"
 
 
+def verlopen_raadsverzoeken(taken, vandaag: str | None = None) -> list[dict]:
+    """Openstaande verzoeken aan de Raad waarvan de uiterste beslisdatum voorbij is: de Oppertet ziet erop toe."""
+    nu = vandaag or _dt.date.today().isoformat()
+    return [t for t in taken if t.get("approval") and t.get("status") != "klaar" and t.get("beslis_voor") and str(t["beslis_voor"]) < nu]
+
+
 class Werkdag(SamenwerkingStappen, HRStappen):
     def __init__(self, werk: pathlib.Path, org: Organisatie | None = None):
         self.werk = werk
@@ -68,6 +88,7 @@ class Werkdag(SamenwerkingStappen, HRStappen):
         inst = laad_instellingen()
         self.max_afkeuringen = inst["taken"]["max_afkeuringen"]
         self.drempel = float(inst.get("brein", {}).get("overlap_drempel", 0.6))
+        self.raadsakkoord = inst["taken"].get("raadsakkoord") or {}
         self._samen_instellingen(inst)
         self._hr_instellingen(inst)
         self.staat = KantoorStaat.uit_json(json.loads((werk / "staat.json").read_text(encoding="utf-8")))
@@ -92,7 +113,7 @@ class Werkdag(SamenwerkingStappen, HRStappen):
                 hersteld += 1
             # tweede escalatie: niet nog een herkansing, maar naar de Raad
             if t.get("geescaleerd") and not t.get("approval") and t.get("herkansingen", 0) >= 1:
-                wd.s.patch("taken", t["id"], {"approval": True, "raadsvraag": "Na een herkansing opnieuw afgekeurd."})
+                wd.s.patch("taken", t["id"], wd._raadsverzoek(t, raadsvraag="Na een herkansing opnieuw afgekeurd."))
         wd.s.activiteit("oppertet", "bezig", "start de werkdag", "werkdag")
         wd.s.event("werkdag.gestart", "oppertet", {"hersteld": hersteld, "doelstelling": wd.staat.doel.get("naam", "")})
         wd.log(f"Werkdag gestart; {hersteld} vastgelopen taken hersteld.")
@@ -348,6 +369,7 @@ class Werkdag(SamenwerkingStappen, HRStappen):
         st = self.staat
         tel = lambda f: sum(1 for t in st.taken.values() if f(t))
         telling = statustelling(st.taken.values())
+        verlopen = verlopen_raadsverzoeken(st.taken.values())
         return [f"Doelstelling: {st.doel.get('naam') or 'nog niet ingesteld'} (deadline {st.doel.get('deadline') or 'geen'})",
                 f"Afdelingen met doel: {sum(1 for a in st.afdelingsdoelen.values() if a.get('doel'))} van 7",
                 f"Taken: {len(st.taken)} totaal, {tel(lambda t: t.get('status') == 'klaar')} klaar, {tel(lambda t: t.get('status') == 'volgende')} open, "
@@ -355,8 +377,18 @@ class Werkdag(SamenwerkingStappen, HRStappen):
                 f"(los daarvan: {tel(lambda t: t.get('approval'))} met een Raadsakkoord nodig, {tel(lambda t: t.get('geescaleerd'))} geëscaleerd; die tellen ook mee in de aantallen hiervoor)",
                 f"Telling per status: " + ", ".join(f"{k} {n}" for k, n in telling["per_status"].items())
                 + (f" = {telling['som']}, sluit" if telling["sluit"] else f" = {telling['som']} tegen {telling['totaal']} totaal: TELLING SLUIT NIET, controleer de taken"),
+                f"Raadsverzoeken voorbij hun beslisdatum: {len(verlopen)}"
+                + (" (" + "; ".join(f"'{kort(t.get('title'), 50)}' beslis vóór {t.get('beslis_voor')}, intussen: {t.get('standaardgedrag')}" for t in verlopen[:3]) + ")" if verlopen else ""),
                 f"Open verbetervoorstellen: {sum(1 for v in st.voorstellen.values() if v.get('status') == 'open')}",
                 f"Lessen in het Brein: {len(st.brein)}"]
+
+    def _raadsverzoek(self, t: dict, **velden) -> dict:
+        """Velden voor een verzoek aan de Raad: altijd met een uiterste beslisdatum vóór de deadline en een veilig standaardgedrag."""
+        if t.get("approval") and t.get("beslis_voor") and t.get("standaardgedrag"):   # lopend verzoek: de afgesproken datum blijft staan
+            return {"approval": True, **velden}
+        ad = self.staat.afdelingsdoelen.get(t.get("dept"), {})
+        deadline = ad.get("deadline") or self.staat.doel.get("deadline")
+        return {"approval": True, **beslisregel(deadline, self.raadsakkoord), **velden}
 
     def _routine_bericht(self, routine: str) -> str:
         st, org = self.staat, self.org
@@ -383,6 +415,8 @@ class Werkdag(SamenwerkingStappen, HRStappen):
                 if t.get("geescaleerd") or t.get("approval"):
                     regels.append(f"- {org.afdelingen[t['dept']]['naam']}: '{kort(t.get('title'), 80)}' {'geëscaleerd' if t.get('geescaleerd') else ''} {'wacht op Raad' if t.get('approval') else ''}".rstrip())
                     regels += [f"  - bevinding: {b}" for b in (t.get("bevindingen") or [])[:2]]
+                    if t.get("approval") and t.get("beslis_voor"):
+                        regels.append(f"  - Raad beslist uiterlijk {t['beslis_voor']}; intussen: {t.get('standaardgedrag') or STANDAARDGEDRAG}")
             regels.append(f"- Beleidsovertredingen in het grootboek: {sum(1 for e in st.grootboek if e.get('type') == 'beleid.overtreding')}")
         elif routine == "voorstellen":
             afgekeurd = [t for t in st.taken.values() if t.get("afkeuringen")]
@@ -498,7 +532,7 @@ class Werkdag(SamenwerkingStappen, HRStappen):
             self.s.event("taak.opgeleverd", t["agent"], {"tekens": len(tekst)}, t["id"])
             self.s.activiteit(t["agent"], "klaar", "leverde op: " + kort(t.get("title")), t["id"])
             if t.get("control") == "raad":
-                self.s.patch("taken", t["id"], {"approval": True})
+                self.s.patch("taken", t["id"], self._raadsverzoek(t))
                 self.s.event("goedkeuring.gevraagd", t["agent"], {}, t["id"])
                 stap["status"] = "klaar"
                 self.log(f"{self.org.agent(t['agent'])['naam']} leverde '{kort(t.get('title'), 50)}' op; wacht op de Raad.")
@@ -600,7 +634,7 @@ class Werkdag(SamenwerkingStappen, HRStappen):
             for k in route["kopie"]:
                 self.s.event("escalatie.kopie", k, {"van": stap["agent"], "naar": route["naar"], "soort": route["soort"]}, t["id"])
             if route["naar"] == "raad":
-                self.s.patch("taken", t["id"], {"approval": True, "raadsvraag": toelichting})
+                self.s.patch("taken", t["id"], self._raadsverzoek(t, raadsvraag=toelichting))
                 uit = "naar de Raad"
             else:   # via de directie: eerst de assistent, of via de directe lijn de Oppertet; het origineel gaat ongewijzigd mee
                 self.s.patch("taken", t["id"], {"escalatie_bij": route["naar"], "escalatie": {"van": stap["agent"], "soort": route["soort"], "toelichting": toelichting,
@@ -649,7 +683,7 @@ class Werkdag(SamenwerkingStappen, HRStappen):
             vraag = "\n\n".join(x for x in [e.get("toelichting") or "",
                                               f"Samenvatting Assistent-Oppertet: {e['samenvatting_assistent']}" if e.get("samenvatting_assistent") else "",
                                               f"Oppertet: {o.get('toelichting')}" if o.get("toelichting") else ""] if x)
-            self.s.patch("taken", t["id"], {"approval": True, "raadsvraag": vraag, "escalatie_bij": None})
+            self.s.patch("taken", t["id"], self._raadsverzoek(t, raadsvraag=vraag, escalatie_bij=None))
             self.s.event("escalatie.bij_raad", stap["agent"], {}, t["id"])
             uit = "naar de Raad"
         self.s.activiteit(stap["agent"], "klaar", f"escalatie {uit}: " + kort(t.get("title")), t["id"])

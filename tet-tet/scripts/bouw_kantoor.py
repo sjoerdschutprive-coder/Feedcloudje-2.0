@@ -20,6 +20,7 @@ from tettet import directie as dr  # noqa: E402
 from tettet import keten  # noqa: E402
 from tettet import prestatie  # noqa: E402
 from tettet import samenwerking as sw  # noqa: E402
+from tettet import werkdag  # noqa: E402
 from tettet.kaarten import Organisatie  # noqa: E402
 from tettet.validatie import controleer_mappen  # noqa: E402
 
@@ -31,6 +32,12 @@ VOLGORDE = ["oppertet", "oppertet-a", "ops-h", "ops-1", "ops-2", "ops-3", "fin-h
 
 def principes(kaart):
     return [f'{p["principe"]}: {p["toepassing"].strip()}' for p in kaart.get("edge_principes", [])]
+
+
+def raadsakkoord(inst: dict) -> dict:
+    r = (inst.get("taken") or {}).get("raadsakkoord") or {}
+    return {"marge_dagen": int(r.get("marge_dagen", 1)), "zonder_deadline_dagen": int(r.get("zonder_deadline_dagen", 3)),
+            "standaardgedrag": str(r.get("standaardgedrag") or werkdag.STANDAARDGEDRAG)}
 
 
 def blok(org: Organisatie) -> str:
@@ -98,6 +105,7 @@ def blok(org: Organisatie) -> str:
         "/* @@KAARTEN:BEGIN – gegenereerd door scripts/bouw_kantoor.py uit tet-tet/kaarten/. Niet met de hand wijzigen. */",
         f"const MAX_AFKEURINGEN = {keten.laad_instellingen()['taken']['max_afkeuringen']};",
         f"const BREIN_OVERLAP = {float(keten.laad_instellingen().get('brein', {}).get('overlap_drempel', 0.6))};",
+        f"const RAADSAKKOORD = {J(raadsakkoord(keten.laad_instellingen()))};",
         f"const CULTUUR_ORG = {J(cultuur_org)};",
         f"const DEPT_KAARTEN = {J(afd)};",
         f"const AFDELING_KAART_KPIS = {J(kpis)};",
